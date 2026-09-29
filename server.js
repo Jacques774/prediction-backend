@@ -40,8 +40,6 @@ io.on("connection", (socket) => {
 
     // Track player using socket.id
     game.players[socket.id] = { playerName, isHost };
-
-    // Join the socket room
     socket.join(gameId);
 
     // Broadcast join events
@@ -74,9 +72,20 @@ io.on("connection", (socket) => {
 
   // --- Chat handler ---
   socket.on("chat_message", ({ gameId, playerName, message }) => {
-    // Broadcast chat to everyone in the room
     io.to(gameId).emit("chat_message", { playerName, message });
     console.log(`Chat in ${gameId} from ${playerName}: ${message}`);
+  });
+
+  // --- Player answers ---
+  socket.on("player_action", ({ gameId, playerName, answer }) => {
+    io.to(gameId).emit("player_action", { playerName, answer });
+    console.log(`Answer in ${gameId} from ${playerName}: ${answer}`);
+  });
+
+  // --- Host resolves outcome ---
+  socket.on("host_resolve", ({ gameId, outcome }) => {
+    io.to(gameId).emit("host_resolve", { outcome });
+    console.log(`Outcome in ${gameId}: ${outcome}`);
   });
 });
 
