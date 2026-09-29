@@ -38,7 +38,7 @@ io.on("connection", (socket) => {
     }
 
     // Track player using socket.id
-    game.players[socket.id] = { name: playerName, isHost };
+    game.players[socket.id] = { playerName, isHost };
 
     // Join the socket room
     socket.join(gameId);
@@ -46,7 +46,7 @@ io.on("connection", (socket) => {
     // Broadcast join events
     if (isHost) {
       game.hostId = socket.id;
-      io.to(gameId).emit("host_joined", { name: playerName });
+      io.to(gameId).emit("host_joined", { playerName });
       console.log(`Host ${playerName} joined game ${gameId}`);
     } else {
       io.to(gameId).emit("player_joined", { playerName });
@@ -57,14 +57,14 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
       const player = game.players[socket.id];
       if (player) {
-        const leftName = player.name;
+        const leftName = player.playerName;
         delete game.players[socket.id];
 
         if (player.isHost) {
-          io.to(gameId).emit("host_left", { name: leftName });
+          io.to(gameId).emit("host_left", { playerName: leftName });
           console.log(`Host ${leftName} left game ${gameId}`);
         } else {
-          io.to(gameId).emit("player_left", { name: leftName });
+          io.to(gameId).emit("player_left", { playerName: leftName });
           console.log(`Player ${leftName} left game ${gameId}`);
         }
       }
