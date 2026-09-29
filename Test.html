@@ -45,11 +45,18 @@
     socket.emit("join_game", { gameId, playerName, isHost: false });
 
     // Listen for chat messages
-    socket.on("chat_message", ({ playerName, message }) => {
+    socket.on("chat_message", ({ playerName: senderName, message }) => {
       const chatBox = document.getElementById("chat-box");
       const msg = document.createElement("div");
-      msg.className = "msg other";
-      msg.textContent = `${playerName}: ${message}`;
+
+      if (senderName === playerName) {
+        msg.className = "msg me";
+        msg.textContent = `Me: ${message}`;
+      } else {
+        msg.className = "msg other";
+        msg.textContent = `${senderName}: ${message}`;
+      }
+
       chatBox.appendChild(msg);
       chatBox.scrollTop = chatBox.scrollHeight;
     });
@@ -60,13 +67,6 @@
       const message = input.value.trim();
       if (message) {
         socket.emit("chat_message", { gameId, playerName, message });
-        // Show your own message immediately
-        const chatBox = document.getElementById("chat-box");
-        const msg = document.createElement("div");
-        msg.className = "msg me";
-        msg.textContent = `Me: ${message}`;
-        chatBox.appendChild(msg);
-        chatBox.scrollTop = chatBox.scrollHeight;
         input.value = "";
       }
     });
