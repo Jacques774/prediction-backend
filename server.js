@@ -26,10 +26,11 @@ app.get("/api/healthz", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// ✅ Socket.IO join handler
+// ✅ Socket.IO handlers
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
 
+  // --- Game join handler ---
   socket.on("join_game", ({ gameId, playerName, isHost }) => {
     const game = games[gameId];
     if (!game) {
@@ -69,6 +70,13 @@ io.on("connection", (socket) => {
         }
       }
     });
+  });
+
+  // --- Chat handler ---
+  socket.on("chat_message", ({ gameId, playerName, message }) => {
+    // Broadcast chat to everyone in the room
+    io.to(gameId).emit("chat_message", { playerName, message });
+    console.log(`Chat in ${gameId} from ${playerName}: ${message}`);
   });
 });
 
