@@ -17,7 +17,7 @@ const games = {};
 // ✅ Create Game route
 app.post("/api/create-game", (req, res) => {
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-  games[code] = { players: {} };
+  games[code] = { players: {}, hostId: null };
   res.json({ code });
 });
 
@@ -37,22 +37,36 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const playerId = Math.random().toString(36).substring(2, 9);
-    game.players[playerId] = { name: playerName };
+    // Track player using socket.id
+    game.players[socket.id] = { name: playerName, isHost };
 
-    if (isHost) {
-      game.hostId = playerId;
-      io.to(gameId).emit("host_joined", { name: playerName });
-    } else {
-      io.to(gameId).emit("player_joined", { name: playerName });
-    }
-
+    // Join the socket room
     socket.join(gameId);
 
+    // Broadcast join events
+    if (isHost) {
+      game.hostId = socket.id;
+      io.to(gameId).emit("host_joined", { name: playerName });
+      console.log(`Host ${playerName} joined game ${gameId}`);
+    } else {
+      io.to(gameId).emit("player_joined", { playerName });
+      console.log(`Player ${playerName} joined game ${gameId}`);
+    }
+
+    // Handle disconnect
     socket.on("disconnect", () => {
-      if (!isHost) {
-        io.to(gameId).emit("player_left", { name: playerName });
-        delete game.players[playerId];
+      const player = game.players[socket.id];
+      if (player) {
+        const leftName = player.name;
+        delete game.players[socket.id];
+
+        if (player.isHost) {
+          io.to(gameId).emit("host_left", { name: leftName });
+          console.log(`Host ${leftName} left game ${gameId}`);
+        } else {
+          io.to(gameId).emit("player_left", { name: leftName });
+          console.log(`Player ${leftName} left game ${gameId}`);
+        }
       }
     });
   });
