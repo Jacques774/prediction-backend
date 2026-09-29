@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatroom Test</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #chat-box { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; margin-bottom: 10px; }
+    #chat-input { width: 70%; padding: 5px; }
+    #send-btn { padding: 5px 10px; }
+    .msg { margin: 5px 0; }
+    .me { font-weight: bold; color: #2563eb; }
+    .other { color: #374151; }
+  </style>
+</head>
+<body>
+  <h2>Chatroom Test</h2>
+  <div id="chat-box"></div>
+  <input id="chat-input" placeholder="Type a message…" />
+  <button id="send-btn">Send</button>
+
+  <script>
+    // Connect to your Render backend
+    const socket = io("https://prediction-backend-2e20.onrender.com");
+
+    // Read gameId and playerName from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameId = urlParams.get("code") || "TESTROOM";
+    const playerName = urlParams.get("name") || "Anonymous";
+
+    // Join the room
+    socket.emit("join_game", { gameId, playerName, isHost: false });
+
+    // Listen for chat messages
+    socket.on("chat_message", ({ playerName, message }) => {
+      const chatBox = document.getElementById("chat-box");
+      const msg = document.createElement("div");
+      msg.className = "msg other";
+      msg.textContent = `${playerName}: ${message}`;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    // Send chat messages
+    document.getElementById("send-btn").addEventListener("click", () => {
+      const input = document.getElementById("chat-input");
+      const message = input.value.trim();
+      if (message) {
+        socket.emit("chat_message", { gameId, playerName, message });
+        // Show your own message immediately
+        const chatBox = document.getElementById("chat-box");
+        const msg = document.createElement("div");
+        msg.className = "msg me";
+        msg.textContent = `Me: ${message}`;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        input.value = "";
+      }
+    });
+  </script>
+</body>
+</html>
