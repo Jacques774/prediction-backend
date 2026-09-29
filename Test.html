@@ -24,6 +24,14 @@
     // Connect to your Render backend
     const socket = io("https://prediction-backend-2e20.onrender.com");
 
+    // Log connection status
+    socket.on("connect", () => {
+      console.log("✅ Connected to backend:", socket.id);
+    });
+    socket.on("connect_error", (err) => {
+      console.error("❌ Connection failed:", err.message);
+    });
+
     // Read gameId and playerName from URL
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get("code") || "TESTROOM";
