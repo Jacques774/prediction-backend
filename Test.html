@@ -12,10 +12,12 @@
     .msg { margin: 5px 0; }
     .me { font-weight: bold; color: #2563eb; }
     .other { color: #374151; }
+    #status { margin-bottom: 10px; font-size: 14px; color: #555; }
   </style>
 </head>
 <body>
   <h2>Chatroom Test</h2>
+  <div id="status">Connecting…</div>
   <div id="chat-box"></div>
   <input id="chat-input" placeholder="Type a message…" />
   <button id="send-btn">Send</button>
@@ -24,12 +26,14 @@
     // Connect to your Render backend
     const socket = io("https://prediction-backend-2e20.onrender.com");
 
-    // Log connection status
+    const statusBox = document.getElementById("status");
+
+    // Show connection status on the page
     socket.on("connect", () => {
-      console.log("✅ Connected to backend:", socket.id);
+      statusBox.textContent = "✅ Connected to backend: " + socket.id;
     });
     socket.on("connect_error", (err) => {
-      console.error("❌ Connection failed:", err.message);
+      statusBox.textContent = "❌ Connection failed: " + err.message;
     });
 
     // Read gameId and playerName from URL
