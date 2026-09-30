@@ -7,7 +7,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Create HTTP + Socket.IO server
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: "*" } });
 
@@ -17,7 +16,12 @@ const games = {};
 // ✅ Create Game route
 app.post("/api/create-game", (req, res) => {
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-  games[code] = { players: {}, hostId: null };
+  games[code] = {
+    players: {},
+    hostId: null,
+    predictions: { YES: 0, NO: 0 },
+    started: false
+  };
   res.json({ code });
 });
 
@@ -38,11 +42,15 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (game.started) {
+      socket.emit("error_message", "Game already started. Room is closed.");
+      return;
+    }
+
     // Track player using socket.id
-    game.players[socket.id] = { playerName, isHost };
+    game.players[socket.id] = { playerName, isHost, balance: 120, wins: 0, cashouts: 0 };
     socket.join(gameId);
 
-    // Broadcast join events
     if (isHost) {
       game.hostId = socket.id;
       io.to(gameId).emit("host_joined", { playerName });
@@ -51,6 +59,9 @@ io.on("connection", (socket) => {
       io.to(gameId).emit("player_joined", { playerName });
       console.log(`Player ${playerName} joined game ${gameId}`);
     }
+
+    // Broadcast updated leaderboard immediately
+    broadcastLeaderboard(gameId);
 
     // Handle disconnect
     socket.on("disconnect", () => {
@@ -66,28 +77,97 @@ io.on("connection", (socket) => {
           io.to(gameId).emit("player_left", { playerName: leftName });
           console.log(`Player ${leftName} left game ${gameId}`);
         }
+
+        broadcastLeaderboard(gameId);
       }
     });
   });
 
-  // --- Chat handler ---
-  socket.on("chat_message", ({ gameId, playerName, message }) => {
-    io.to(gameId).emit("chat_message", { playerName, message });
-    console.log(`Chat in ${gameId} from ${playerName}: ${message}`);
+  // --- Host starts game with countdown ---
+  socket.on("start_game", ({ gameId, host }) => {
+    const game = games[gameId];
+    if (!game) return;
+
+    game.started = true; // 🚪 lock the room
+
+    io.to(gameId).emit("pre_countdown", { seconds: 3 });
+    setTimeout(() => {
+      io.to(gameId).emit("game_started", { host });
+      game.predictions = { YES: 0, NO: 0 };
+    }, 3000);
   });
 
   // --- Player answers ---
   socket.on("player_action", ({ gameId, playerName, answer }) => {
-    io.to(gameId).emit("player_action", { playerName, answer });
+    const game = games[gameId];
+    if (!game.predictions) game.predictions = { YES: 0, NO: 0 };
+    game.predictions[answer]++;
+
+    io.to(gameId).emit("player_action", {
+      playerName,
+      answer,
+      totals: game.predictions
+    });
     console.log(`Answer in ${gameId} from ${playerName}: ${answer}`);
   });
 
   // --- Host resolves outcome ---
   socket.on("host_resolve", ({ gameId, outcome }) => {
+    const game = games[gameId];
+    if (!game) return;
+
     io.to(gameId).emit("host_resolve", { outcome });
     console.log(`Outcome in ${gameId}: ${outcome}`);
+
+    // Update balances & wins
+    for (const player of Object.values(game.players)) {
+      if (!player.isHost) {
+        // Example scoring logic
+        if (outcome === "YES") {
+          player.balance += 10;
+          player.wins++;
+        } else if (outcome === "NO") {
+          player.balance -= 5;
+        }
+      }
+    }
+
+    broadcastLeaderboard(gameId);
+
+    // Reset predictions for next round
+    game.predictions = { YES: 0, NO: 0 };
+  });
+
+  // --- Cashout handler ---
+  socket.on("cashout", ({ gameId, playerName, amount }) => {
+    const game = games[gameId];
+    const player = Object.values(game.players).find(p => p.playerName === playerName);
+
+    if (player) {
+      player.balance += amount;
+      player.cashouts++;
+      io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
+      broadcastLeaderboard(gameId);
+    }
   });
 });
+
+// ✅ Helper: broadcast leaderboard sorted by balance
+function broadcastLeaderboard(gameId) {
+  const game = games[gameId];
+  if (!game) return;
+
+  const leaderboard = Object.values(game.players)
+    .sort((a, b) => b.balance - a.balance)
+    .map(p => ({
+      name: p.playerName,
+      balance: p.balance,
+      wins: p.wins,
+      cashouts: p.cashouts
+    }));
+
+  io.to(gameId).emit("leaderboard_update", leaderboard);
+}
 
 // ✅ Start server
 const PORT = process.env.PORT || 3000;
