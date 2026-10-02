@@ -109,18 +109,7 @@ socket.on("player_action", ({ gameId, playerName, answer }) => {
   if (answer === "YES") game.predictions.YES++;
   if (answer === "NO") game.predictions.NO++;
 
-  // Calculate percentages
-  const total = game.predictions.YES + game.predictions.NO;
-  const yesPercent = total > 0 ? (game.predictions.YES / total) * 100 : 0;
-  const noPercent = total > 0 ? (game.predictions.NO / total) * 100 : 0;
-
-  // Broadcast aggregated percentages (not individual votes)
-  io.to(gameId).emit("prediction_update", {
-    yesPercent,
-    noPercent,
-    totals: game.predictions
-  });
-
+  // 🚫 No percentages, no broadcast
   console.log(`Answer in ${gameId} from ${playerName}: ${answer}`);
 });
 
