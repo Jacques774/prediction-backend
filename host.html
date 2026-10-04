@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prediction Game - Host Setup</title>
+  <link rel="stylesheet" href="style.css">
+  
+</head>
+<body>
+
+<!-- HOST SETUP SLIDE (main panel) -->
+<div id="hostSetupSlide" class="player-details-slide">
+  <div class="details-content">
+    <h2>Host Setup</h2>
+
+    <label>Your Name</label>
+    <input type="text" id="host-name-input" placeholder="Enter your name">
+
+    <div id="hostNameError"
+      style="color:#ef4444; font-weight:600; display:none; font-size:0.9rem;">
+    </div>
+
+    <h3>Players in Room</h3>
+    <ul id="host-player-list"></ul>
+
+    <button id="host-start-btn">Start Game</button>
+  </div>
+</div>
+
+<!-- GAME DASHBOARD (hidden until start) -->
+<div class="dashboard hidden" id="dashboard">
+  <div class="top-header">
+    <div class="header-left">
+      <div class="header-line" id="player-name">Host: --</div>
+      <div class="header-line" id="player-balance">Balance: 120</div>
+    </div>
+    <div class="header-right">
+      <div class="header-line" id="player-wins">Wins: 0</div>
+      <div class="header-line" id="player-cashouts">Cash-outs: 0</div>
+    </div>
+  </div>
+  
+
+  <!-- Countdown -->
+  <div id="preCountdown" style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">3</div>
+
+<!-- Post-Question Countdown -->
+<div id="postQuestionCountdown"
+     style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">
+  3</div>
+
+  <!-- Cards -->
+<div class="cards">
+  <div class="card" id="active-card">
+    <div class="card-header">
+      <div class="question-text" id="q-text">Loading question...</div>
+    </div>
+    <div class="choices">
+      <button class="btn btn-yes" id="btn-yes">YES</button>
+      <button class="btn btn-no" id="btn-no">NO</button>
+    </div>
+    <!-- 🚫 Removed popularity labels and bar -->
+
+    <div class="cashout-row">
+      <span class="position" id="q-info">
+        You chose: --<br>
+        Stake: --<br>
+        Timer: --
+      </span>
+      <div class="cashout-action">
+        <button class="cashout-btn" id="cashout-btn">Cash Out: --</button>
+        <div class="cashout-timer" id="timer">Cash out: --s</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Footer Buttons -->
+  <div class="bottom-buttons">
+    <button class="nav-btn" onclick="openHistory()">History</button>
+    <button class="nav-btn" onclick="openLeaderboard()">Leaderboard</button>
+  </div>
+
+  <!-- Panels -->
+  <div id="historyPanel" class="history-panel">
+    <div class="history-content">
+      <button class="close-btn" onclick="closeHistory()">Close</button>
+      <div class="history-header">History</div>
+      <div class="history-list"></div>
+    </div>
+  </div>
+
+  <div id="leaderboardPanel" class="history-panel">
+    <div class="leaderboard-content">
+      <button class="close-btn" onclick="closeLeaderboard()">Close</button>
+      <div class="leaderboard-title">Leaderboard</div>
+      <div id="leaderboard-list" class="leaderboard-list"></div>
+    </div>
+  </div>
+
+  <!-- ============================
+     STAKE POPUP
+     ============================ -->
+<div id="stakePopup" class="stake-popup">
+  <div class="stake-popup-content">
+    <h3>Edit Stake</h3>
+    <input type="number" id="stakeInput" min="1" placeholder="Enter stake" />
+
+    <div class="stake-popup-actions">
+      <button id="stake-save-btn">Save</button>
+<button id="stake-cancel-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="host-outcome-panel">
+  <div class="host-outcome-content">
+    <div class="history-header">Confirm Outcome</div>
+    <div class="question-text" id="host-outcome-question">Loading question...</div>
+    <div class="choices">
+      <button class="btn btn-yes" id="host-yes-btn">YES — It Happened</button>
+      <button class="btn btn-no" id="host-no-btn">NO — It Didn’t</button>
+    </div>
+  </div>
+</div>
+
+<!-- Load Socket.IO client once -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<!-- Then your own scripts -->
+<script src="socket.js"></script>
+<script src="engine.js"></script>
+<script src="leaderboard.js"></script>
+<script src="history.js"></script>
+<script src="host-ui.js"></script>
+
+</body>
+</html>
