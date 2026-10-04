@@ -94,55 +94,59 @@ io.on("connection", (socket) => {
     setTimeout(() => {
       io.to(gameId).emit("game_started", { host });
       game.predictions = { YES: 0, NO: 0 };
+      // Broadcast leaderboard at game start
+      broadcastLeaderboard(gameId);
     }, 3000);
   });
 
- // --- Player answers ---
-socket.on("player_action", ({ gameId, playerName, answer }) => {
-  const game = games[gameId];
-  if (!game) return;
+  // --- Player answers ---
+  socket.on("player_action", ({ gameId, playerName, answer }) => {
+    const game = games[gameId];
+    if (!game) return;
 
-  // Ensure predictions object exists
-  if (!game.predictions) game.predictions = { YES: 0, NO: 0 };
+    // Ensure predictions object exists
+    if (!game.predictions) game.predictions = { YES: 0, NO: 0 };
 
-  // Increment vote count
-  if (answer === "YES") game.predictions.YES++;
-  if (answer === "NO") game.predictions.NO++;
+    // Increment vote count
+    if (answer === "YES") game.predictions.YES++;
+    if (answer === "NO") game.predictions.NO++;
 
-  // 🚫 No percentages, no broadcast
-  console.log(`Answer in ${gameId} from ${playerName}: ${answer}`);
-});
+    console.log(`Answer in ${gameId} from ${playerName}: ${answer}`);
 
-// --- Host resolves outcome ---
-socket.on("host_resolve", ({ gameId, outcome }) => {
-  const game = games[gameId];
-  if (!game) return;
+    // Broadcast leaderboard after each prediction
+    broadcastLeaderboard(gameId);
+  });
 
-  io.to(gameId).emit("host_resolve", { outcome });
-  console.log(`Outcome in ${gameId}: ${outcome}`);
+  // --- Host resolves outcome ---
+  socket.on("host_resolve", ({ gameId, outcome }) => {
+    const game = games[gameId];
+    if (!game) return;
 
-  // Update balances & wins
-  for (const player of Object.values(game.players)) {
-    if (!player.isHost) {
-      if (outcome === "YES") {
-        player.balance += 10;
-        player.wins++;
-      } else if (outcome === "NO") {
-        player.balance -= 5;
+    io.to(gameId).emit("host_resolve", { outcome });
+    console.log(`Outcome in ${gameId}: ${outcome}`);
+
+    // Update balances & wins
+    for (const player of Object.values(game.players)) {
+      if (!player.isHost) {
+        if (outcome === "YES") {
+          player.balance += 10;
+          player.wins++;
+        } else if (outcome === "NO") {
+          player.balance -= 5;
+        }
       }
     }
-  }
 
-  broadcastLeaderboard(gameId);
+    broadcastLeaderboard(gameId);
 
-  // Reset predictions for next round
-  game.predictions = { YES: 0, NO: 0 };
-  io.to(gameId).emit("prediction_update", {
-    yesPercent: 0,
-    noPercent: 0,
-    totals: game.predictions
+    // Reset predictions for next round
+    game.predictions = { YES: 0, NO: 0 };
+    io.to(gameId).emit("prediction_update", {
+      yesPercent: 0,
+      noPercent: 0,
+      totals: game.predictions
+    });
   });
-});
 
   // --- Cashout handler ---
   socket.on("cashout", ({ gameId, playerName, amount }) => {
@@ -173,6 +177,7 @@ function broadcastLeaderboard(gameId) {
     }));
 
   io.to(gameId).emit("leaderboard_update", leaderboard);
+  console.log(`📡 Leaderboard update broadcasted for game ${gameId}`);
 }
 
 // ✅ Start server
