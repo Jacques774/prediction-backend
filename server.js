@@ -10,6 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 const httpServer = createServer(app);
+// Serve static files (CSS, JS, images) from the project directory
+app.use(express.static(__dirname));
 const io = new Server(httpServer, { cors: { origin: "*" } });
 
 // ✅ Needed for ES modules (__dirname equivalent)
