@@ -1,0 +1,613 @@
+/* ============================
+   GLOBAL
+   ============================ */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0b1220;
+  color: #e5e7eb;
+  margin: 0;
+  padding: 16px;
+}
+
+.dashboard {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* ============================
+   HEADER
+   ============================ */
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding: 4px;
+}
+
+.header-left,
+.header-right {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.header-line {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+/* ============================
+   QUESTION CARD
+   ============================ */
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.card {
+  background: #111827;
+  border-radius: 14px;
+  padding: 20px 22px;
+  border: 1px solid #1f2937;
+}
+
+.card-header {
+  margin-bottom: 14px;
+}
+
+.question-text {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.choices {
+  display: flex;
+  gap: 14px;
+  margin: 14px 0;
+}
+
+.btn {
+  flex: 1;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.btn-yes {
+  background: #22c55e;
+  color: #052e16;
+}
+
+.btn-no {
+  background: #ef4444;
+  color: #450a0a;
+}
+
+.btn-yes:disabled,
+.btn-no:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================
+   POPULARITY BAR
+   ============================ */
+.popularity-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin-bottom: 8px;
+}
+
+.popularity-bar {
+  position: relative;
+  height: 16px;
+  background: #1f2937;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.popularity-yes {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: #22c55e; /* green */
+  transition: width 0.3s ease;   /* add smooth animation */
+}
+
+.popularity-no {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: #ef4444; /* red */
+  transition: width 0.3s ease;   /* keep consistent with YES */
+}
+
+/* ============================
+   CASHOUT ROW
+   ============================ */
+.cashout-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 12px;
+}
+
+.position {
+  font-size: 0.9rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.cashout-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.cashout-btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  background: #38bdf8;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+#cashout-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cashout-timer {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+/* ============================
+   FOOTER BUTTONS
+   ============================ */
+.bottom-buttons {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 95%;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 11px;
+  z-index: 999;
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 16px;
+  background: #1f2937;
+  color: #e5e7eb;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-weight: 600;
+}
+
+.nav-btn:hover {
+  background: #374151;
+}
+
+/* ============================
+   PLAYER / HOST DETAILS SLIDE
+   ============================ */
+.player-details-slide {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+.details-content {
+  background: #111827;
+  border-radius: 14px;
+  padding: 20px;
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid #1f2937;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.details-content h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  text-align: center;
+}
+
+.details-content label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.details-content input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #1f2937;
+  background: #0f172a;
+  color: #e5e7eb;
+  font-size: 0.95rem;
+}
+
+.readonly-field {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #1f2937;
+  color: #e5e7eb;
+  font-size: 0.95rem;
+  border: 1px solid #374151;
+}
+
+/* ============================
+   READY + START BUTTONS
+   ============================ */
+#btn-ready,
+#host-start-btn {
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: none;
+  background: #22c55e;
+  color: #052e16;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 20px;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+#btn-ready:hover,
+#host-start-btn:hover {
+  background: #16a34a;
+  transform: translateY(-2px);
+}
+
+#btn-ready:active,
+#host-start-btn:active {
+  background: #15803d;
+  transform: translateY(0);
+}
+
+/* ============================
+   STAKE POPUP
+   ============================ */
+.stake-popup {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.stake-popup-content {
+  background: #111827;
+  padding: 20px;
+  border-radius: 14px;
+  width: 90%;
+  max-width: 360px;
+  border: 1px solid #1f2937;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stake-popup-content h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  text-align: center;
+}
+
+.stake-popup-content input {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: #e5e7eb;
+  font-size: 1rem;
+}
+
+.stake-popup-actions {
+  display: flex;
+  gap: 12px;
+}
+
+#stake-save-btn,
+#stake-cancel-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#stake-save-btn {
+  background: #22c55e;
+  color: #052e16;
+}
+
+#stake-cancel-btn {
+  background: #ef4444;
+  color: #450a0a;
+}
+
+/* ============================
+   PANELS (History + Leaderboard)
+   ============================ */
+.history-panel,
+#leaderboardPanel {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 999;
+}
+
+.history-panel.active,
+#leaderboardPanel.active {
+  display: flex;
+}
+
+.history-content,
+.leaderboard-content {
+  background: #0f172a;
+  width: 100%;
+  max-height: 80%;
+  border-radius: 18px 18px 0 0;
+  padding: 20px;
+  overflow-y: auto;
+  border: 1px solid #1f2937;
+  transform: translateY(100%);
+  transition: transform 0.35s ease;
+  position: relative;
+}
+
+.history-panel.active .history-content,
+#leaderboardPanel.active .leaderboard-content {
+  transform: translateY(0);
+}
+
+/* ============================
+   HISTORY + LEADERBOARD CONTENT
+   ============================ */
+.history-header,
+.leaderboard-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #e5e7eb;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.history-list,
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* ============================
+   HISTORY CARD — FULL DESIGN
+   ============================ */
+.history-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #1f2937;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #374151;
+  color: #e5e7eb;
+}
+
+.history-question {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.history-outcome-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.history-balance {
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.history-time {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  text-align: right;
+}
+
+/* Profit colors */
+.profit-pos { color: #22c55e; font-weight: 700; }
+.profit-neg { color: #ef4444; font-weight: 700; }
+.profit-zero { color: #9ca3af; }
+
+/* Outcome borders */
+.outcome-yes { border-left: 6px solid #22c55e; }
+.outcome-no { border-left: 6px solid #ef4444; }
+.outcome-cash { border-left: 6px solid #38bdf8; }
+
+/* ============================
+   CLOSE BUTTON
+   ============================ */
+.close-btn {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.close-btn:hover {
+  background: #dc2626;
+}
+
+/* ============================
+   LEADERBOARD ITEM — FULL DESIGN
+   ============================ */
+.leaderboard-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1f2937;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #374151;
+  color: #e5e7eb;
+}
+
+.leaderboard-item .left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.leaderboard-item .rank {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.leaderboard-item .name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.leaderboard-item .arrow {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.leaderboard-item .arrow.up { color: #22c55e; }
+.leaderboard-item .arrow.down { color: #ef4444; }
+.leaderboard-item .arrow.same { color: #9ca3af; }
+
+.leaderboard-item .balance {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.player-roster {
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #111827;
+  margin-top: 10px;
+}
+
+.player-roster div {
+  margin: 4px 0;
+  padding: 4px 6px;
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+/* ============================
+   HOST SETUP SLIDE ANIMATION
+   ============================ */
+#hostSetupSlide {
+  transition: transform 0.6s ease, opacity 0.6s ease;
+}
+
+#hostSetupSlide.slide-away {
+  transform: translateY(-100%); /* slide up off screen */
+  opacity: 0;                   /* fade out */
+  pointer-events: none;          /* disable clicks while animating */
+}
+
+/* ============================
+   DASHBOARD FADE-IN
+   ============================ */
+#dashboard.hidden {
+  display: none;
+  opacity: 0;
+}
+
+#dashboard {
+  transition: opacity 0.6s ease;
+}
+
+.host-outcome-panel {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 999;
+}
+
+.host-outcome-panel.active {
+  display: flex;
+}
+
+.host-outcome-content {
+  background: #0f172a;
+  width: 100%;
+  max-height: 60%;
+  border-radius: 18px 18px 0 0;
+  padding: 20px;
+  overflow-y: auto;
+  border: 1px solid #1f2937;
+  transform: translateY(100%);      /* hidden off-screen */
+  transition: transform 0.35s ease; /* slide animation */
+  position: relative;
+}
+
+.host-outcome-panel.active .host-outcome-content {
+  transform: translateY(0);         /* slide up into view */
+}
