@@ -116,6 +116,10 @@ const joinLink = `${BASE_URL}/player.html?code=${gameCode}`;
       }
     });
 
+// ✅ Player join link
+const joinLink = `${BASE_URL}/player?code=${gameCode}`;
+
+// ✅ Host redirect
 startBtn.addEventListener("click", () => {
   const code = window.GameSession.gameCode;
   window.location.href = `${BASE_URL}/host?code=${code}`;
