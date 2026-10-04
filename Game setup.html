@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Game Setup</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0b1220;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 16px;
+    }
+    .setup-container { max-width: 600px; margin: 0 auto; padding-top: 20px; }
+    .setup-title { text-align: center; font-size: 1.6rem; font-weight: 700; margin-bottom: 20px; }
+    .setup-card { background: #111827; border-radius: 14px; padding: 22px; border: 1px solid #1f2937; display: flex; flex-direction: column; gap: 16px; }
+    .setup-card label { font-size: 0.95rem; font-weight: 600; color: #cbd5e1; }
+    .setup-card input, .setup-card select { padding: 12px; border-radius: 10px; border: 1px solid #1f2937; background: #0f172a; color: #e5e7eb; font-size: 1rem; }
+    #create-game-btn { padding: 14px; border-radius: 12px; border: none; background: #22c55e; color: #052e16; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    #create-game-btn:hover { background: #16a34a; }
+    .readonly-field { padding: 12px; border-radius: 10px; background: #1f2937; color: #e5e7eb; font-size: 1rem; border: 1px solid #374151; word-break: break-all; }
+    .share-btn { padding: 12px; border-radius: 10px; border: none; background: #38bdf8; color: #0f172a; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    #start-game-btn { padding: 14px; border-radius: 12px; border: none; background: #3b82f6; color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <h1 class="setup-title">Game Setup</h1>
+    <div class="setup-card">
+      <label>Sport Type</label>
+      <select id="sport-type">
+        <option value="">Select sport</option>
+        <option value="football">Football</option>
+        <option value="rugby">Rugby</option>
+        <option value="basketball">Basketball</option>
+        <option value="tennis">Tennis</option>
+      </select>
+      <label>How Many Questions</label>
+      <input type="number" id="question-count" placeholder="40">
+      <label>Game Time (minutes)</label>
+      <input type="number" id="game-time" placeholder="20">
+      <div id="setupError" style="color:#ef4444; font-weight:600; display:none; font-size:0.9rem;"></div>
+      <button id="create-game-btn">Create Game</button>
+      <div id="generatedLinkBox" style="display:none; margin-top:20px;">
+        <label>Players Join Link</label>
+        <div class="readonly-field" id="generated-link"></div>
+        <button id="share-btn" class="share-btn">Share Link</button>
+      </div>
+      <button id="start-game-btn">Start Game</button>
+    </div>
+  </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const createBtn = document.getElementById("create-game-btn");
+    const err = document.getElementById("setupError");
+    const linkBox = document.getElementById("generatedLinkBox");
+    const linkField = document.getElementById("generated-link");
+    const shareBtn = document.getElementById("share-btn");
+    const startBtn = document.getElementById("start-game-btn");
+
+    // ✅ Use /api prefix for backend
+    const API_BASE = "https://prediction-backend-2e20.onrender.com/api";
+
+    createBtn.addEventListener("click", () => {
+      const sport = document.getElementById("sport-type").value;
+      const questions = Number(document.getElementById("question-count").value);
+      const gameTime = Number(document.getElementById("game-time").value);
+
+      if (!sport || questions <= 0 || gameTime <= 0) {
+        err.textContent = "Please fill in all fields correctly.";
+        err.style.display = "block";
+        return;
+      }
+      err.style.display = "none";
+
+      // ✅ Call backend with hostId
+      fetch(`${API_BASE}/create-game`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostId: "temp-host" })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log("Backend response:", data); // 👀 should show { code: "N2X9FM" }
+        const gameCode = data.code;
+
+        window.GameSession = { gameCode, sport, questions, gameTime };
+
+        const BASE_URL = "https://prediction-backend-2e20.onrender.com";
+const joinLink = `${BASE_URL}/player.html?code=${gameCode}`;
+        linkField.textContent = joinLink;
+        linkBox.style.display = "block";
+        startBtn.style.display = "block";
+
+        console.log("Game created:", window.GameSession);
+      })
+      .catch(err => {
+        console.error("Error creating game:", err);
+        alert("Failed to create game. Please try again.");
+      });
+    });
+
+    shareBtn.addEventListener("click", async () => {
+      const link = linkField.textContent;
+      try {
+        await navigator.share({
+          title: "Join Prediction Game",
+          text: "Join the game now!",
+          url: link
+        });
+      } catch {
+        navigator.clipboard.writeText(link);
+        alert("Link copied to clipboard");
+      }
+    });
+
+startBtn.addEventListener("click", () => {
+  const code = window.GameSession.gameCode;
+  window.location.href = `${BASE_URL}/host.html?code=${code}`;
+});
+  });
+</script>
+</body>
+</html>
