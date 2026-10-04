@@ -21,6 +21,10 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "MainMenu.html"));
 });
 
+app.get("/gamesetup.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "gamesetup.html"));
+});
+
 // ✅ Optional: serve host and player pages directly
 app.get("/host", (req, res) => {
   res.sendFile(path.join(__dirname, "host.html"));
