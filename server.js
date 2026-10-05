@@ -104,9 +104,17 @@ io.on("connection", (socket) => {
 
   // Handle start_game
   socket.on("start_game", ({ gameId, host }) => {
-    console.log(`🎮 Game ${gameId} started by host ${host}`);
+  console.log(`🎮 Game ${gameId} started by host ${host}`);
+
+  // Tell everyone the countdown is starting
+  io.to(gameId).emit("game_starting", { host });
+
+  // After 3 seconds + "GO!", mark the game as started
+  setTimeout(() => {
+    games[gameId].started = true;
     io.to(gameId).emit("game_started", { host });
-  });
+  }, 4000); // 3 seconds countdown + 1 second for "GO!"
+});
 
   // Handle disconnect
   socket.on("disconnect", () => {
