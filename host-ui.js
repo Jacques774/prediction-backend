@@ -65,12 +65,16 @@ if (window.socket) {
     if (nameEl) nameEl.textContent = `Host: ${hostName}`;
     if (balanceEl) balanceEl.textContent = "Balance: 120";
 
-    // Trigger countdown
-    startPreCountdown(() => {
-      const activeCard = document.getElementById("active-card");
-      if (activeCard) activeCard.style.display = "block";
-      Engine.start();
-    });
+    // Listen for server broadcast
+socket.on("game_starting", ({ host }) => {
+  console.log(`Game starting by host: ${host}`);
+
+  startPreCountdown(() => {
+    const activeCard = document.getElementById("active-card");
+    if (activeCard) activeCard.style.display = "block";
+    Engine.start();
+  });
+});
   });
 });
 
