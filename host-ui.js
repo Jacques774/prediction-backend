@@ -43,6 +43,37 @@ if (window.socket) {
   window.socket.emit("start_game", { gameId, host: hostName });
 }
 
+// Outcome buttons
+const yesBtn = document.getElementById("host-yes-btn");
+const noBtn = document.getElementById("host-no-btn");
+
+if (yesBtn) {
+  yesBtn.addEventListener("click", () => {
+    console.log("✅ Host chose outcome YES");
+    window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
+  });
+}
+
+if (noBtn) {
+  noBtn.addEventListener("click", () => {
+    console.log("✅ Host chose outcome NO");
+    window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
+  });
+}
+
+    socket.on("round_outcome", ({ outcome }) => {
+  console.log(`📡 Round outcome: ${outcome}`);
+
+  const outcomeEl = document.getElementById("host-outcome-question");
+  if (outcomeEl) {
+    outcomeEl.textContent = `Outcome: ${outcome}`;
+  }
+
+  // Trigger next round countdown
+  Engine.handleOutcome(outcome);
+  Engine.startNextCountdown();
+});
+    
     // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
     if (hostSlide) {
