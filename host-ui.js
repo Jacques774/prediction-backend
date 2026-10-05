@@ -1,8 +1,14 @@
 // host-ui.js
 
 console.log("✅ host-ui.js loaded");
-// Temporary hardcoded ID for testing
-const gameId = "test123";
+// Read ?code= from URL
+const urlParams = new URLSearchParams(window.location.search);
+const gameId = urlParams.get("code");
+
+if (!gameId) {
+  console.error("❌ No game code found in URL. Did you come from setup.html?");
+}
+window.gameId = gameId;
 
 document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("host-start-btn");
