@@ -116,6 +116,20 @@ io.on("connection", (socket) => {
   }, 4000); // 3 seconds countdown + 1 second for "GO!"
 });
 
+
+  // Handle round outcome (YES/NO)
+  socket.on("round_outcome", ({ gameId, outcome }) => {
+    console.log(`✅ Outcome for ${gameId}: ${outcome}`);
+
+    // Broadcast to everyone in the room
+    io.to(gameId).emit("round_outcome", { outcome });
+
+    // Optional: update game state
+    if (games[gameId]) {
+      games[gameId].lastOutcome = outcome;
+    }
+  });
+
   // Handle disconnect
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
