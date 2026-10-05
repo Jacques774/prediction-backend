@@ -71,6 +71,24 @@ window.cashout = function () {
   });
 };
 
+// Countdown helper (copied from host-ui.js)
+window.startPreCountdown = function (onDone) {
+  const el = document.getElementById("preCountdown");
+  if (!el) return;
+  el.style.display = "block";
+  let count = 3;
+  el.textContent = count;
+  const interval = setInterval(() => {
+    count--;
+    el.textContent = count > 0 ? count : "GO!";
+    if (count < 0) {
+      clearInterval(interval);
+      el.style.display = "none";
+      onDone();
+    }
+  }, 1000);
+};
+
 // Status dot
 const statusDot = document.createElement("div");
 statusDot.id = "socket-status";
@@ -84,3 +102,14 @@ document.querySelector(".top-header").appendChild(statusDot);
 
 socket.on("connect", () => statusDot.style.backgroundColor = "limegreen");
 socket.on("disconnect", () => statusDot.style.backgroundColor = "red");
+
+// 🔑 NEW: Listen for server broadcast to start countdown
+socket.on("game_starting", ({ host }) => {
+  console.log(`Game starting by host: ${host}`);
+
+  startPreCountdown(() => {
+    const activeCard = document.getElementById("active-card");
+    if (activeCard) activeCard.style.display = "block";
+    Engine.start();
+  });
+});
