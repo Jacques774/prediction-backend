@@ -12,12 +12,12 @@ app.use(express.json());
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: "*" } });
 
-// Serve static files (CSS, JS, images) from the project directory
-app.use(express.static(__dirname));
-
 // ✅ Needed for ES modules (__dirname equivalent)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Serve static files (CSS, JS, images) from the project directory
+app.use(express.static(__dirname));
 
 // ✅ Serve MainMenu.html at root
 app.get("/", (req, res) => {
