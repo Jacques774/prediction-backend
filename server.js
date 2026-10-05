@@ -37,7 +37,7 @@ app.get("/player", (req, res) => {
   res.sendFile(path.join(__dirname, "player.html"));
 });
 
-// --- Your existing game logic below ---
+// --- Game state ---
 const games = {};
 
 app.post("/api/create-game", (req, res) => {
@@ -55,14 +55,86 @@ app.get("/api/healthz", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// ✅ Socket.IO handlers (unchanged)
+// ✅ Socket.IO handlers
 io.on("connection", (socket) => {
-  // ... all your existing socket logic ...
+  console.log("🔌 Client connected:", socket.id);
+
+  // Handle join_game
+  socket.on("join_game", ({ gameId, playerName, isHost }) => {
+    if (!games[gameId]) {
+      console.warn(`Game ${gameId} not found`);
+      return;
+    }
+
+    socket.join(gameId);
+
+    games[gameId].players[socket.id] = {
+      name: playerName,
+      balance: 120,
+      wins: 0,
+      cashouts: 0
+    };
+
+    if (isHost) {
+      games[gameId].hostId = socket.id;
+      io.to(gameId).emit("host_joined", { playerName });
+    } else {
+      io.to(gameId).emit("player_joined", { playerName });
+    }
+
+    broadcastLeaderboard(gameId);
+  });
+
+  // Handle prediction
+  socket.on("prediction", ({ gameId, playerName, choice }) => {
+    console.log(`📡 Prediction from ${playerName} in ${gameId}: ${choice}`);
+    io.to(gameId).emit("prediction_made", { player: playerName, choice });
+  });
+
+  // Handle cashout
+  socket.on("cashout", ({ gameId, playerName, amount }) => {
+    const player = Object.values(games[gameId].players).find(p => p.name === playerName);
+    if (player) {
+      player.balance += amount;
+      player.cashouts += 1;
+      io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
+      broadcastLeaderboard(gameId);
+    }
+  });
+
+  // Handle start_game
+  socket.on("start_game", ({ gameId, host }) => {
+    console.log(`🎮 Game ${gameId} started by host ${host}`);
+    io.to(gameId).emit("game_started", { host });
+  });
+
+  // Handle disconnect
+  socket.on("disconnect", () => {
+    console.log("❌ Client disconnected:", socket.id);
+    for (const [gameId, game] of Object.entries(games)) {
+      if (game.players[socket.id]) {
+        const playerName = game.players[socket.id].name;
+        delete game.players[socket.id];
+        io.to(gameId).emit("player_left", { playerName });
+        broadcastLeaderboard(gameId);
+      }
+    }
+  });
 });
 
-// ✅ Helper: broadcast leaderboard (unchanged)
+// ✅ Helper: broadcast leaderboard
 function broadcastLeaderboard(gameId) {
-  // ... your existing leaderboard logic ...
+  const game = games[gameId];
+  if (!game) return;
+
+  const players = Object.values(game.players).map(p => ({
+    name: p.name,
+    balance: p.balance,
+    wins: p.wins,
+    cashouts: p.cashouts
+  }));
+
+  io.to(gameId).emit("leaderboard_update", players);
 }
 
 // ✅ Start server
