@@ -24,13 +24,13 @@ socket.on("player_joined", ({ playerName }) => {
 // --- Send prediction (YES/NO) ---
 function sendPrediction(choice) {
   const gameId = window.gameId;
-  const playerName = document.getElementById("host-name-input")?.value || "Host";
+  const playerName = window.currentPlayerName || "Player";
 
   if (window.socket) {
-    window.socket.emit("player_action", {
+    window.socket.emit("prediction", {
       gameId,
       playerName,
-      answer: choice
+      choice
     });
   }
 
