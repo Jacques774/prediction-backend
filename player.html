@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prediction Game - Player</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -40,35 +39,39 @@
     </div>
   </div>
 
-  <!-- Countdown -->
-  <div id="preCountdown" style="display:none;">3</div>
-  <div id="postQuestionCountdown" style="display:none;">3</div>
+<!-- Countdown -->
+  <div id="preCountdown" style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">3</div>
 
-  <!-- Prediction Card -->
-  <div class="cards">
-    <div class="card" id="active-card">
-      <div class="card-header">
-        <div class="question-text" id="q-text">Waiting for host...</div>
-      </div>
-      <div class="choices">
-        <button class="btn btn-yes" onclick="sendPrediction('YES')">YES</button>
-        <button class="btn btn-no" onclick="sendPrediction('NO')">NO</button>
-      </div>
+<!-- Post-Question Countdown -->
+<div id="postQuestionCountdown"
+     style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">
+  3</div>
 
-      <div class="cashout-row">
-        <span class="position" id="q-info">
-          You chose: --<br>
-          Stake: --<br>
-          Timer: --
-        </span>
-        <div class="cashout-action">
-          <input type="number" id="cashout-amount" placeholder="Amount" />
-          <button id="cashout-btn" class="cashout-btn" onclick="cashout()">Cash Out</button>
-          <div class="cashout-timer" id="timer">Cash out: --s</div>
-        </div>
+    <!-- Cards -->
+<div class="cards">
+  <div class="card" id="active-card">
+    <div class="card-header">
+      <div class="question-text" id="q-text">Loading question...</div>
+    </div>
+    <div class="choices">
+      <button class="btn btn-yes" id="btn-yes">YES</button>
+      <button class="btn btn-no" id="btn-no">NO</button>
+    </div>
+    <!-- 🚫 Removed popularity labels and bar -->
+
+    <div class="cashout-row">
+      <span class="position" id="q-info">
+        You chose: --<br>
+        Stake: --<br>
+        Timer: --
+      </span>
+      <div class="cashout-action">
+        <button class="cashout-btn" id="cashout-btn">Cash Out: --</button>
+        <div class="cashout-timer" id="timer">Cash out: --s</div>
       </div>
     </div>
   </div>
+</div>
 
   <!-- Footer Buttons -->
   <div class="bottom-buttons">
@@ -85,14 +88,29 @@
     </div>
   </div>
 
-  <div id="leaderboardPanel">
+  <div id="leaderboardPanel" class="history-panel">
     <div class="leaderboard-content">
       <button class="close-btn" onclick="closeLeaderboard()">Close</button>
       <div class="leaderboard-title">Leaderboard</div>
       <div id="leaderboard-list" class="leaderboard-list"></div>
     </div>
   </div>
+
+  <!-- ============================
+     STAKE POPUP
+     ============================ -->
+<div id="stakePopup" class="stake-popup">
+  <div class="stake-popup-content">
+    <h3>Edit Stake</h3>
+    <input type="number" id="stakeInput" min="1" placeholder="Enter stake" />
+
+    <div class="stake-popup-actions">
+      <button id="stake-save-btn">Save</button>
+<button id="stake-cancel-btn">Cancel</button>
+    </div>
+  </div>
 </div>
+
 
 <!-- Scripts -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
