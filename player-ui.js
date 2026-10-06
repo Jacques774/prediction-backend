@@ -124,7 +124,10 @@ socket.on("round_outcome", ({ outcome }) => {
     outcomeEl.style.display = "block";
   }
 
-  // Trigger next round countdown
-  Engine.handleOutcome(outcome);
-  Engine.startNextCountdown();
+  // Run next countdown directly
+  startPreCountdown(() => {
+    const activeCard = document.getElementById("active-card");
+    if (activeCard) activeCard.style.display = "block";
+    Engine.start(); // next question begins
+  });
 });
