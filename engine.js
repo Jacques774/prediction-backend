@@ -184,33 +184,35 @@ window.Engine = {
   },
 
   updateBalance(outcome, stake) {
-    const oldBalance = window.balance;
-    let newBalance = oldBalance;
+  const oldBalance = window.balance;
+  let newBalance = oldBalance;
 
-    if (outcome === "WIN") {
-      newBalance += stake * 2;
-    } else if (outcome === "CASHED OUT") {
-      newBalance += stake * 0.5;
-    }
-
-    window.balance = newBalance;
-
-    const nameEl = document.getElementById("player-name");
-    if (nameEl) {
-      const prefix = window.isHost ? "Host" : "Player";
-      nameEl.textContent = `${prefix}: ${window.currentPlayerName}`;
-    }
-
-    const balanceEl = document.getElementById("player-balance");
-    if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-    }
-
-    Leaderboard.update(window.currentPlayerName, window.balance);
-    Leaderboard.render();
-
-    return { oldBalance, newBalance };
+  if (outcome === "WIN") {
+    newBalance += stake * 2; // payout
+  } else if (outcome === "CASHED OUT") {
+    newBalance += stake * 0.5; // partial return
+  } else if (outcome === "LOSE") {
+    newBalance -= stake; // deduct stake on loss
   }
+
+  window.balance = newBalance;
+
+  const nameEl = document.getElementById("player-name");
+  if (nameEl) {
+    const prefix = window.isHost ? "Host" : "Player";
+    nameEl.textContent = `${prefix}: ${window.currentPlayerName}`;
+  }
+
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl) {
+    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+  }
+
+  Leaderboard.update(window.currentPlayerName, window.balance);
+  Leaderboard.render();
+
+  return { oldBalance, newBalance };
+}
 };
   
 // ============================
