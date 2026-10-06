@@ -131,3 +131,15 @@ socket.on("round_outcome", ({ outcome }) => {
     Engine.start(); // next question begins
   });
 });
+
+// 🔑 Listen for server broadcast of new question
+socket.on("new_question", ({ question }) => {
+  console.log(`📡 New question: ${question.text}`);
+
+  const qTextEl = document.getElementById("q-text");
+  if (qTextEl) qTextEl.textContent = question.text;
+
+  // Show the active card once the question arrives
+  const activeCard = document.getElementById("active-card");
+  if (activeCard) activeCard.style.display = "block";
+});
