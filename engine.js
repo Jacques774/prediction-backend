@@ -133,6 +133,14 @@ window.Engine = {
       return;
     }
     q.userChoice = choice;
+
+    // Deduct stake immediately when player commits
+    window.balance -= q.stake;
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    }
+
     updateActiveCard(q);
     btnYes.disabled = true;
     btnNo.disabled = true;
@@ -160,28 +168,28 @@ window.Engine = {
   },
 
   handleOutcome(outcome) {
-  const q = this.currentQuestion;
-  if (!q) return;
+    const q = this.currentQuestion;
+    if (!q) return;
 
-  // Host sets the true outcome
-  q.outcome = outcome;
+    // Host sets the true outcome
+    q.outcome = outcome;
 
-  // Decide win/lose based on player choice
-  let result;
-  if (q.userChoice === outcome) {
-    result = this.updateBalance("WIN", q.stake);
-  } else {
-    result = this.updateBalance("LOSE", q.stake);
-  }
+    // Decide win/lose based on player choice
+    let result;
+    if (q.userChoice === outcome) {
+      result = this.updateBalance("WIN", q.stake);
+    } else {
+      result = this.updateBalance("LOSE", q.stake);
+    }
 
-  q.oldBalance = result.oldBalance;
-  q.newBalance = result.newBalance;
+    q.oldBalance = result.oldBalance;
+    q.newBalance = result.newBalance;
 
-  History.push(q);
-  History.render();
+    History.push(q);
+    History.render();
 
-  this.startNextCountdown();
-},
+    this.startNextCountdown();
+  },
 
   startNextCountdown() {
     window.startPostQuestionCountdown(() => {
@@ -190,29 +198,28 @@ window.Engine = {
   },
 
   updateBalance(outcome, stake) {
-  const oldBalance = window.balance;
-  let newBalance = oldBalance;
+    const oldBalance = window.balance;
+    let newBalance = oldBalance;
 
-  if (outcome === "WIN") {
-    newBalance += stake * 2;
-  } else if (outcome === "CASHED OUT") {
-    newBalance += stake * 0.5;
-  } else if (outcome === "LOSE") {
-    newBalance -= stake;
+    if (outcome === "WIN") {
+      newBalance += stake * 2; // winnings only
+    } else if (outcome === "CASHED OUT") {
+      newBalance += stake * 0.5; // partial return
+    }
+    // LOSE → nothing added, since stake already deducted in choose()
+
+    window.balance = newBalance;
+
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    }
+
+    Leaderboard.update(window.currentPlayerName, window.balance);
+    Leaderboard.render();
+
+    return { oldBalance, newBalance };
   }
-
-  window.balance = newBalance;
-
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-  }
-
-  Leaderboard.update(window.currentPlayerName, window.balance);
-  Leaderboard.render();
-
-  return { oldBalance, newBalance };
-}
 };
   
 // ============================
