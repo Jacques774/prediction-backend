@@ -131,8 +131,6 @@ socket.on("round_outcome", ({ outcome }) => {
   });
 });
 
-import { RugbyQuestions } from "./questions.js";
-
 // 🔑 New question broadcast
 socket.on("new_question", ({ id }) => {
   const question = RugbyQuestions[id];
