@@ -131,11 +131,14 @@ socket.on("round_outcome", ({ outcome }) => {
   });
 });
 
-// 🔑 New question broadcast
-socket.on("new_question", ({ question }) => {
-  console.log(`📡 New question: ${question.text}`);
+import { RugbyQuestions } from "./questions.js";
 
-  // ✅ Use Engine to handle the server question
+// 🔑 New question broadcast
+socket.on("new_question", ({ id }) => {
+  const question = RugbyQuestions[id];
+  console.log(`📡 Player received new question: ${question.text}`);
+
+  // ✅ Use Engine to handle the resolved question
   Engine.nextQuestion(question);
 
   const activeCard = document.getElementById("active-card");
