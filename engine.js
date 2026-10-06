@@ -55,24 +55,26 @@ const stakeCancelBtn = document.getElementById("stake-cancel-btn");
 }
   };
 
-  // ============================
-  // TIMER
-  // ============================
-  const Timer = {
-    start(question, onTick, onEnd) {
-      let timeLeft = Number(question.timer);
+// ============================
+// TIMER
+// ============================
+const Timer = {
+  start(question, onTick, onEnd) {
+    // Always use the same time for every question
+    let timeLeft = 15; // e.g. 15 seconds for all
+
+    onTick(timeLeft);
+    const interval = setInterval(() => {
+      timeLeft--;
       onTick(timeLeft);
-      const interval = setInterval(() => {
-        timeLeft--;
-        onTick(timeLeft);
-        if (timeLeft <= 0) {
-          clearInterval(interval);
-          onEnd();
-        }
-      }, 1000);
-      return interval;
-    }
-  };
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        onEnd();
+      }
+    }, 1000);
+    return interval;
+  }
+};
 
   // ============================
   // UTILS
