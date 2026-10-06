@@ -1,6 +1,12 @@
 // host-ui.js
+import { RugbyQuestions } from "./questions.js";
 
 console.log("✅ host-ui.js loaded");
+
+// ✅ Create socket connection
+const socket = io();
+window.socket = socket;
+
 // Read ?code= from URL
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("code");
@@ -35,50 +41,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ✅ Save globally so updateBalance can use it
     window.currentPlayerName = hostName;
-    window.isHost = true;   // <-- added flag
+    window.isHost = true;
 
     // Host joins only when Start is pressed
-if (window.socket) {
-  window.socket.emit("join_game", { gameId, playerName: hostName, isHost: true });
-  window.socket.emit("start_game", { gameId, host: hostName });
-}
+    socket.emit("join_game", { gameId, playerName: hostName, isHost: true });
+    socket.emit("start_game", { gameId, host: hostName });
 
-// Outcome buttons
-const yesBtn = document.getElementById("host-yes-btn");
-const noBtn = document.getElementById("host-no-btn");
+    // Outcome buttons
+    const yesBtn = document.getElementById("host-yes-btn");
+    const noBtn = document.getElementById("host-no-btn");
 
-if (yesBtn) {
-  yesBtn.addEventListener("click", () => {
-    console.log("✅ Host chose outcome YES");
-    window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
-  });
-}
+    if (yesBtn) {
+      yesBtn.addEventListener("click", () => {
+        console.log("✅ Host chose outcome YES");
+        socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
+      });
+    }
 
-if (noBtn) {
-  noBtn.addEventListener("click", () => {
-    console.log("✅ Host chose outcome NO");
-    window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
-  });
-}
+    if (noBtn) {
+      noBtn.addEventListener("click", () => {
+        console.log("✅ Host chose outcome NO");
+        socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
+      });
+    }
 
     socket.on("round_outcome", ({ outcome }) => {
-  console.log(`📡 Round outcome: ${outcome}`);
+      console.log(`📡 Round outcome: ${outcome}`);
 
-  const outcomeEl = document.getElementById("host-outcome-question");
-  if (outcomeEl) {
-    outcomeEl.textContent = `Outcome: ${outcome}`;
-  }
+      const outcomeEl = document.getElementById("host-outcome-question");
+      if (outcomeEl) {
+        outcomeEl.textContent = `Outcome: ${outcome}`;
+      }
 
-  // Trigger next round countdown
-  Engine.handleOutcome(outcome);
+      // Trigger next round countdown
+      Engine.handleOutcome(outcome);
 
-  // When countdown finishes, emit next_round
-  Engine.startNextCountdown(() => {
-    window.socket.emit("next_round", { gameId: window.gameId });
-  });
-});
-    
-  
+      // When countdown finishes, emit next_round
+      Engine.startNextCountdown(() => {
+        socket.emit("next_round", { gameId: window.gameId });
+      });
+    });
+
     // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
     if (hostSlide) {
@@ -102,22 +105,21 @@ if (noBtn) {
     if (balanceEl) balanceEl.textContent = "Balance: 120";
 
     // Listen for server broadcast
-socket.on("game_starting", ({ host }) => {
-  console.log(`Game starting by host: ${host}`);
+    socket.on("game_starting", ({ host }) => {
+      console.log(`Game starting by host: ${host}`);
 
-  startPreCountdown(() => {
-    const activeCard = document.getElementById("active-card");
-    if (activeCard) activeCard.style.display = "block";
-  });
-});
+      startPreCountdown(() => {
+        const activeCard = document.getElementById("active-card");
+        if (activeCard) activeCard.style.display = "block";
+      });
+    });
 
     // Listen for server broadcast of new question
-socket.on("new_question", ({ id }) => {
-  const question = RugbyQuestions[id];
-  console.log(`📡 Host received new question: ${question.text}`);
-  Engine.nextQuestion(question);
-});
-    
+    socket.on("new_question", ({ id }) => {
+      const question = RugbyQuestions[id];
+      console.log(`📡 Host received new question: ${question.text}`);
+      Engine.nextQuestion(question);
+    });
   });
 });
 
@@ -139,6 +141,7 @@ window.startPreCountdown = function (onDone) {
   }, 1000);
 };
 
+// Status dot
 const statusDot = document.createElement("div");
 statusDot.id = "socket-status";
 statusDot.style.width = "10px";
@@ -149,5 +152,5 @@ statusDot.style.backgroundColor = socket.connected ? "limegreen" : "red";
 
 document.querySelector(".top-header").appendChild(statusDot);
 
-socket.on("connect", () => statusDot.style.backgroundColor = "limegreen");
-socket.on("disconnect", () => statusDot.style.backgroundColor = "red");
+socket.on("connect", () => (statusDot.style.backgroundColor = "limegreen"));
+socket.on("disconnect", () => (statusDot.style.backgroundColor = "red"));
