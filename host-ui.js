@@ -100,16 +100,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Update dashboard with host name + balance
-    // Update dashboard with host name + balance
-const nameEl = document.getElementById("player-name");
-const balanceEl = document.getElementById("player-balance");
-if (nameEl) nameEl.textContent = `Host: ${hostName}`;
-
-// ✅ Initialize host balance once
-window.balance = 100; // or whatever starting value you want
-if (balanceEl) {
-  balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-}
+    const nameEl = document.getElementById("player-name");
+    const balanceEl = document.getElementById("player-balance");
+    if (nameEl) nameEl.textContent = `Host: ${hostName}`;
+    if (balanceEl) balanceEl.textContent = "Balance: 120";
 
     // Listen for server broadcast
     socket.on("game_starting", ({ host }) => {
