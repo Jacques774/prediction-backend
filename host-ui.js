@@ -66,21 +66,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     socket.on("round_outcome", ({ outcome }) => {
-      console.log(`📡 Round outcome: ${outcome}`);
+  console.log(`📡 Round outcome: ${outcome}`);
 
-      const outcomeEl = document.getElementById("host-outcome-question");
-      if (outcomeEl) {
-        outcomeEl.textContent = `Outcome: ${outcome}`;
-      }
+  const outcomeEl = document.getElementById("host-outcome-question");
+  if (outcomeEl) {
+    outcomeEl.textContent = `Outcome: ${outcome}`;
+  }
 
-      // Trigger next round countdown
-      Engine.handleOutcome(outcome);
+  // ✅ Update balance & outcome
+  Engine.handleOutcome(outcome);
 
-      // When countdown finishes, emit next_round
-      Engine.startNextCountdown(() => {
-        socket.emit("next_round", { gameId: window.gameId });
-      });
-    });
+  // ✅ Run post-question countdown, then emit next_round and load next question
+  window.startPostQuestionCountdown(() => {
+    socket.emit("next_round", { gameId: window.gameId });
+    Engine.nextQuestion();
+  });
+});
 
     // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
