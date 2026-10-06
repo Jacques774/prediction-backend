@@ -71,9 +71,14 @@ if (noBtn) {
 
   // Trigger next round countdown
   Engine.handleOutcome(outcome);
-  Engine.startNextCountdown();
+
+  // When countdown finishes, emit next_round
+  Engine.startNextCountdown(() => {
+    window.socket.emit("next_round", { gameId: window.gameId });
+  });
 });
     
+  
     // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
     if (hostSlide) {
