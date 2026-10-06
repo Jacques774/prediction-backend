@@ -113,3 +113,18 @@ socket.on("game_starting", ({ host }) => {
     Engine.start();
   });
 });
+
+// 🔑 Listen for round outcome broadcast
+socket.on("round_outcome", ({ outcome }) => {
+  console.log(`📡 Round outcome: ${outcome}`);
+
+  const outcomeEl = document.getElementById("outcome-panel");
+  if (outcomeEl) {
+    outcomeEl.textContent = `Outcome: ${outcome}`;
+    outcomeEl.style.display = "block";
+  }
+
+  // Trigger next round countdown
+  Engine.handleOutcome(outcome);
+  Engine.startNextCountdown();
+});
