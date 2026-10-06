@@ -71,7 +71,7 @@ window.cashout = function () {
   });
 };
 
-// Countdown helper (copied from host-ui.js)
+// Countdown helper
 window.startPreCountdown = function (onDone) {
   const el = document.getElementById("preCountdown");
   if (!el) return;
@@ -103,17 +103,18 @@ document.querySelector(".top-header").appendChild(statusDot);
 socket.on("connect", () => statusDot.style.backgroundColor = "limegreen");
 socket.on("disconnect", () => statusDot.style.backgroundColor = "red");
 
-// 🔑 NEW: Listen for server broadcast to start countdown
+// 🔑 Game starting broadcast
 socket.on("game_starting", ({ host }) => {
   console.log(`Game starting by host: ${host}`);
 
   startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
     if (activeCard) activeCard.style.display = "block";
+    // ✅ Wait for server to send new_question
   });
 });
 
-// 🔑 Listen for round outcome broadcast
+// 🔑 Round outcome broadcast
 socket.on("round_outcome", ({ outcome }) => {
   console.log(`📡 Round outcome: ${outcome}`);
 
@@ -123,21 +124,20 @@ socket.on("round_outcome", ({ outcome }) => {
     outcomeEl.style.display = "block";
   }
 
-  // Run next countdown directly
+  // ✅ Wait for server to send next new_question
   startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
     if (activeCard) activeCard.style.display = "block";
   });
 });
 
-// 🔑 Listen for server broadcast of new question
+// 🔑 New question broadcast
 socket.on("new_question", ({ question }) => {
   console.log(`📡 New question: ${question.text}`);
 
-  const qTextEl = document.getElementById("q-text");
-  if (qTextEl) qTextEl.textContent = question.text;
+  // ✅ Use Engine to handle the server question
+  Engine.nextQuestion(question);
 
-  // Show the active card once the question arrives
   const activeCard = document.getElementById("active-card");
   if (activeCard) activeCard.style.display = "block";
 });
