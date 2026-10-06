@@ -107,7 +107,7 @@ window.Engine = {
     clearInterval(questionCountdown);
     clearInterval(cashoutCountdown);
 
-    const q = Questions.generate();   // still local for now
+    const q = Questions.generate();
     this.currentQuestion = q;
     updateActiveCard(q);
 
@@ -129,8 +129,6 @@ window.Engine = {
     }
 
     q.userChoice = choice;
-
-    // ❌ Do NOT deduct balance here
     updateActiveCard(q);
 
     btnYes.disabled = true;
@@ -156,11 +154,35 @@ window.Engine = {
     btnYes.disabled = true;
     btnNo.disabled = true;
     cashoutBtn.disabled = true;
-
-    // Countdown triggered in handleOutcome
   },
 
-  // ... handleOutcome and startNextCountdown unchanged ...
+  handleOutcome(outcome) {
+    const q = this.currentQuestion;
+    if (!q) {
+      console.error("❌ No active question when handling outcome");
+      return;
+    }
+
+    q.outcome = outcome;
+
+    // Update balance
+    const result = this.updateBalance(outcome, q.stake);
+    q.oldBalance = result.oldBalance;
+    q.newBalance = result.newBalance;
+
+    // Push to history
+    History.push(q);
+    History.render();
+
+    // Trigger countdown to next question
+    this.startNextCountdown();
+  },
+
+  startNextCountdown() {
+    window.startPostQuestionCountdown(() => {
+      this.nextQuestion();
+    });
+  },
 
   updateBalance(outcome, stake) {
     const oldBalance = balance;
