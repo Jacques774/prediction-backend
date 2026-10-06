@@ -160,22 +160,28 @@ window.Engine = {
   },
 
   handleOutcome(outcome) {
-    const q = this.currentQuestion;
-    if (!q) {
-      console.error("❌ No active question when handling outcome");
-      return;
-    }
-    q.outcome = outcome;
+  const q = this.currentQuestion;
+  if (!q) return;
 
-    const result = this.updateBalance(outcome, q.stake);
-    q.oldBalance = result.oldBalance;
-    q.newBalance = result.newBalance;
+  // Host sets the true outcome
+  q.outcome = outcome;
 
-    History.push(q);
-    History.render();
+  // Decide win/lose based on player choice
+  let result;
+  if (q.userChoice === outcome) {
+    result = this.updateBalance("WIN", q.stake);
+  } else {
+    result = this.updateBalance("LOSE", q.stake);
+  }
 
-    this.startNextCountdown();
-  },
+  q.oldBalance = result.oldBalance;
+  q.newBalance = result.newBalance;
+
+  History.push(q);
+  History.render();
+
+  this.startNextCountdown();
+},
 
   startNextCountdown() {
     window.startPostQuestionCountdown(() => {
@@ -188,20 +194,14 @@ window.Engine = {
   let newBalance = oldBalance;
 
   if (outcome === "WIN") {
-    newBalance += stake * 2; // payout
+    newBalance += stake * 2;
   } else if (outcome === "CASHED OUT") {
-    newBalance += stake * 0.5; // partial return
+    newBalance += stake * 0.5;
   } else if (outcome === "LOSE") {
-    newBalance -= stake; // deduct stake on loss
+    newBalance -= stake;
   }
 
   window.balance = newBalance;
-
-  const nameEl = document.getElementById("player-name");
-  if (nameEl) {
-    const prefix = window.isHost ? "Host" : "Player";
-    nameEl.textContent = `${prefix}: ${window.currentPlayerName}`;
-  }
 
   const balanceEl = document.getElementById("player-balance");
   if (balanceEl) {
