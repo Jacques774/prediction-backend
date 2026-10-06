@@ -108,9 +108,15 @@ socket.on("game_starting", ({ host }) => {
   startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
     if (activeCard) activeCard.style.display = "block";
-    Engine.start();
   });
 });
+
+    // Listen for server broadcast of new question
+socket.on("new_question", ({ question }) => {
+  console.log(`📡 Host received new question: ${question.text}`);
+  Engine.nextQuestion(question);   // ✅ use server question
+});
+    
   });
 });
 
