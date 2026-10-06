@@ -40,13 +40,22 @@ app.get("/player", (req, res) => {
 // --- Game state ---
 const games = {};
 
+// ✅ Define question pool once
+const questionPool = [
+  { text: "Will Team A score next?" },
+  { text: "Will there be a penalty?" },
+  { text: "Will the match go to overtime?" }
+];
+
 app.post("/api/create-game", (req, res) => {
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
   games[code] = {
     players: {},
     hostId: null,
     predictions: { YES: 0, NO: 0 },
-    started: false
+    started: false,
+    currentQuestion: null,
+    lastOutcome: null
   };
   res.json({ code });
 });
@@ -102,65 +111,40 @@ io.on("connection", (socket) => {
     }
   });
 
- // Handle start_game
-socket.on("start_game", ({ gameId, host }) => {
-  console.log(`🎮 Game ${gameId} started by host ${host}`);
+  // Handle start_game
+  socket.on("start_game", ({ gameId, host }) => {
+    console.log(`🎮 Game ${gameId} started by host ${host}`);
 
-  // Tell everyone the countdown is starting
-  io.to(gameId).emit("game_starting", { host });
+    // Tell everyone the countdown is starting
+    io.to(gameId).emit("game_starting", { host });
 
-  // After 3 seconds + "GO!", mark the game as started
-  setTimeout(() => {
-    games[gameId].started = true;
-    io.to(gameId).emit("game_started", { host });
+    // After countdown, mark started and broadcast first question
+    setTimeout(() => {
+      games[gameId].started = true;
+      io.to(gameId).emit("game_started", { host });
 
-    // ✅ Broadcast first question here
-    const questionPool = [
-      { text: "Will Team A score next?" },
-      { text: "Will there be a penalty?" },
-      { text: "Will the match go to overtime?" }
-    ];
-    const question = questionPool[Math.floor(Math.random() * questionPool.length)];
-    games[gameId].currentQuestion = question;
+      const question = questionPool[Math.floor(Math.random() * questionPool.length)];
+      games[gameId].currentQuestion = question;
+      io.to(gameId).emit("new_question", { question });
+    }, 4000);
+  });
 
-    io.to(gameId).emit("new_question", { question });
-  }, 4000); // 3 seconds countdown + 1 second for "GO!"
-});
-
-
-  // Handle round outcome (YES/NO)
+  // Handle round outcome
   socket.on("round_outcome", ({ gameId, outcome }) => {
     console.log(`✅ Outcome for ${gameId}: ${outcome}`);
-
-    // Broadcast to everyone in the room
     io.to(gameId).emit("round_outcome", { outcome });
-
-    // Optional: update game state
     if (games[gameId]) {
       games[gameId].lastOutcome = outcome;
     }
   });
 
-  // Example question pool
-const questionPool = [
-  { text: "Will Team A score next?" },
-  { text: "Will there be a penalty?" },
-  { text: "Will the match go to overtime?" }
-];
-
-// Handle next round trigger
-socket.on("next_round", ({ gameId }) => {
-  if (!games[gameId]) return;
-
-  // Pick random question
-  const question = questionPool[Math.floor(Math.random() * questionPool.length)];
-
-  // Save to game state
-  games[gameId].currentQuestion = question;
-
-  // Broadcast to all players + host
-  io.to(gameId).emit("new_question", { question });
-});
+  // Handle next round
+  socket.on("next_round", ({ gameId }) => {
+    if (!games[gameId]) return;
+    const question = questionPool[Math.floor(Math.random() * questionPool.length)];
+    games[gameId].currentQuestion = question;
+    io.to(gameId).emit("new_question", { question });
+  });
 
   // Handle disconnect
   socket.on("disconnect", () => {
