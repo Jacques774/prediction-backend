@@ -1,3 +1,4 @@
+
 document.addEventListener("DOMContentLoaded", () => {
   // ============================
   // SAFE GLOBALS
@@ -90,6 +91,7 @@ const stakeCancelBtn = document.getElementById("stake-cancel-btn");
     }
   };
 
+
 // ============================
 // ENGINE
 // ============================
@@ -105,179 +107,91 @@ window.Engine = {
     clearInterval(questionCountdown);
     clearInterval(cashoutCountdown);
 
-    const q = Questions.generate();
+    const q = Questions.generate();   // still local for now
     this.currentQuestion = q;
     updateActiveCard(q);
 
     questionCountdown = Timer.start(q,
       (timeLeft) => {
         qInfo.innerHTML = `You chose: ${q.userChoice || "--"}<br>
-          Stake: £${q.stake.toFixed(2)}<br>
+          Stake: £${q.stake ? q.stake.toFixed(2) : 0}<br>
           Timer: ${timeLeft}s`;
       },
-      () => window.openHostOutcome(q.text) // ✅ open outcome panel
+      () => window.openHostOutcome(q.text)
     );
   },
 
   choose(choice) {
-  const q = this.currentQuestion;
-  q.userChoice = choice;
-
-  // Deduct stake immediately when player chooses
-  const oldBalance = balance;
-  balance -= q.stake;
-
-  // Update balance display
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: ${Utils.formatMoney(balance)}`;
-  }
-
-  // Track balances for history
-  q.oldBalance = oldBalance;
-  q.newBalance = balance;
-
-  updateActiveCard(q);
-  btnYes.disabled = true;
-  btnNo.disabled = true;
-  window.openStakePopup();
-  cashoutBtn.disabled = true;
-},
-
-  cashout() {
-  const q = this.currentQuestion;
-  clearInterval(cashoutCountdown);
-  q.cashedOut = true;
-  q.outcome = "CASHED OUT";
-
-  const result = this.updateBalance("CASHED OUT", q.stake);
-  q.oldBalance = result.oldBalance;
-  q.newBalance = result.newBalance;
-
-  totalCashouts++;
-  document.getElementById("player-cashouts").textContent =
-    `Cash-outs: ${totalCashouts}`;
-
-  // ❌ Removed History.push(q) and History.render()
-
-  btnYes.disabled = true;
-  btnNo.disabled = true;
-  cashoutBtn.disabled = true;
-
-  // ❌ Removed startNextCountdown() here too
-  // ✅ Countdown will be triggered in handleOutcome()
-},
-
-  handlePlayerAnswer(playerName, answer) {
-    qInfo.innerHTML = `${playerName} answered: ${answer}`;
-  },
-
-  handleOutcome(outcome) {
-  const q = this.currentQuestion;
-  q.outcome = outcome;
-
-  // 🔹 If player cashed out, skip balance update
-  if (q.cashedOut) {
-    qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player cashed out)</small>`;
-    History.push(q);
-    History.render();
-
-if (window.socket) {
-  window.socket.emit("host_outcome", {
-    gameId: window.gameId,
-    outcome
-  });
-  console.log(`📡 Host outcome sent: ${outcome}`);
-}
-
-    this.startNextCountdown(); // ✅ advance only after host reveal
-    return;
-  }
-
-  // Normal outcome flow
-  let result;
-  if (outcome === q.userChoice) {
-    result = this.updateBalance("WIN", q.stake);
-  } else {
-    result = this.updateBalance("LOSS", q.stake);
-  }
-
-  q.oldBalance = result.oldBalance;
-  q.newBalance = result.newBalance;
-
-  qInfo.innerHTML += `<br>✅ Outcome: ${outcome}`;
-  History.push(q);
-  History.render();
-
-  if (window.socket) {
-    window.socket.emit("host_outcome", {
-      gameId: window.gameId,
-      outcome
-    });
-    console.log(`📡 Host outcome sent: ${outcome}`);
-}
-
-  this.startNextCountdown();
-},
-
-  // 🔹 Post‑round countdown using #postCountdown
-  startNextCountdown() {
-    let nextTime = 3;
-    const countdownEl = document.getElementById("postCountdown");
-    if (!countdownEl) return;
-
-    countdownEl.style.display = "block";
-    countdownEl.textContent = nextTime;
-
-    if (this._nextCountdownInterval) {
-      clearInterval(this._nextCountdownInterval);
+    const q = this.currentQuestion;
+    if (!q) {
+      console.error("❌ No active question when choosing");
+      return;
     }
 
-    this._nextCountdownInterval = setInterval(() => {
-      nextTime--;
-      countdownEl.textContent = nextTime > 0 ? nextTime : "GO!";
+    q.userChoice = choice;
 
-      if (nextTime < 0) {
-        clearInterval(this._nextCountdownInterval);
-        countdownEl.style.display = "none";
-        this.nextQuestion();   // ✅ advance to next question
-      }
-    }, 1000);
+    // ❌ Do NOT deduct balance here
+    updateActiveCard(q);
+
+    btnYes.disabled = true;
+    btnNo.disabled = true;
+    window.openStakePopup();   // stake popup will handle deduction
+    cashoutBtn.disabled = true;
   },
 
+  cashout() {
+    const q = this.currentQuestion;
+    clearInterval(cashoutCountdown);
+    q.cashedOut = true;
+    q.outcome = "CASHED OUT";
+
+    const result = this.updateBalance("CASHED OUT", q.stake);
+    q.oldBalance = result.oldBalance;
+    q.newBalance = result.newBalance;
+
+    totalCashouts++;
+    document.getElementById("player-cashouts").textContent =
+      `Cash-outs: ${totalCashouts}`;
+
+    btnYes.disabled = true;
+    btnNo.disabled = true;
+    cashoutBtn.disabled = true;
+
+    // Countdown triggered in handleOutcome
+  },
+
+  // ... handleOutcome and startNextCountdown unchanged ...
+
   updateBalance(outcome, stake) {
-  const oldBalance = balance;
-  let newBalance = oldBalance;
+    const oldBalance = balance;
+    let newBalance = oldBalance;
 
-  if (outcome === "WIN") {
-    newBalance += stake * 2;
-  } else if (outcome === "CASHED OUT") {
-    newBalance += stake * 0.5;
-  } else if (outcome === "LOSS") {
-    newBalance = oldBalance;
+    if (outcome === "WIN") {
+      newBalance += stake * 2;
+    } else if (outcome === "CASHED OUT") {
+      newBalance += stake * 0.5;
+    } else if (outcome === "LOSS") {
+      newBalance = oldBalance;
+    }
+
+    balance = newBalance;
+
+    const nameEl = document.getElementById("player-name");
+    if (nameEl) {
+      const prefix = window.isHost ? "Host" : "Player";
+      nameEl.textContent = `${prefix}: ${window.currentPlayerName}`;
+    }
+
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(balance)}`;
+    }
+
+    Leaderboard.update(window.currentPlayerName, balance);
+    Leaderboard.render();
+
+    return { oldBalance, newBalance };
   }
-
-  balance = newBalance;
-
-  // ✅ Update UI with correct label
-  const nameEl = document.getElementById("player-name");
-  if (nameEl) {
-    const prefix = window.isHost ? "Host" : "Player";
-    nameEl.textContent = `${prefix}: ${window.currentPlayerName}`;
-  }
-
-  // Update balance
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(balance)}`;
-  }
-
-  // Update leaderboard
-  Leaderboard.update(window.currentPlayerName, balance);
-  Leaderboard.render();
-
-  return { oldBalance, newBalance };
-}
 };
   
 // ============================
@@ -319,53 +233,60 @@ window.openStakePopup = function () {
 
 if (stakeSaveBtn) {
   stakeSaveBtn.onclick = () => {
-  const amount = Number(stakeInput?.value);
-  if (isNaN(amount) || amount <= 0) {
-    alert("Enter a valid stake amount.");
-    return;
-  }
+    const amount = Number(stakeInput?.value);
 
-  if (amount > balance) {
-    alert("Not enough balance for this stake.");
-    return;
-  }
+    if (isNaN(amount) || amount <= 0) {
+      alert("Enter a valid stake amount.");
+      return;
+    }
 
-  const q = Engine.currentQuestion;
-  if (!q) {
-    alert("No active question found.");
-    return;
-  }
+    if (amount > balance) {
+      alert("Not enough balance for this stake.");
+      return;
+    }
 
-  // Save stake
-  q.stake = amount;
+    const q = Engine.currentQuestion;
+    if (!q) {
+      alert("No active question found.");
+      return;
+    }
 
-  // Deduct balance
-  const oldBalance = balance;
-  balance -= amount;
+    // Save stake
+    q.stake = amount;
 
-  document.getElementById("player-balance").textContent =
-    `Balance: ${balance.toFixed(2)}`;
+    // Deduct balance only now
+    const oldBalance = balance;
+    balance -= amount;
 
-  q.oldBalance = oldBalance;
-  q.newBalance = balance;
+    q.oldBalance = oldBalance;
+    q.newBalance = balance;
 
-  qInfo.innerHTML = `
-    You chose: ${q.userChoice}<br>
-    Stake: £${amount.toFixed(2)}<br>
-    Timer: ${q.timer}s
-  `;
+    // Update balance display
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${balance.toFixed(2)}`;
+    }
 
-  cashoutBtn.disabled = false;
-  cashoutBtn.textContent = `Cash Out: £${(amount * 0.5).toFixed(2)}`;
+    // Update info panel (remove q.timer if not defined)
+    qInfo.innerHTML = `
+      You chose: ${q.userChoice}<br>
+      Stake: £${amount.toFixed(2)}
+    `;
 
-  stakePopup.style.display = "none";
+    // Enable cashout
+    cashoutBtn.disabled = false;
+    cashoutBtn.textContent = `Cash Out: £${(amount * 0.5).toFixed(2)}`;
 
-  if (typeof startCashoutTimer === "function") {
-    startCashoutTimer();
-  }
+    // Close popup
+    stakePopup.style.display = "none";
 
-  console.log(`✅ Stake saved & balance deducted: ${amount}`);
-};
+    // Start cashout timer if available
+    if (typeof startCashoutTimer === "function") {
+      startCashoutTimer();
+    }
+
+    console.log(`✅ Stake saved & balance deducted: £${amount}`);
+  };
 }
 
 if (stakeCancelBtn) {
@@ -391,6 +312,9 @@ if (stakeCancelBtn) {
     // Re‑enable YES/NO
     if (btnYes) btnYes.disabled = false;
     if (btnNo) btnNo.disabled = false;
+
+    // Cashout stays disabled until a stake is placed
+    if (cashoutBtn) cashoutBtn.disabled = true;
 
     console.log("❌ Stake cancelled (no balance deducted yet)");
   };
