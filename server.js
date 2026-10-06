@@ -5,6 +5,9 @@ import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// ✅ Import shared rugby questions
+import { RugbyQuestions } from "./questions.js";
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -19,33 +22,14 @@ const __dirname = path.dirname(__filename);
 // Serve static files (CSS, JS, images) from the project directory
 app.use(express.static(__dirname));
 
-// ✅ Serve MainMenu.html at root
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "MainMenu.html"));
-});
-
-app.get("/gamesetup.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "gamesetup.html"));
-});
-
-// ✅ Optional: serve host and player pages directly
-app.get("/host", (req, res) => {
-  res.sendFile(path.join(__dirname, "host.html"));
-});
-
-app.get("/player", (req, res) => {
-  res.sendFile(path.join(__dirname, "player.html"));
-});
+// ✅ Serve pages
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "MainMenu.html")));
+app.get("/gamesetup.html", (req, res) => res.sendFile(path.join(__dirname, "gamesetup.html")));
+app.get("/host", (req, res) => res.sendFile(path.join(__dirname, "host.html")));
+app.get("/player", (req, res) => res.sendFile(path.join(__dirname, "player.html")));
 
 // --- Game state ---
 const games = {};
-
-// ✅ Define question pool once
-const questionPool = [
-  { text: "Will Team A score next?" },
-  { text: "Will there be a penalty?" },
-  { text: "Will the match go to overtime?" }
-];
 
 app.post("/api/create-game", (req, res) => {
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -54,15 +38,13 @@ app.post("/api/create-game", (req, res) => {
     hostId: null,
     predictions: { YES: 0, NO: 0 },
     started: false,
-    currentQuestion: null,
+    currentQuestionId: null,
     lastOutcome: null
   };
   res.json({ code });
 });
 
-app.get("/api/healthz", (req, res) => {
-  res.json({ status: "ok" });
-});
+app.get("/api/healthz", (req, res) => res.json({ status: "ok" }));
 
 // ✅ Socket.IO handlers
 io.on("connection", (socket) => {
@@ -114,18 +96,19 @@ io.on("connection", (socket) => {
   // Handle start_game
   socket.on("start_game", ({ gameId, host }) => {
     console.log(`🎮 Game ${gameId} started by host ${host}`);
-
-    // Tell everyone the countdown is starting
     io.to(gameId).emit("game_starting", { host });
 
-    // After countdown, mark started and broadcast first question
     setTimeout(() => {
       games[gameId].started = true;
       io.to(gameId).emit("game_started", { host });
 
-      const question = questionPool[Math.floor(Math.random() * questionPool.length)];
-      games[gameId].currentQuestion = question;
-      io.to(gameId).emit("new_question", { question });
+      // ✅ Pick random ID from RugbyQuestions
+      const ids = Object.keys(RugbyQuestions);
+      const randomId = ids[Math.floor(Math.random() * ids.length)];
+      games[gameId].currentQuestionId = randomId;
+
+      // Broadcast only ID
+      io.to(gameId).emit("new_question", { id: randomId });
     }, 4000);
   });
 
@@ -141,9 +124,10 @@ io.on("connection", (socket) => {
   // Handle next round
   socket.on("next_round", ({ gameId }) => {
     if (!games[gameId]) return;
-    const question = questionPool[Math.floor(Math.random() * questionPool.length)];
-    games[gameId].currentQuestion = question;
-    io.to(gameId).emit("new_question", { question });
+    const ids = Object.keys(RugbyQuestions);
+    const randomId = ids[Math.floor(Math.random() * ids.length)];
+    games[gameId].currentQuestionId = randomId;
+    io.to(gameId).emit("new_question", { id: randomId });
   });
 
   // Handle disconnect
