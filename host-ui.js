@@ -112,9 +112,10 @@ socket.on("game_starting", ({ host }) => {
 });
 
     // Listen for server broadcast of new question
-socket.on("new_question", ({ question }) => {
+socket.on("new_question", ({ id }) => {
+  const question = RugbyQuestions[id];
   console.log(`📡 Host received new question: ${question.text}`);
-  Engine.nextQuestion(question);   // ✅ use server question
+  Engine.nextQuestion(question);
 });
     
   });
