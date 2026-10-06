@@ -97,7 +97,6 @@ const Timer = {
 // ============================
 // ENGINE
 // ============================
-window.balance = 100; // global balance
 
 window.Engine = {
   currentQuestion: null,
