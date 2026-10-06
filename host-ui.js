@@ -65,23 +65,17 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
+    // ✅ Outcome listener — Engine handles balance + countdown internally
     socket.on("round_outcome", ({ outcome }) => {
-  console.log(`📡 Round outcome: ${outcome}`);
+      console.log(`📡 Round outcome: ${outcome}`);
 
-  const outcomeEl = document.getElementById("host-outcome-question");
-  if (outcomeEl) {
-    outcomeEl.textContent = `Outcome: ${outcome}`;
-  }
+      const outcomeEl = document.getElementById("host-outcome-question");
+      if (outcomeEl) {
+        outcomeEl.textContent = `Outcome: ${outcome}`;
+      }
 
-  // ✅ Update balance & outcome
-  Engine.handleOutcome(outcome);
-
-  // ✅ Run post-question countdown, then emit next_round and load next question
-  window.startPostQuestionCountdown(() => {
-    socket.emit("next_round", { gameId: window.gameId });
-    Engine.nextQuestion();
-  });
-});
+      Engine.handleOutcome(outcome);
+    });
 
     // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
@@ -99,20 +93,19 @@ document.addEventListener("DOMContentLoaded", () => {
       dashboard.style.opacity = "1";
     }
 
-    // Update dashboard with host name + balance
     // ✅ Initialize host balance once
-window.balance = 120; // or whatever starting value you want
+    window.balance = 120; // starting value
 
-const nameEl = document.getElementById("player-name");
-const balanceEl = document.getElementById("player-balance");
+    const nameEl = document.getElementById("player-name");
+    const balanceEl = document.getElementById("player-balance");
 
-if (nameEl) nameEl.textContent = `Host: ${hostName}`;
-if (balanceEl) {
-  balanceEl.textContent = "Balance: £" + 
-    (typeof Utils !== "undefined" && Utils.formatMoney
-      ? Utils.formatMoney(window.balance)
-      : window.balance.toFixed(2));
-}
+    if (nameEl) nameEl.textContent = `Host: ${hostName}`;
+    if (balanceEl) {
+      balanceEl.textContent = "Balance: £" +
+        (typeof Utils !== "undefined" && Utils.formatMoney
+          ? Utils.formatMoney(window.balance)
+          : window.balance.toFixed(2));
+    }
 
     // Listen for server broadcast
     socket.on("game_starting", ({ host }) => {
