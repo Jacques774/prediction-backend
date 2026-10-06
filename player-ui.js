@@ -38,16 +38,19 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.emit("join_game", { gameId, playerName, isHost: false });
 
     // Hide setup, show dashboard
-    document.getElementById("playerSetupSlide").style.display = "none";
-    const dashboard = document.getElementById("dashboard");
-    dashboard.classList.remove("hidden");
-    dashboard.style.opacity = "1";
+document.getElementById("playerSetupSlide").style.display = "none";
+const dashboard = document.getElementById("dashboard");
+dashboard.classList.remove("hidden");
+dashboard.style.opacity = "1";
 
-    // Update dashboard header
-    const nameEl = document.getElementById("player-name");
-    const balanceEl = document.getElementById("player-balance");
-    if (nameEl) nameEl.textContent = `Player: ${playerName}`;
-    if (balanceEl) balanceEl.textContent = "Balance: 120";
+// Set starting balance when player joins
+window.balance = 100; // or whatever starting value you want
+const nameEl = document.getElementById("player-name");
+const balanceEl = document.getElementById("player-balance");
+if (nameEl) nameEl.textContent = `Player: ${playerName}`;
+if (balanceEl) {
+  balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+}
   });
 });
 
