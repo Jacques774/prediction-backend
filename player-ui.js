@@ -1,6 +1,11 @@
 // player-ui.js
+import { RugbyQuestions } from "./questions.js";
 
 console.log("✅ player-ui.js loaded");
+
+// ✅ Create socket connection
+const socket = io();
+window.socket = socket;
 
 document.addEventListener("DOMContentLoaded", () => {
   const joinBtn = document.getElementById("player-join-btn");
@@ -30,9 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.isHost = false;
 
     // Emit join event
-    if (window.socket) {
-      window.socket.emit("join_game", { gameId, playerName, isHost: false });
-    }
+    socket.emit("join_game", { gameId, playerName, isHost: false });
 
     // Hide setup, show dashboard
     document.getElementById("playerSetupSlide").style.display = "none";
@@ -50,8 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Prediction helper
 window.sendPrediction = function (choice) {
-  if (!window.socket) return;
-  window.socket.emit("prediction", {
+  socket.emit("prediction", {
     gameId: window.gameId,
     playerName: window.currentPlayerName,
     choice
@@ -62,9 +64,7 @@ window.sendPrediction = function (choice) {
 window.cashout = function () {
   const amount = parseInt(document.getElementById("cashout-amount").value, 10);
   if (!amount || amount <= 0) return;
-  if (!window.socket) return;
-
-  window.socket.emit("cashout", {
+  socket.emit("cashout", {
     gameId: window.gameId,
     playerName: window.currentPlayerName,
     amount
@@ -100,8 +100,8 @@ statusDot.style.backgroundColor = socket.connected ? "limegreen" : "red";
 
 document.querySelector(".top-header").appendChild(statusDot);
 
-socket.on("connect", () => statusDot.style.backgroundColor = "limegreen");
-socket.on("disconnect", () => statusDot.style.backgroundColor = "red");
+socket.on("connect", () => (statusDot.style.backgroundColor = "limegreen"));
+socket.on("disconnect", () => (statusDot.style.backgroundColor = "red"));
 
 // 🔑 Game starting broadcast
 socket.on("game_starting", ({ host }) => {
