@@ -102,8 +102,8 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle start_game
-  socket.on("start_game", ({ gameId, host }) => {
+ // Handle start_game
+socket.on("start_game", ({ gameId, host }) => {
   console.log(`🎮 Game ${gameId} started by host ${host}`);
 
   // Tell everyone the countdown is starting
@@ -113,6 +113,17 @@ io.on("connection", (socket) => {
   setTimeout(() => {
     games[gameId].started = true;
     io.to(gameId).emit("game_started", { host });
+
+    // ✅ Broadcast first question here
+    const questionPool = [
+      { text: "Will Team A score next?" },
+      { text: "Will there be a penalty?" },
+      { text: "Will the match go to overtime?" }
+    ];
+    const question = questionPool[Math.floor(Math.random() * questionPool.length)];
+    games[gameId].currentQuestion = question;
+
+    io.to(gameId).emit("new_question", { question });
   }, 4000); // 3 seconds countdown + 1 second for "GO!"
 });
 
