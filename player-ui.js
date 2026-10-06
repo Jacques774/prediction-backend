@@ -110,7 +110,6 @@ socket.on("game_starting", ({ host }) => {
   startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
     if (activeCard) activeCard.style.display = "block";
-    Engine.start();
   });
 });
 
@@ -128,7 +127,6 @@ socket.on("round_outcome", ({ outcome }) => {
   startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
     if (activeCard) activeCard.style.display = "block";
-    Engine.start(); // next question begins
   });
 });
 
