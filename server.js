@@ -130,6 +130,27 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Example question pool
+const questionPool = [
+  { text: "Will Team A score next?" },
+  { text: "Will there be a penalty?" },
+  { text: "Will the match go to overtime?" }
+];
+
+// Handle next round trigger
+socket.on("next_round", ({ gameId }) => {
+  if (!games[gameId]) return;
+
+  // Pick random question
+  const question = questionPool[Math.floor(Math.random() * questionPool.length)];
+
+  // Save to game state
+  games[gameId].currentQuestion = question;
+
+  // Broadcast to all players + host
+  io.to(gameId).emit("new_question", { question });
+});
+
   // Handle disconnect
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
