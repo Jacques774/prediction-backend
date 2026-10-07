@@ -160,10 +160,8 @@ window.Engine = {
   const q = this.currentQuestion;
   if (!q) return;
 
-  // Host sets the true outcome
   q.outcome = outcome;
 
-  // 🔹 If player cashed out, skip balance update
   if (q.cashedOut) {
     qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
     History.push(q);
@@ -172,7 +170,6 @@ window.Engine = {
     return;
   }
 
-  // Normal outcome flow
   let result;
   if (q.userChoice === outcome) {
     result = this.updateBalance("WIN", q.stake);
@@ -182,6 +179,15 @@ window.Engine = {
 
   q.oldBalance = result.oldBalance;
   q.newBalance = result.newBalance;
+
+  // ✅ Refresh balance UI immediately
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl) {
+    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+  }
+
+  Leaderboard.update(window.currentPlayerName, window.balance);
+  Leaderboard.render();
 
   qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
   History.push(q);
