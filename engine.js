@@ -110,7 +110,6 @@ window.Engine = {
     clearInterval(questionCountdown);
     clearInterval(cashoutCountdown);
 
-    // Accept external question or generate one
     if (!q) q = Questions.generate();
     this.currentQuestion = { ...q, stake: 0, userChoice: null, outcome: null };
     updateActiveCard(this.currentQuestion);
@@ -127,19 +126,10 @@ window.Engine = {
 
   choose(choice) {
     const q = this.currentQuestion;
-    if (!q) {
-      console.error("❌ No active question when choosing");
-      return;
-    }
+    if (!q) return;
     q.userChoice = choice;
 
-    // Deduct stake immediately when player commits
-    window.balance -= q.stake;
-    const balanceEl = document.getElementById("player-balance");
-    if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-    }
-
+    // ❌ Removed stake deduction here
     updateActiveCard(q);
     btnYes.disabled = true;
     btnNo.disabled = true;
@@ -170,10 +160,8 @@ window.Engine = {
     const q = this.currentQuestion;
     if (!q) return;
 
-    // Host sets the true outcome
     q.outcome = outcome;
 
-    // Decide win/lose based on player choice
     let result;
     if (q.userChoice === outcome) {
       result = this.updateBalance("WIN", q.stake);
@@ -201,11 +189,12 @@ window.Engine = {
     let newBalance = oldBalance;
 
     if (outcome === "WIN") {
-      newBalance += stake * 2; // winnings only
+      // ✅ Stake was deducted once in stakeSaveBtn, so add stake*2 (stake + profit)
+      newBalance += stake * 2;
     } else if (outcome === "CASHED OUT") {
-      newBalance += stake * 0.5; // partial return
+      newBalance += stake * 0.5;
     }
-    // LOSE → nothing added, since stake already deducted in choose()
+    // LOSE → nothing added
 
     window.balance = newBalance;
 
@@ -267,7 +256,7 @@ if (stakeSaveBtn) {
       return;
     }
 
-    if (amount > balance) {
+    if (amount > window.balance) {
       alert("Not enough balance for this stake.");
       return;
     }
@@ -278,23 +267,23 @@ if (stakeSaveBtn) {
       return;
     }
 
-    // Save stake
+    // ✅ Save stake
     q.stake = amount;
 
-    // Deduct balance only now
-    const oldBalance = balance;
-    balance -= amount;
+    // ✅ Deduct balance once here
+    const oldBalance = window.balance;
+    window.balance -= amount;
 
     q.oldBalance = oldBalance;
-    q.newBalance = balance;
+    q.newBalance = window.balance;
 
-    // Update balance display
+    // ✅ Update balance display
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl) {
-      balanceEl.textContent = `Balance: £${balance.toFixed(2)}`;
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
     }
 
-    // Update info panel (remove q.timer if not defined)
+    // ✅ Update info panel
     qInfo.innerHTML = `
       You chose: ${q.userChoice}<br>
       Stake: £${amount.toFixed(2)}
@@ -307,7 +296,6 @@ if (stakeSaveBtn) {
     // Close popup
     stakePopup.style.display = "none";
 
-    // Start cashout timer if available
     if (typeof startCashoutTimer === "function") {
       startCashoutTimer();
     }
@@ -324,7 +312,6 @@ if (stakeCancelBtn) {
       q.stake = 0;
     }
 
-    // Reset dashboard info
     if (qInfo) {
       qInfo.innerHTML = `
         You chose: --<br>
@@ -333,14 +320,10 @@ if (stakeCancelBtn) {
       `;
     }
 
-    // Close popup
     stakePopup.style.display = "none";
 
-    // Re‑enable YES/NO
     if (btnYes) btnYes.disabled = false;
     if (btnNo) btnNo.disabled = false;
-
-    // Cashout stays disabled until a stake is placed
     if (cashoutBtn) cashoutBtn.disabled = true;
 
     console.log("❌ Stake cancelled (no balance deducted yet)");
