@@ -87,14 +87,12 @@ window.Engine = {
     clearInterval(window.questionCountdown);
     clearInterval(window.cashoutCountdown);
 
-    // ✅ Pull a random question from RugbyQuestions if none provided
     if (!q) {
       const keys = Object.keys(RugbyQuestions);
       const randomKey = keys[Math.floor(Math.random() * keys.length)];
       q = { ...RugbyQuestions[randomKey] };
     }
 
-    // ✅ Add timer default so it never shows undefined
     this.currentQuestion = { 
       ...q, 
       timer: 15, 
@@ -121,7 +119,7 @@ window.Engine = {
     if (!q) return;
     q.userChoice = choice;
 
-    // ✅ Deduct stake immediately when choice is made
+    // ✅ Deduct stake immediately
     if (q.stake > 0) {
       window.balance -= q.stake;
     }
@@ -147,7 +145,6 @@ window.Engine = {
     document.getElementById("player-cashouts").textContent =
       `Cash-outs: ${window.totalCashouts}`;
 
-    // ✅ Refresh balance UI immediately
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl) {
       balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
@@ -177,7 +174,6 @@ window.Engine = {
       q.oldBalance = result.oldBalance;
       q.newBalance = result.newBalance;
 
-      // ✅ Refresh balance UI immediately
       const balanceEl = document.getElementById("player-balance");
       if (balanceEl) {
         balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
@@ -189,7 +185,7 @@ window.Engine = {
       qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
     }
 
-    // ✅ Push history only once per round
+    // ✅ Push history only once
     History.push(q);
     History.render();
 
@@ -210,7 +206,6 @@ window.Engine = {
       // Stake was already deducted → add back stake + profit
       newBalance += stake * 2;
     } else if (outcome === "CASHED OUT") {
-      // Stake was already deducted → partial return
       newBalance += stake * 0.5;
     }
     // LOSE → nothing added
