@@ -96,3 +96,18 @@ socket.on("leaderboard_update", (players) => {
 socket.on("cashout_update", ({ playerName, balance }) => {
   console.log(`${playerName} cashed out. New balance: £${balance}`);
 });
+
+// --- New question from server ---
+socket.on("new_question", ({ id }) => {
+  console.log("📡 New question ID received:", id);
+
+  // Look up the question text locally
+  const q = RugbyQuestions[id];
+  if (!q) {
+    console.error("❌ Question not found for ID:", id);
+    return;
+  }
+
+  // Pass the full question object to Engine
+  Engine.nextQuestion(q);
+});
