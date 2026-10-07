@@ -52,18 +52,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const noBtn = document.getElementById("host-no-btn");
 
     if (yesBtn) {
-      yesBtn.addEventListener("click", () => {
-        console.log("✅ Host chose outcome YES");
-        socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
-      });
-    }
+  yesBtn.addEventListener("click", () => {
+    console.log("✅ Host chose outcome YES");
+    socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
 
-    if (noBtn) {
-      noBtn.addEventListener("click", () => {
-        console.log("✅ Host chose outcome NO");
-        socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
-      });
-    }
+    // After outcome, trigger next round via server
+    window.startPostQuestionCountdown(() => {
+      socket.emit("next_round", { gameId: window.gameId });
+    });
+  });
+}
+
+if (noBtn) {
+  noBtn.addEventListener("click", () => {
+    console.log("✅ Host chose outcome NO");
+    socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
+
+    // After outcome, trigger next round via server
+    window.startPostQuestionCountdown(() => {
+      socket.emit("next_round", { gameId: window.gameId });
+    });
+  });
+}
 
     socket.on("round_outcome", ({ outcome }) => {
   const result = Engine.handleOutcome(outcome);
