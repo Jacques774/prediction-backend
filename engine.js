@@ -129,7 +129,7 @@ window.Engine = {
     if (!q) return;
     q.userChoice = choice;
 
-    // ❌ Removed stake deduction here
+    // ❌ No balance deduction here anymore
     updateActiveCard(q);
     btnYes.disabled = true;
     btnNo.disabled = true;
@@ -189,8 +189,8 @@ window.Engine = {
     let newBalance = oldBalance;
 
     if (outcome === "WIN") {
-      // ✅ Stake was deducted once in stakeSaveBtn, so add stake*2 (stake + profit)
-      newBalance += stake * 2;
+      // ✅ Only add profit once (stake already deducted in popup)
+      newBalance += stake;
     } else if (outcome === "CASHED OUT") {
       newBalance += stake * 0.5;
     }
