@@ -417,7 +417,9 @@ if (hostYesBtn) {
   hostYesBtn.onclick = () => {
     window.closeHostOutcome();
     Engine.handleOutcome("YES");
-    window.startPostQuestionCountdown(() => Engine.nextQuestion());
+    window.startPostQuestionCountdown(() => {
+  socket.emit("next_round", { gameId: window.gameId });
+});
   };
 }
 
@@ -425,7 +427,9 @@ if (hostNoBtn) {
   hostNoBtn.onclick = () => {
     window.closeHostOutcome();
     Engine.handleOutcome("NO");
-    window.startPostQuestionCountdown(() => Engine.nextQuestion());
+    window.startPostQuestionCountdown(() => {
+  socket.emit("next_round", { gameId: window.gameId });
+});
   };
 }
 
