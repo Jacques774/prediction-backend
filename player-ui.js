@@ -1,4 +1,7 @@
+// ============================
 // player-ui.js
+// ============================
+
 import { RugbyQuestions } from "./questions.js";
 
 console.log("✅ player-ui.js loaded");
@@ -38,21 +41,25 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.emit("join_game", { gameId, playerName, isHost: false });
 
     // Hide setup, show dashboard
-document.getElementById("playerSetupSlide").style.display = "none";
-const dashboard = document.getElementById("dashboard");
-dashboard.classList.remove("hidden");
-dashboard.style.opacity = "1";
+    document.getElementById("playerSetupSlide").style.display = "none";
+    const dashboard = document.getElementById("dashboard");
+    dashboard.classList.remove("hidden");
+    dashboard.style.opacity = "1";
 
-// Set starting balance when player joins
-window.balance = 100; // or whatever starting value you want
-const nameEl = document.getElementById("player-name");
-const balanceEl = document.getElementById("player-balance");
-if (nameEl) nameEl.textContent = `Player: ${playerName}`;
-if (balanceEl) {
-  balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-}
+    // Set starting balance when player joins
+    window.balance = 100; // or whatever starting value you want
+    const nameEl = document.getElementById("player-name");
+    const balanceEl = document.getElementById("player-balance");
+    if (nameEl) nameEl.textContent = `Player: ${playerName}`;
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    }
   });
 });
+
+// ============================
+// Helpers
+// ============================
 
 // Prediction helper
 window.sendPrediction = function (choice) {
@@ -92,7 +99,10 @@ window.startPreCountdown = function (onDone) {
   }, 1000);
 };
 
+// ============================
 // Status dot
+// ============================
+
 const statusDot = document.createElement("div");
 statusDot.id = "socket-status";
 statusDot.style.width = "10px";
@@ -105,6 +115,10 @@ document.querySelector(".top-header").appendChild(statusDot);
 
 socket.on("connect", () => (statusDot.style.backgroundColor = "limegreen"));
 socket.on("disconnect", () => (statusDot.style.backgroundColor = "red"));
+
+// ============================
+// Socket listeners
+// ============================
 
 // 🔑 Game starting broadcast
 socket.on("game_starting", ({ host }) => {
@@ -127,7 +141,10 @@ socket.on("round_outcome", ({ outcome }) => {
     outcomeEl.style.display = "block";
   }
 
-  // ✅ Wait for server to send next new_question
+  // ✅ Apply balance/outcome logic via Engine
+  Engine.handleOutcome(outcome);
+
+  // ✅ Start countdown for next question
   startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
     if (activeCard) activeCard.style.display = "block";
