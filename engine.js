@@ -260,7 +260,7 @@ if (stakeSaveBtn) {
       return;
     }
 
-    if (amount > balance) {
+    if (amount > window.balance) {
       alert("Not enough balance for this stake.");
       return;
     }
@@ -271,28 +271,33 @@ if (stakeSaveBtn) {
       return;
     }
 
-    // Save stake
+    // ✅ Save stake
     q.stake = amount;
 
     // ✅ Deduct balance once here
-    balance -= amount;
+    const oldBalance = window.balance;
+    window.balance -= amount;
 
     q.oldBalance = oldBalance;
-    q.newBalance = balance;
+    q.newBalance = window.balance;
 
+    // ✅ Update balance display
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl) {
-      balanceEl.textContent = `Balance: £${balance.toFixed(2)}`;
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
     }
 
+    // ✅ Update info panel
     qInfo.innerHTML = `
       You chose: ${q.userChoice}<br>
       Stake: £${amount.toFixed(2)}
     `;
 
+    // Enable cashout
     cashoutBtn.disabled = false;
     cashoutBtn.textContent = `Cash Out: £${(amount * 0.5).toFixed(2)}`;
 
+    // Close popup
     stakePopup.style.display = "none";
 
     if (typeof startCashoutTimer === "function") {
