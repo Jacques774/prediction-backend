@@ -200,19 +200,21 @@ window.Engine = {
   },
 
   updateBalance(outcome, stake) {
-    const oldBalance = window.balance;
-    let newBalance = oldBalance;
+  const oldBalance = window.balance;
+  let newBalance = oldBalance;
 
-    if (outcome === "WIN") {
-      newBalance += stake * 2; // stake return + profit
-    } else if (outcome === "CASHED OUT") {
-      newBalance += stake * 0.5;
-    }
-    // LOSE → nothing added
-
-    window.balance = newBalance;
-    return { oldBalance, newBalance };
+  if (outcome === "WIN") {
+    // Stake was already deducted → only add back stake + profit
+    newBalance += stake + stake; // = stake * 2
+  } else if (outcome === "CASHED OUT") {
+    // Stake was already deducted → add back partial return
+    newBalance += stake * 0.5;
   }
+  // LOSE → nothing added
+
+  window.balance = newBalance;
+  return { oldBalance, newBalance };
+}
 };
   
 // ============================
