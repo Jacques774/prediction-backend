@@ -192,7 +192,7 @@ window.Engine = {
   History.render();
 
   this.startNextCountdown();
-}
+},
 
   startNextCountdown() {
     window.startPostQuestionCountdown(() => {
