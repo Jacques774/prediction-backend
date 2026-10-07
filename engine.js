@@ -197,27 +197,17 @@ window.Engine = {
   },
 
   updateBalance(outcome, stake) {
-  const oldBalance = window.balance;
-  let newBalance = oldBalance;
+  let newBalance = window.balance;
 
   if (outcome === "WIN") {
-    // ✅ Return stake + profit
-    newBalance += stake; // return stake
-    newBalance += stake; // profit
+    newBalance += stake * 2; // stake return + profit
   } else if (outcome === "CASHED OUT") {
     newBalance += stake * 0.5;
   }
   // LOSE → nothing added
 
+  const oldBalance = window.balance;
   window.balance = newBalance;
-
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-  }
-
-  Leaderboard.update(window.currentPlayerName, window.balance);
-  Leaderboard.render();
 
   return { oldBalance, newBalance };
 }
