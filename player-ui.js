@@ -133,22 +133,15 @@ socket.on("game_starting", ({ host }) => {
 
 // 🔑 Round outcome broadcast
 socket.on("round_outcome", ({ outcome }) => {
-  console.log(`📡 Round outcome: ${outcome}`);
+  const result = Engine.handleOutcome(outcome);
 
-  const outcomeEl = document.getElementById("outcome-panel");
-  if (outcomeEl) {
-    outcomeEl.textContent = `Outcome: ${outcome}`;
-    outcomeEl.style.display = "block";
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl) {
+    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
   }
 
-  // ✅ Apply balance/outcome logic via Engine
-  Engine.handleOutcome(outcome);
-
-  // ✅ Start countdown for next question
-  startPreCountdown(() => {
-    const activeCard = document.getElementById("active-card");
-    if (activeCard) activeCard.style.display = "block";
-  });
+  Leaderboard.update(window.currentPlayerName, window.balance);
+  Leaderboard.render();
 });
 
 // 🔑 New question broadcast
