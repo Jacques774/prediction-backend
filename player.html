@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prediction Game - Player</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -113,13 +112,14 @@
 </div>
 
 
-<!-- Scripts -->
+<!-- Load Socket.IO client once -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<!-- Then your own scripts -->
 <script src="socket.js"></script>
-<script src="engine.js"></script>
+<script type="module" src="engine.js"></script>
 <script src="leaderboard.js"></script>
 <script src="history.js"></script>
-<script type="module" src="questions.js"></script>
 <script type="module" src="player-ui.js"></script>
 
 </body>
