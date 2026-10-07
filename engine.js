@@ -87,7 +87,7 @@ window.Engine = {
     clearInterval(window.questionCountdown);
     clearInterval(window.cashoutCountdown);
 
-    // ✅ Pull a random question from RugbyQuestions
+    // ✅ Pull a random question from RugbyQuestions if none provided
     if (!q) {
       const keys = Object.keys(RugbyQuestions);
       const randomKey = keys[Math.floor(Math.random() * keys.length)];
@@ -120,6 +120,11 @@ window.Engine = {
     const q = this.currentQuestion;
     if (!q) return;
     q.userChoice = choice;
+
+    // ✅ Deduct stake immediately when choice is made
+    if (q.stake > 0) {
+      window.balance -= q.stake;
+    }
 
     updateActiveCard(q);
     btnYes.disabled = true;
@@ -161,32 +166,30 @@ window.Engine = {
 
     if (q.cashedOut) {
       qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
-      History.push(q);
-      History.render();
-      this.startNextCountdown();
-      return;
-    }
-
-    let result;
-    if (q.userChoice === outcome) {
-      result = this.updateBalance("WIN", q.stake);
     } else {
-      result = this.updateBalance("LOSE", q.stake);
+      let result;
+      if (q.userChoice === outcome) {
+        result = this.updateBalance("WIN", q.stake);
+      } else {
+        result = this.updateBalance("LOSE", q.stake);
+      }
+
+      q.oldBalance = result.oldBalance;
+      q.newBalance = result.newBalance;
+
+      // ✅ Refresh balance UI immediately
+      const balanceEl = document.getElementById("player-balance");
+      if (balanceEl) {
+        balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+      }
+
+      Leaderboard.update(window.currentPlayerName, window.balance);
+      Leaderboard.render();
+
+      qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
     }
 
-    q.oldBalance = result.oldBalance;
-    q.newBalance = result.newBalance;
-
-    // ✅ Refresh balance UI immediately
-    const balanceEl = document.getElementById("player-balance");
-    if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-    }
-
-    Leaderboard.update(window.currentPlayerName, window.balance);
-    Leaderboard.render();
-
-    qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
+    // ✅ Push history only once per round
     History.push(q);
     History.render();
 
@@ -200,21 +203,21 @@ window.Engine = {
   },
 
   updateBalance(outcome, stake) {
-  const oldBalance = window.balance;
-  let newBalance = oldBalance;
+    const oldBalance = window.balance;
+    let newBalance = oldBalance;
 
-  if (outcome === "WIN") {
-    // Stake was already deducted → only add back stake + profit
-    newBalance += stake + stake; // = stake * 2
-  } else if (outcome === "CASHED OUT") {
-    // Stake was already deducted → add back partial return
-    newBalance += stake * 0.5;
+    if (outcome === "WIN") {
+      // Stake was already deducted → add back stake + profit
+      newBalance += stake * 2;
+    } else if (outcome === "CASHED OUT") {
+      // Stake was already deducted → partial return
+      newBalance += stake * 0.5;
+    }
+    // LOSE → nothing added
+
+    window.balance = newBalance;
+    return { oldBalance, newBalance };
   }
-  // LOSE → nothing added
-
-  window.balance = newBalance;
-  return { oldBalance, newBalance };
-}
 };
   
 // ============================
