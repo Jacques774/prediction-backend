@@ -198,6 +198,8 @@ window.Engine = {
     History.push(q);
     History.render();
 
+    this.startNextCountdown();
+
   },
 
 
