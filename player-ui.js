@@ -135,10 +135,8 @@ socket.on("game_starting", ({ host }) => {
 socket.on("round_outcome", ({ outcome }) => {
   const result = Engine.handleOutcome(outcome);
 
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-  }
+  document.getElementById("player-balance").textContent =
+    `Balance: £${Utils.formatMoney(window.balance)}`;
 
   Leaderboard.update(window.currentPlayerName, window.balance);
   Leaderboard.render();
