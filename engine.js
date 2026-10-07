@@ -1,3 +1,5 @@
+import { RugbyQuestions } from "./questions.js";
+
 
 document.addEventListener("DOMContentLoaded", () => {
   // ============================
@@ -72,8 +74,6 @@ const Utils = {
 // ============================
 // ENGINE
 // ============================
-
-import { RugbyQuestions } from "./questions.js";
 
 window.Engine = {
   currentQuestion: null,
