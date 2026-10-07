@@ -26,42 +26,14 @@ const stakeInput = document.getElementById("stakeInput");
 const stakeSaveBtn = document.getElementById("stake-save-btn");
 const stakeCancelBtn = document.getElementById("stake-cancel-btn");
 
-  // ============================
-  // QUESTIONS
-  // ============================
-  const Questions = {
-    list: [
-      { text: "Will the next phase gain more than 5 meters?", timer: 12 },
-      { text: "Will the next possession end in a kick?", timer: 10 },
-      { text: "Will the next scrum result in a penalty?", timer: 18 },
-      { text: "Will the next lineout be won cleanly?", timer: 14 },
-      { text: "Will the next carry break the gain line?", timer: 11 },
-      { text: "Will the next tackle be dominant?", timer: 9 },
-      { text: "Will the next ruck be completed in under 3 seconds?", timer: 8 },
-      { text: "Will the next attacking phase reach the 22‑meter line?", timer: 20 },
-      { text: "Will the next kick be successfully caught?", timer: 13 },
-      { text: "Will the next defensive set force a turnover?", timer: 17 }
-    ],
-    generate() {
-  const q = this.list[Math.floor(Math.random() * this.list.length)];
-  return {
-    ...q,
-    stake: 0,              // ensures toFixed() works
-    userChoice: null,
-    outcome: null,
-    cashedOut: false,
-    finalPercent: 50
-  };
-}
-  };
 
 // ============================
 // TIMER
 // ============================
 const Timer = {
   start(question, onTick, onEnd) {
-    // Always use the same time for every question
-    let timeLeft = 15; // e.g. 15 seconds for all
+    // Use question.timer if available, fallback to 15
+    let timeLeft = question.timer || 15;
 
     onTick(timeLeft);
     const interval = setInterval(() => {
@@ -76,27 +48,32 @@ const Timer = {
   }
 };
 
-  // ============================
-  // UTILS
-  // ============================
-  const Utils = {
-    profit(q) {
-      if (q.cashedOut) {
-        const amt = Number(cashoutBtn.textContent.replace("Cash Out: ", ""));
-        return isNaN(amt) ? 0 : amt;
-      }
-      if (q.userChoice === q.outcome) return q.stake * 2;
-      return 0;
-    },
-    formatMoney(amount) {
-      return Number(amount).toFixed(2);
+// ============================
+// UTILS
+// ============================
+const Utils = {
+  profit(q) {
+    if (q.cashedOut) {
+      // ✅ Use stake directly instead of button text
+      return q.stake * 0.5;
     }
-  };
+    if (q.userChoice === q.outcome) {
+      return q.stake * 2; // stake return + profit
+    }
+    return 0;
+  },
+
+  formatMoney(amount) {
+    return Number(amount).toFixed(2);
+  }
+};
 
 
 // ============================
 // ENGINE
 // ============================
+
+import { RugbyQuestions } from "./questions.js";
 
 window.Engine = {
   currentQuestion: null,
@@ -107,14 +84,20 @@ window.Engine = {
     cashoutBtn.disabled = true;
     btnYes.disabled = false;
     btnNo.disabled = false;
-    clearInterval(questionCountdown);
-    clearInterval(cashoutCountdown);
+    clearInterval(window.questionCountdown);
+    clearInterval(window.cashoutCountdown);
 
-    if (!q) q = Questions.generate();
-    this.currentQuestion = { ...q, stake: 0, userChoice: null, outcome: null };
+    // ✅ Use RugbyQuestions instead of Questions.generate
+    if (!q) {
+      const keys = Object.keys(RugbyQuestions);
+      const randomKey = keys[Math.floor(Math.random() * keys.length)];
+      q = { ...RugbyQuestions[randomKey] };
+    }
+
+    this.currentQuestion = { ...q, stake: 0, userChoice: null, outcome: null, cashedOut: false };
     updateActiveCard(this.currentQuestion);
 
-    questionCountdown = Timer.start(this.currentQuestion,
+    window.questionCountdown = Timer.start(this.currentQuestion,
       (timeLeft) => {
         qInfo.innerHTML = `You chose: ${this.currentQuestion.userChoice || "--"}<br>
           Stake: £${this.currentQuestion.stake ? this.currentQuestion.stake.toFixed(2) : 0}<br>
@@ -129,7 +112,6 @@ window.Engine = {
     if (!q) return;
     q.userChoice = choice;
 
-    // ❌ No balance deduction here anymore
     updateActiveCard(q);
     btnYes.disabled = true;
     btnNo.disabled = true;
@@ -139,7 +121,7 @@ window.Engine = {
 
   cashout() {
     const q = this.currentQuestion;
-    clearInterval(cashoutCountdown);
+    clearInterval(window.cashoutCountdown);
     q.cashedOut = true;
     q.outcome = "CASHED OUT";
 
@@ -147,9 +129,15 @@ window.Engine = {
     q.oldBalance = result.oldBalance;
     q.newBalance = result.newBalance;
 
-    totalCashouts++;
+    window.totalCashouts++;
     document.getElementById("player-cashouts").textContent =
-      `Cash-outs: ${totalCashouts}`;
+      `Cash-outs: ${window.totalCashouts}`;
+
+    // ✅ Refresh balance UI immediately
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    }
 
     btnYes.disabled = true;
     btnNo.disabled = true;
@@ -157,44 +145,44 @@ window.Engine = {
   },
 
   handleOutcome(outcome) {
-  const q = this.currentQuestion;
-  if (!q) return;
+    const q = this.currentQuestion;
+    if (!q) return;
 
-  q.outcome = outcome;
+    q.outcome = outcome;
 
-  if (q.cashedOut) {
-    qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
+    if (q.cashedOut) {
+      qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
+      History.push(q);
+      History.render();
+      this.startNextCountdown();
+      return;
+    }
+
+    let result;
+    if (q.userChoice === outcome) {
+      result = this.updateBalance("WIN", q.stake);
+    } else {
+      result = this.updateBalance("LOSE", q.stake);
+    }
+
+    q.oldBalance = result.oldBalance;
+    q.newBalance = result.newBalance;
+
+    // ✅ Refresh balance UI immediately
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    }
+
+    Leaderboard.update(window.currentPlayerName, window.balance);
+    Leaderboard.render();
+
+    qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
     History.push(q);
     History.render();
+
     this.startNextCountdown();
-    return;
-  }
-
-  let result;
-  if (q.userChoice === outcome) {
-    result = this.updateBalance("WIN", q.stake);
-  } else {
-    result = this.updateBalance("LOSE", q.stake);
-  }
-
-  q.oldBalance = result.oldBalance;
-  q.newBalance = result.newBalance;
-
-  // ✅ Refresh balance UI immediately
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-  }
-
-  Leaderboard.update(window.currentPlayerName, window.balance);
-  Leaderboard.render();
-
-  qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
-  History.push(q);
-  History.render();
-
-  this.startNextCountdown();
-},
+  },
 
   startNextCountdown() {
     window.startPostQuestionCountdown(() => {
@@ -203,19 +191,19 @@ window.Engine = {
   },
 
   updateBalance(outcome, stake) {
-  const oldBalance = window.balance;
-  let newBalance = oldBalance;
+    const oldBalance = window.balance;
+    let newBalance = oldBalance;
 
-  if (outcome === "WIN") {
-    newBalance += stake * 2; // stake return + profit
-  } else if (outcome === "CASHED OUT") {
-    newBalance += stake * 0.5;
+    if (outcome === "WIN") {
+      newBalance += stake * 2; // stake return + profit
+    } else if (outcome === "CASHED OUT") {
+      newBalance += stake * 0.5;
+    }
+    // LOSE → nothing added
+
+    window.balance = newBalance;
+    return { oldBalance, newBalance };
   }
-  // LOSE → nothing added
-
-  window.balance = newBalance;
-  return { oldBalance, newBalance };
-}
 };
   
 // ============================
@@ -225,7 +213,7 @@ if (btnYes) {
   btnYes.onclick = () => {
     Engine.choose("YES");
     sendPrediction("YES");
-    openStakePopup(); // ⭐ trigger popup
+    // ❌ remove openStakePopup here, Engine.choose already calls it
   };
 }
 
@@ -233,7 +221,7 @@ if (btnNo) {
   btnNo.onclick = () => {
     Engine.choose("NO");
     sendPrediction("NO");
-    openStakePopup(); // ⭐ trigger popup
+    // ❌ remove openStakePopup here too
   };
 }
 
@@ -254,7 +242,6 @@ window.openStakePopup = function () {
 // ============================
 // STAKE POPUP LOGIC
 // ============================
-
 if (stakeSaveBtn) {
   stakeSaveBtn.onclick = () => {
     const amount = Number(stakeInput?.value);
@@ -278,7 +265,7 @@ if (stakeSaveBtn) {
     // ✅ Save stake
     q.stake = amount;
 
-    // ✅ Deduct balance once here
+    // ✅ Deduct balance
     const oldBalance = window.balance;
     window.balance -= amount;
 
@@ -351,23 +338,20 @@ window.updateActiveCard = function (q) {
     qInfo.innerHTML = `
       You chose: ${q.userChoice || "--"}<br>
       Stake: £${safeStake.toFixed(2)}<br>
-      Timer: ${q.timer}s
+      Timer: ${q.timer || "--"}s
     `;
   }
-
-  // 🚫 Removed bar + label reset logic
 };
-
 
 // ============================
 // POST QUESTION COUNTDOWN
 // ============================
-window.startPostQuestionCountdown = function (onDone) {
+window.startPostQuestionCountdown = function (onDone, duration = 3) {
   const el = document.getElementById("postQuestionCountdown");
   if (!el) return;
 
   el.style.display = "block";
-  let count = 3;
+  let count = duration;
   el.textContent = count;
 
   const interval = setInterval(() => {
@@ -380,7 +364,7 @@ window.startPostQuestionCountdown = function (onDone) {
       setTimeout(() => {
         el.style.display = "none";
         if (typeof onDone === "function") onDone();
-      }, 500); // short pause so "GO!" is visible
+      }, 500);
     }
   }, 1000);
 };
@@ -408,28 +392,16 @@ const hostNoBtn = document.getElementById("host-no-btn");
 if (hostYesBtn) {
   hostYesBtn.onclick = () => {
     window.closeHostOutcome();
-
-    // ✅ Update balance & outcome immediately
     Engine.handleOutcome("YES");
-
-    // ✅ Then start countdown to next question
-    window.startPostQuestionCountdown(() => {
-      Engine.nextQuestion();
-    });
+    window.startPostQuestionCountdown(() => Engine.nextQuestion());
   };
 }
 
 if (hostNoBtn) {
   hostNoBtn.onclick = () => {
     window.closeHostOutcome();
-
-    // ✅ Update balance & outcome immediately
     Engine.handleOutcome("NO");
-
-    // ✅ Then start countdown to next question
-    window.startPostQuestionCountdown(() => {
-      Engine.nextQuestion();
-    });
+    window.startPostQuestionCountdown(() => Engine.nextQuestion());
   };
 }
 
