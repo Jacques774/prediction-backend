@@ -140,6 +140,16 @@ socket.on("round_outcome", ({ outcome }) => {
 
   Leaderboard.update(window.currentPlayerName, window.balance);
   Leaderboard.render();
+
+  // Show outcome text (optional)
+  const outcomeEl = document.getElementById("player-outcome");
+  if (outcomeEl) outcomeEl.textContent = `Outcome: ${outcome}`;
+
+  // 🔧 Add countdown before next question
+  window.startPostQuestionCountdown(() => {
+    // Players don’t emit next_round — they just wait for server’s new_question
+    console.log("⏳ Player finished post-question countdown, waiting for server...");
+  });
 });
 
 // 🔑 New question broadcast
@@ -153,3 +163,21 @@ socket.on("new_question", ({ id }) => {
   const activeCard = document.getElementById("active-card");
   if (activeCard) activeCard.style.display = "block";
 });
+
+// Countdown helper for next question
+window.startPostQuestionCountdown = function (onDone) {
+  const el = document.getElementById("postQuestionCountdown"); // ✅ match HTML
+  if (!el) return;
+  el.style.display = "block";
+  let count = 5; // or however many seconds you want
+  el.textContent = count;
+  const interval = setInterval(() => {
+    count--;
+    el.textContent = count > 0 ? count : "Next!";
+    if (count < 0) {
+      clearInterval(interval);
+      el.style.display = "none";
+      onDone();
+    }
+  }, 1000);
+};
