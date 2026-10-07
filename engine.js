@@ -78,7 +78,6 @@ const Utils = {
 window.Engine = {
   currentQuestion: null,
 
-  start() { this.nextQuestion(); },
 
   nextQuestion(q) {
     cashoutBtn.disabled = true;
@@ -87,11 +86,6 @@ window.Engine = {
     clearInterval(window.questionCountdown);
     clearInterval(window.cashoutCountdown);
 
-    if (!q) {
-      const keys = Object.keys(RugbyQuestions);
-      const randomKey = keys[Math.floor(Math.random() * keys.length)];
-      q = { ...RugbyQuestions[randomKey] };
-    }
 
     this.currentQuestion = { 
       ...q, 
@@ -204,14 +198,8 @@ window.Engine = {
     History.push(q);
     History.render();
 
-    this.startNextCountdown();
   },
 
-  startNextCountdown() {
-    window.startPostQuestionCountdown(() => {
-      this.nextQuestion();
-    });
-  },
 
   updateBalance(outcome, stake) {
     const oldBalance = window.balance;
