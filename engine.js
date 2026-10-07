@@ -197,7 +197,8 @@ window.Engine = {
   },
 
   updateBalance(outcome, stake) {
-  let newBalance = window.balance;
+  const oldBalance = window.balance;
+  let newBalance = oldBalance;
 
   if (outcome === "WIN") {
     newBalance += stake * 2; // stake return + profit
@@ -206,9 +207,7 @@ window.Engine = {
   }
   // LOSE → nothing added
 
-  const oldBalance = window.balance;
   window.balance = newBalance;
-
   return { oldBalance, newBalance };
 }
 };
