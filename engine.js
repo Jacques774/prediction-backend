@@ -198,10 +198,22 @@ window.Engine = {
     History.push(q);
     History.render();
 
+    // ✅ Trigger countdown
     this.startNextCountdown();
-
   },
 
+  // 🔧 New method
+  startNextCountdown() {
+    window.startPostQuestionCountdown(() => {
+      if (window.isHost) {
+        socket.emit("next_round", { gameId: window.gameId });
+      } else {
+        console.log("⏳ Player finished countdown, waiting for server...");
+      }
+    });
+  },
+
+  
 
   updateBalance(outcome, stake) {
     const oldBalance = window.balance;
