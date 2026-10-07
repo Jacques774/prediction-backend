@@ -201,8 +201,9 @@ window.Engine = {
   let newBalance = oldBalance;
 
   if (outcome === "WIN") {
-    // ✅ Add stake back + profit
-    newBalance += stake * 2;
+    // ✅ Return stake + profit
+    newBalance += stake; // return stake
+    newBalance += stake; // profit
   } else if (outcome === "CASHED OUT") {
     newBalance += stake * 0.5;
   }
