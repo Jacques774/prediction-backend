@@ -157,26 +157,38 @@ window.Engine = {
   },
 
   handleOutcome(outcome) {
-    const q = this.currentQuestion;
-    if (!q) return;
+  const q = this.currentQuestion;
+  if (!q) return;
 
-    q.outcome = outcome;
+  // Host sets the true outcome
+  q.outcome = outcome;
 
-    let result;
-    if (q.userChoice === outcome) {
-      result = this.updateBalance("WIN", q.stake);
-    } else {
-      result = this.updateBalance("LOSE", q.stake);
-    }
-
-    q.oldBalance = result.oldBalance;
-    q.newBalance = result.newBalance;
-
+  // 🔹 If player cashed out, skip balance update
+  if (q.cashedOut) {
+    qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
     History.push(q);
     History.render();
-
     this.startNextCountdown();
-  },
+    return;
+  }
+
+  // Normal outcome flow
+  let result;
+  if (q.userChoice === outcome) {
+    result = this.updateBalance("WIN", q.stake);
+  } else {
+    result = this.updateBalance("LOSE", q.stake);
+  }
+
+  q.oldBalance = result.oldBalance;
+  q.newBalance = result.newBalance;
+
+  qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
+  History.push(q);
+  History.render();
+
+  this.startNextCountdown();
+},
 
   startNextCountdown() {
     window.startPostQuestionCountdown(() => {
