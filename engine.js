@@ -133,7 +133,13 @@ window.Engine = {
     }
     q.userChoice = choice;
 
-    // ❌ Removed stake deduction here
+    // Deduct stake immediately when player commits
+    window.balance -= q.stake;
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    }
+
     updateActiveCard(q);
     btnYes.disabled = true;
     btnNo.disabled = true;
@@ -164,8 +170,10 @@ window.Engine = {
     const q = this.currentQuestion;
     if (!q) return;
 
+    // Host sets the true outcome
     q.outcome = outcome;
 
+    // Decide win/lose based on player choice
     let result;
     if (q.userChoice === outcome) {
       result = this.updateBalance("WIN", q.stake);
@@ -193,12 +201,11 @@ window.Engine = {
     let newBalance = oldBalance;
 
     if (outcome === "WIN") {
-      // ✅ Stake was deducted once already, so add stake*2 (stake + profit)
-      newBalance += stake * 2;
+      newBalance += stake * 2; // winnings only
     } else if (outcome === "CASHED OUT") {
-      newBalance += stake * 0.5;
+      newBalance += stake * 0.5; // partial return
     }
-    // LOSE → nothing added, since stake already deducted
+    // LOSE → nothing added, since stake already deducted in choose()
 
     window.balance = newBalance;
 
@@ -213,7 +220,7 @@ window.Engine = {
     return { oldBalance, newBalance };
   }
 };
-
+  
 // ============================
 // BUTTON LISTENERS (safe)
 // ============================
@@ -221,7 +228,7 @@ if (btnYes) {
   btnYes.onclick = () => {
     Engine.choose("YES");
     sendPrediction("YES");
-    openStakePopup();
+    openStakePopup(); // ⭐ trigger popup
   };
 }
 
@@ -229,7 +236,7 @@ if (btnNo) {
   btnNo.onclick = () => {
     Engine.choose("NO");
     sendPrediction("NO");
-    openStakePopup();
+    openStakePopup(); // ⭐ trigger popup
   };
 }
 
@@ -246,7 +253,7 @@ window.openStakePopup = function () {
   stakePopup.style.display = "flex";
   if (stakeInput) stakeInput.value = "";
 };
-
+  
 // ============================
 // STAKE POPUP LOGIC
 // ============================
@@ -260,7 +267,7 @@ if (stakeSaveBtn) {
       return;
     }
 
-    if (amount > window.balance) {
+    if (amount > balance) {
       alert("Not enough balance for this stake.");
       return;
     }
@@ -271,23 +278,23 @@ if (stakeSaveBtn) {
       return;
     }
 
-    // ✅ Save stake
+    // Save stake
     q.stake = amount;
 
-    // ✅ Deduct balance once here
-    const oldBalance = window.balance;
-    window.balance -= amount;
+    // Deduct balance only now
+    const oldBalance = balance;
+    balance -= amount;
 
     q.oldBalance = oldBalance;
-    q.newBalance = window.balance;
+    q.newBalance = balance;
 
-    // ✅ Update balance display
+    // Update balance display
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+      balanceEl.textContent = `Balance: £${balance.toFixed(2)}`;
     }
 
-    // ✅ Update info panel
+    // Update info panel (remove q.timer if not defined)
     qInfo.innerHTML = `
       You chose: ${q.userChoice}<br>
       Stake: £${amount.toFixed(2)}
@@ -300,6 +307,7 @@ if (stakeSaveBtn) {
     // Close popup
     stakePopup.style.display = "none";
 
+    // Start cashout timer if available
     if (typeof startCashoutTimer === "function") {
       startCashoutTimer();
     }
@@ -316,6 +324,7 @@ if (stakeCancelBtn) {
       q.stake = 0;
     }
 
+    // Reset dashboard info
     if (qInfo) {
       qInfo.innerHTML = `
         You chose: --<br>
@@ -324,10 +333,14 @@ if (stakeCancelBtn) {
       `;
     }
 
+    // Close popup
     stakePopup.style.display = "none";
 
+    // Re‑enable YES/NO
     if (btnYes) btnYes.disabled = false;
     if (btnNo) btnNo.disabled = false;
+
+    // Cashout stays disabled until a stake is placed
     if (cashoutBtn) cashoutBtn.disabled = true;
 
     console.log("❌ Stake cancelled (no balance deducted yet)");
