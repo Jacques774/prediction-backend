@@ -68,21 +68,14 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.on("round_outcome", ({ outcome }) => {
   const result = Engine.handleOutcome(outcome);
 
-  // Host balance updates same as players
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-  }
+  document.getElementById("player-balance").textContent =
+    `Balance: £${Utils.formatMoney(window.balance)}`;
 
   Leaderboard.update(window.currentPlayerName, window.balance);
   Leaderboard.render();
 
   // Outcome panel only for host
-  const outcomeEl = document.getElementById("outcome-panel");
-  if (outcomeEl) {
-    outcomeEl.textContent = `Outcome: ${outcome}`;
-    outcomeEl.style.display = "block";
-  }
+  document.getElementById("outcome-panel").textContent = `Outcome: ${outcome}`;
 });
 
     // Animate + hide setup slide
