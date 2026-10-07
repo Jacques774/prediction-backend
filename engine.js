@@ -110,7 +110,13 @@ window.Engine = {
           Stake: £${this.currentQuestion.stake ? this.currentQuestion.stake.toFixed(2) : 0}<br>
           Timer: ${timeLeft}s`;
       },
-      () => window.openHostOutcome(this.currentQuestion.text)
+      () => {
+        // ✅ Only the host decides the outcome locally
+        if (window.isHost) {
+          window.openHostOutcome(this.currentQuestion.text);
+        }
+        // Players wait for socket outcome
+      }
     );
   },
 
@@ -156,43 +162,46 @@ window.Engine = {
   },
 
   handleOutcome(outcome) {
-  const q = this.currentQuestion;
-  if (!q) return;
+    const q = this.currentQuestion;
+    if (!q) return;
 
-  q.outcome = outcome;
+    // ✅ Prevent duplicate processing
+    if (q.outcome !== null) {
+      return; // already handled once
+    }
 
-  if (q.cashedOut) {
-    // ✅ Only mark cashed out, no balance update
-    qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
-  } else {
-    // ✅ Normal outcome flow
-    let result;
-    if (q.userChoice === outcome) {
-      result = this.updateBalance("WIN", q.stake);
+    q.outcome = outcome;
+
+    if (q.cashedOut) {
+      qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
     } else {
-      result = this.updateBalance("LOSE", q.stake);
+      let result;
+      if (q.userChoice === outcome) {
+        result = this.updateBalance("WIN", q.stake);
+      } else {
+        result = this.updateBalance("LOSE", q.stake);
+      }
+
+      q.oldBalance = result.oldBalance;
+      q.newBalance = result.newBalance;
+
+      const balanceEl = document.getElementById("player-balance");
+      if (balanceEl) {
+        balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+      }
+
+      Leaderboard.update(window.currentPlayerName, window.balance);
+      Leaderboard.render();
+
+      qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
     }
 
-    q.oldBalance = result.oldBalance;
-    q.newBalance = result.newBalance;
+    // ✅ Push history only once per round
+    History.push(q);
+    History.render();
 
-    const balanceEl = document.getElementById("player-balance");
-    if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-    }
-
-    Leaderboard.update(window.currentPlayerName, window.balance);
-    Leaderboard.render();
-
-    qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
-  }
-
-  // ✅ Push history only once per round
-  History.push(q);
-  History.render();
-
-  this.startNextCountdown();
-},
+    this.startNextCountdown();
+  },
 
   startNextCountdown() {
     window.startPostQuestionCountdown(() => {
