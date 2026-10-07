@@ -138,28 +138,32 @@ window.Engine = {
   },
 
   cashout() {
-    const q = this.currentQuestion;
-    clearInterval(window.cashoutCountdown);
-    q.cashedOut = true;
-    q.outcome = "CASHED OUT";
+  const q = this.currentQuestion;
+  clearInterval(window.cashoutCountdown);
+  q.cashedOut = true;
+  q.outcome = "CASHED OUT";
 
-    const result = this.updateBalance("CASHED OUT", q.stake);
-    q.oldBalance = result.oldBalance;
-    q.newBalance = result.newBalance;
+  const result = this.updateBalance("CASHED OUT", q.stake);
+  q.oldBalance = result.oldBalance;
+  q.newBalance = result.newBalance;
 
-    window.totalCashouts++;
-    document.getElementById("player-cashouts").textContent =
-      `Cash-outs: ${window.totalCashouts}`;
+  window.totalCashouts++;
+  document.getElementById("player-cashouts").textContent =
+    `Cash-outs: ${window.totalCashouts}`;
 
-    const balanceEl = document.getElementById("player-balance");
-    if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-    }
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl) {
+    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+  }
 
-    btnYes.disabled = true;
-    btnNo.disabled = true;
-    cashoutBtn.disabled = true;
-  },
+  btnYes.disabled = true;
+  btnNo.disabled = true;
+  cashoutBtn.disabled = true;
+
+  // ✅ Log cash‑out immediately in history
+  History.push(q);
+  History.render();
+},
 
   handleOutcome(outcome) {
     const q = this.currentQuestion;
