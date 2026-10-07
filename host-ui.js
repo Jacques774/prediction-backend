@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // ✅ Save globally so updateBalance can use it
+    // ✅ Save globally so Engine can use it
     window.currentPlayerName = hostName;
     window.isHost = true;
 
@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // ✅ Outcome listener — Engine handles balance + countdown internally
+    // ✅ Outcome listener — Engine owns balance updates
     socket.on("round_outcome", ({ outcome }) => {
       console.log(`📡 Round outcome: ${outcome}`);
 
