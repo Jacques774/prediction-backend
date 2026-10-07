@@ -87,14 +87,23 @@ window.Engine = {
     clearInterval(window.questionCountdown);
     clearInterval(window.cashoutCountdown);
 
-    // ✅ Use RugbyQuestions instead of Questions.generate
+    // ✅ Pull a random question from RugbyQuestions
     if (!q) {
       const keys = Object.keys(RugbyQuestions);
       const randomKey = keys[Math.floor(Math.random() * keys.length)];
       q = { ...RugbyQuestions[randomKey] };
     }
 
-    this.currentQuestion = { ...q, stake: 0, userChoice: null, outcome: null, cashedOut: false };
+    // ✅ Add timer default so it never shows undefined
+    this.currentQuestion = { 
+      ...q, 
+      timer: 15, 
+      stake: 0, 
+      userChoice: null, 
+      outcome: null, 
+      cashedOut: false 
+    };
+
     updateActiveCard(this.currentQuestion);
 
     window.questionCountdown = Timer.start(this.currentQuestion,
