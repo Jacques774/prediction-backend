@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // ✅ Save globally so Engine can use it
+    // ✅ Save globally so updateBalance can use it
     window.currentPlayerName = hostName;
     window.isHost = true;
 
@@ -65,17 +65,25 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // ✅ Outcome listener — Engine owns balance updates
     socket.on("round_outcome", ({ outcome }) => {
-      console.log(`📡 Round outcome: ${outcome}`);
+  const result = Engine.handleOutcome(outcome);
 
-      const outcomeEl = document.getElementById("host-outcome-question");
-      if (outcomeEl) {
-        outcomeEl.textContent = `Outcome: ${outcome}`;
-      }
+  // Host balance updates same as players
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl) {
+    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+  }
 
-      Engine.handleOutcome(outcome);
-    });
+  Leaderboard.update(window.currentPlayerName, window.balance);
+  Leaderboard.render();
+
+  // Outcome panel only for host
+  const outcomeEl = document.getElementById("outcome-panel");
+  if (outcomeEl) {
+    outcomeEl.textContent = `Outcome: ${outcome}`;
+    outcomeEl.style.display = "block";
+  }
+});
 
     // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
@@ -93,19 +101,20 @@ document.addEventListener("DOMContentLoaded", () => {
       dashboard.style.opacity = "1";
     }
 
+    // Update dashboard with host name + balance
     // ✅ Initialize host balance once
-    window.balance = 120; // starting value
+window.balance = 120; // or whatever starting value you want
 
-    const nameEl = document.getElementById("player-name");
-    const balanceEl = document.getElementById("player-balance");
+const nameEl = document.getElementById("player-name");
+const balanceEl = document.getElementById("player-balance");
 
-    if (nameEl) nameEl.textContent = `Host: ${hostName}`;
-    if (balanceEl) {
-      balanceEl.textContent = "Balance: £" +
-        (typeof Utils !== "undefined" && Utils.formatMoney
-          ? Utils.formatMoney(window.balance)
-          : window.balance.toFixed(2));
-    }
+if (nameEl) nameEl.textContent = `Host: ${hostName}`;
+if (balanceEl) {
+  balanceEl.textContent = "Balance: £" + 
+    (typeof Utils !== "undefined" && Utils.formatMoney
+      ? Utils.formatMoney(window.balance)
+      : window.balance.toFixed(2));
+}
 
     // Listen for server broadcast
     socket.on("game_starting", ({ host }) => {
