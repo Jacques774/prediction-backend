@@ -40,10 +40,7 @@ window.sendPrediction = sendPrediction;
 
 // --- Host outcome resolution ---
 socket.on("host_resolve", ({ outcome }) => {
-  const qInfo = document.getElementById("q-info");
-  if (qInfo) {
-    qInfo.innerHTML += `<br>Outcome: ${outcome}`;
-  }
+  Engine.handleOutcome(outcome);
 });
 
 // --- Leaderboard object for arrows ---
