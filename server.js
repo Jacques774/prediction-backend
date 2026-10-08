@@ -129,30 +129,30 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Helper at top of file
-function calculatePot(gameId) {
-  const game = games[gameId];
-  if (!game) return 0;
-  return Object.values(game.players)
-    .reduce((sum, p) => sum + (p.stake || 0), 0);
-}
+  // Handle next round
+  socket.on("next_round", ({ gameId }) => {
+    if (!games[gameId]) return;
+    const ids = Object.keys(RugbyQuestions);
+    const randomId = ids[Math.floor(Math.random() * ids.length)];
+    games[gameId].currentQuestionId = randomId;
+    io.to(gameId).emit("new_question", { id: randomId });
+  });
 
-// Handle next round
-socket.on("next_round", ({ gameId }) => {
+  // --- Pot reveal ---
+socket.on("pot_reveal", ({ gameId }) => {
   if (!games[gameId]) return;
 
-  // ✅ Step 3: Calculate pot before new question
-  const potAmount = calculatePot(gameId);
+  // Calculate total pot
+  const potAmount = Object.values(games[gameId].players)
+    .reduce((sum, p) => sum + (p.stake || 0), 0);
+
+  // Broadcast pot to all clients
   io.to(gameId).emit("pot_reveal", { amount: potAmount });
 
-  // ✅ Reset stakes for next round
+  // Reset stakes for next round
   Object.values(games[gameId].players).forEach(p => p.stake = 0);
 
-  // ✅ Pick next question
-  const ids = Object.keys(RugbyQuestions);
-  const randomId = ids[Math.floor(Math.random() * ids.length)];
-  games[gameId].currentQuestionId = randomId;
-  io.to(gameId).emit("new_question", { id: randomId });
+  console.log(`💰 Pot revealed for ${gameId}: £${potAmount}`);
 });
 
   // Handle disconnect
