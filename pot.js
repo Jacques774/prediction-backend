@@ -19,9 +19,10 @@ class Pot {
     let timeLeft = durationMs / 1000;
 
     let interval = setInterval(() => {
-      if (onCountdown) onCountdown(timeLeft); // broadcast countdown
-      timeLeft--;
-      if (timeLeft < 0) {
+      if (timeLeft >= 0) {
+        if (onCountdown) onCountdown(timeLeft); // show countdown
+        timeLeft--; // decrement AFTER showing
+      } else {
         clearInterval(interval);
         this.stakeOpen = false;
         if (onReveal) onReveal(this.potBalance); // reveal pot amount
