@@ -112,6 +112,13 @@ window.Engine = {
         // Players wait for socket outcome
       }
     );
+
+// Start stake timer before card timer begins
+pot.startStakeTimer(10000, 
+  (timeLeft) => showCountdown(timeLeft),   // updates #stakeCountdown
+  (amount) => revealPot(amount)            // flips to pot reveal
+);
+    
   },
 
   choose(choice) {
