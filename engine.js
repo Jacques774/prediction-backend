@@ -208,14 +208,22 @@ window.pot.startStakeTimer(
       qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
     }
 
-    // ✅ Push history only once per round
-    History.push(q);
-    History.render();
+// ✅ Push history only once per round
+History.push(q);
+History.render();
 
-    window.pot.resetRound();
+// ✅ Reset pot for next round
+window.pot.resetRound();
 
-    // ✅ Trigger countdown
-    this.startNextCountdown();
+// ✅ Immediately restart stake timer (optional)
+window.pot.startStakeTimer(
+  10000,
+  (timeLeft) => window.showCountdown(timeLeft),
+  (amount) => window.revealPot(amount)
+);
+
+// ✅ Trigger countdown to next question
+this.startNextCountdown();
   },
 
   // 🔧 New method
