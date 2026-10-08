@@ -15,28 +15,37 @@ class Pot {
   }
 
   // Start stake timer, reveal pot when it ends
-  startStakeTimer(durationMs, onCountdown, onReveal) {
-    // ✅ clear any previous interval before starting a new one
-    if (this.interval) {
+  // Start stake timer, reveal pot when it ends
+startStakeTimer(durationMs, onCountdown, onReveal) {
+  // ✅ clear any previous interval
+  if (this.interval) {
+    clearInterval(this.interval);
+    this.interval = null;
+  }
+
+  // ✅ reset pot state for new round
+  this.stakes = {};
+  for (let player in this.balances) {
+    this.stakes[player] = 0;
+  }
+  this.potBalance = 0;
+  this.profitPool = 0;
+
+  this.stakeOpen = true;
+  let timeLeft = Math.floor(durationMs / 1000);
+
+  this.interval = setInterval(() => {
+    if (timeLeft >= 0) {
+      if (onCountdown) onCountdown(timeLeft); // show countdown
+      timeLeft--;
+    } else {
       clearInterval(this.interval);
       this.interval = null;
+      this.stakeOpen = false;
+      if (onReveal) onReveal(this.potBalance); // reveal pot amount
     }
-
-    this.stakeOpen = true;
-    let timeLeft = Math.floor(durationMs / 1000);
-
-    this.interval = setInterval(() => {
-      if (timeLeft >= 0) {
-        if (onCountdown) onCountdown(timeLeft); // show countdown
-        timeLeft--; // decrement AFTER showing
-      } else {
-        clearInterval(this.interval);
-        this.interval = null;
-        this.stakeOpen = false;
-        if (onReveal) onReveal(this.potBalance); // reveal pot amount
-      }
-    }, 1000);
-  }
+  }, 1000);
+}
 
   // Players can only stake while stake timer is open
   stake(player, amount) {
