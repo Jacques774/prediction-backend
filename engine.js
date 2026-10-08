@@ -113,10 +113,17 @@ window.Engine = {
       }
     );
 
-// Start stake timer before card timer begins
-pot.startStakeTimer(10000, 
-  (timeLeft) => showCountdown(timeLeft),   // updates #stakeCountdown
-  (amount) => revealPot(amount)            // flips to pot reveal
+// ✅ clear any old stake timer before starting a new one
+if (window.stakeInterval) {
+  clearInterval(window.stakeInterval);
+  window.stakeInterval = null;
+}
+
+// ✅ restart stake timer fresh each round
+window.pot.startStakeTimer(
+  10000,
+  (timeLeft) => window.showCountdown(timeLeft),   // updates #stakeCountdown
+  (amount) => window.revealPot(amount)            // flips to pot reveal
 );
     
   },
