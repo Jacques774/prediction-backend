@@ -212,6 +212,8 @@ window.pot.startStakeTimer(
     History.push(q);
     History.render();
 
+    window.pot.resetRound();
+
     // ✅ Trigger countdown
     this.startNextCountdown();
   },
