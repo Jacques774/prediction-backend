@@ -123,7 +123,11 @@ if (window.stakeInterval) {
 window.pot.startStakeTimer(
   10000,
   (timeLeft) => window.showCountdown(timeLeft),   // updates #stakeCountdown
-  (amount) => window.revealPot(amount)            // flips to pot reveal
+  () => {
+  if (window.isHost && window.socket) {
+    window.socket.emit("pot_reveal", { gameId: window.gameId });
+  }
+}
 );
     
   },
@@ -211,19 +215,23 @@ window.pot.startStakeTimer(
   this.startNextCountdown();
 },
 
-  // 🔧 New method
-  startNextCountdown() {
+// 🔧 Fixed method
+startNextCountdown() {
   window.startPostQuestionCountdown(() => {
     // ✅ Start stake timer after countdown finishes
     window.pot.startStakeTimer(
       10000,
       (timeLeft) => window.showCountdown(timeLeft),
-      (amount) => window.revealPot(amount)
+      () => {
+        // When stake timer ends → host triggers pot reveal
+        if (window.isHost && window.socket) {
+          window.socket.emit("pot_reveal", { gameId: window.gameId });
+        }
+      }
     );
 
-    if (window.isHost) {
-      socket.emit("next_round", { gameId: window.gameId });
-    } else {
+    // ⏳ Do NOT emit next_round here — wait until after outcome resolution
+    if (!window.isHost) {
       console.log("⏳ Player finished countdown, waiting for server...");
     }
   });
