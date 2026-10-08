@@ -164,6 +164,22 @@ socket.on("new_question", ({ id }) => {
   if (activeCard) activeCard.style.display = "block";
 });
 
+// 🔑 Next round broadcast from host
+socket.on("next_round", ({ gameId }) => {
+  console.log("📡 Player received next_round for game:", gameId);
+
+  // Run post-question countdown locally
+  window.startPostQuestionCountdown(() => {
+    // Start stake timer after countdown finishes
+    window.pot.startStakeTimer(
+      10000, // 10s stake window
+      (timeLeft) => window.showCountdown(timeLeft),
+      (amount) => window.revealPot(amount)
+    );
+  });
+});
+
+
 // Countdown helper for next question
 window.startPostQuestionCountdown = function (onDone) {
   const el = document.getElementById("postQuestionCountdown"); // ✅ match HTML
