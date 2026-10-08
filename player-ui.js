@@ -232,3 +232,33 @@ window.revealPot = function (amount) {
     potEl.textContent = "Pot: £" + amount.toFixed(2);
   }
 };
+
+// ============================
+// POT OBJECT FOR PLAYER
+// ============================
+window.pot = {
+  startStakeTimer(duration, onTick, onEnd) {
+    let timeLeft = duration / 1000; // convert ms → seconds
+    if (window.stakeInterval) clearInterval(window.stakeInterval);
+
+    // Initial tick
+    onTick(timeLeft);
+
+    window.stakeInterval = setInterval(() => {
+      timeLeft--;
+      onTick(timeLeft);
+      if (timeLeft <= 0) {
+        clearInterval(window.stakeInterval);
+        window.stakeInterval = null;
+        onEnd(0); // reveal pot with amount 0 or server‑sent value
+      }
+    }, 1000);
+  },
+
+  resetRound() {
+    const stakeEl = document.getElementById("stakeCountdown");
+    const potEl = document.getElementById("potAmount");
+    if (stakeEl) stakeEl.style.display = "none";
+    if (potEl) potEl.style.display = "none";
+  }
+};
