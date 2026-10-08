@@ -6,6 +6,7 @@ class Pot {
     this.potBalance = 0;
     this.profitPool = 0;
     this.stakeOpen = false;
+    this.interval = null; // ✅ track the stake timer
 
     players.forEach(p => {
       this.balances[p] = 100; // starting balance
@@ -15,15 +16,22 @@ class Pot {
 
   // Start stake timer, reveal pot when it ends
   startStakeTimer(durationMs, onCountdown, onReveal) {
-    this.stakeOpen = true;
-    let timeLeft = durationMs / 1000;
+    // ✅ clear any previous interval before starting a new one
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
 
-    let interval = setInterval(() => {
+    this.stakeOpen = true;
+    let timeLeft = Math.floor(durationMs / 1000);
+
+    this.interval = setInterval(() => {
       if (timeLeft >= 0) {
         if (onCountdown) onCountdown(timeLeft); // show countdown
         timeLeft--; // decrement AFTER showing
       } else {
-        clearInterval(interval);
+        clearInterval(this.interval);
+        this.interval = null;
         this.stakeOpen = false;
         if (onReveal) onReveal(this.potBalance); // reveal pot amount
       }
