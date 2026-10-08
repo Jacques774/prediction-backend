@@ -367,6 +367,23 @@ if (stakeCancelBtn) {
   };
 }
 
+  // ============================
+// STAKE COUNTDOWN DISPLAY
+// ============================
+window.showCountdown = function (timeLeft) {
+  const stakeEl = document.getElementById("stakeCountdown");
+  const postEl = document.getElementById("postQuestionCountdown");
+
+  // Hide post-question countdown if still visible
+  if (postEl) postEl.style.display = "none";
+
+  // Show stake timer
+  if (stakeEl) {
+    stakeEl.style.display = "block";
+    stakeEl.textContent = `${timeLeft}s`;
+  }
+};
+
 // ============================
 // UI HELPERS
 // ============================
@@ -410,6 +427,9 @@ window.startPostQuestionCountdown = function (onDone, duration = 3) {
     }
   }, 1000);
 };
+
+
+
   
 // ============================
 // HOST OUTCOME PANEL
