@@ -1,6 +1,37 @@
 // host-ui.js
 import { RugbyQuestions } from "./questions.js";
 
+
+import Pot from "./pot.js";
+
+// Create pot instance once for the host
+const pot = new Pot([window.currentPlayerName || "Host"]);
+
+// DOM helpers for stake timer + pot reveal
+function showCountdown(timeLeft) {
+  const countdownEl = document.getElementById("stakeCountdown");
+  if (countdownEl) {
+    countdownEl.textContent = "Stake window: " + timeLeft + "s";
+  }
+}
+
+function revealPot(amount) {
+  const countdownEl = document.getElementById("stakeCountdown");
+  const potEl = document.getElementById("potAmount");
+  if (countdownEl && potEl) {
+    countdownEl.style.display = "none";
+    potEl.style.display = "inline";
+    potEl.textContent = "Pot: £" + amount.toFixed(2);
+  }
+}
+
+function updatePot(amount) {
+  const potEl = document.getElementById("potAmount");
+  if (potEl) {
+    potEl.textContent = "Pot: £" + amount.toFixed(2);
+  }
+}
+
 console.log("✅ host-ui.js loaded");
 
 // ✅ Create socket connection
