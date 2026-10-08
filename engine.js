@@ -228,14 +228,22 @@ this.startNextCountdown();
 
   // 🔧 New method
   startNextCountdown() {
-    window.startPostQuestionCountdown(() => {
-      if (window.isHost) {
-        socket.emit("next_round", { gameId: window.gameId });
-      } else {
-        console.log("⏳ Player finished countdown, waiting for server...");
-      }
-    });
-  },
+  window.startPostQuestionCountdown(() => {
+    // ✅ When countdown finishes, start the stake timer
+    window.pot.startStakeTimer(
+      10000, // 10s stake window
+      (timeLeft) => window.showCountdown(timeLeft),
+      (amount) => window.revealPot(amount)
+    );
+
+    // ✅ Host triggers next round after countdown
+    if (window.isHost) {
+      socket.emit("next_round", { gameId: window.gameId });
+    } else {
+      console.log("⏳ Player finished countdown, waiting for server...");
+    }
+  });
+},
 
   
 
