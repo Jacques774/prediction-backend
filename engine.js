@@ -174,69 +174,53 @@ window.pot.startStakeTimer(
 },
 
   handleOutcome(outcome) {
-    const q = this.currentQuestion;
-    if (!q) return;
+  const q = this.currentQuestion;
+  if (!q) return;
 
-    // ✅ Prevent duplicate processing
-    if (q.outcome !== null) {
-      return; // already handled once
+  if (q.outcome !== null) return; // already handled once
+  q.outcome = outcome;
+
+  if (q.cashedOut) {
+    qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
+  } else {
+    let result = (q.userChoice === outcome)
+      ? this.updateBalance("WIN", q.stake)
+      : this.updateBalance("LOSE", q.stake);
+
+    q.oldBalance = result.oldBalance;
+    q.newBalance = result.newBalance;
+
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
     }
 
-    q.outcome = outcome;
+    Leaderboard.update(window.currentPlayerName, window.balance);
+    Leaderboard.render();
 
-    if (q.cashedOut) {
-      qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
-    } else {
-      let result;
-      if (q.userChoice === outcome) {
-        result = this.updateBalance("WIN", q.stake);
-      } else {
-        result = this.updateBalance("LOSE", q.stake);
-      }
+    qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
+  }
 
-      q.oldBalance = result.oldBalance;
-      q.newBalance = result.newBalance;
+  History.push(q);
+  History.render();
 
-      const balanceEl = document.getElementById("player-balance");
-      if (balanceEl) {
-        balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-      }
+  // ✅ Reset pot only
+  window.pot.resetRound();
 
-      Leaderboard.update(window.currentPlayerName, window.balance);
-      Leaderboard.render();
-
-      qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
-    }
-
-// ✅ Push history only once per round
-History.push(q);
-History.render();
-
-// ✅ Reset pot for next round
-window.pot.resetRound();
-
-// ✅ Immediately restart stake timer (optional)
-window.pot.startStakeTimer(
-  10000,
-  (timeLeft) => window.showCountdown(timeLeft),
-  (amount) => window.revealPot(amount)
-);
-
-// ✅ Trigger countdown to next question
-this.startNextCountdown();
-  },
+  // ✅ Trigger post-question countdown
+  this.startNextCountdown();
+},
 
   // 🔧 New method
   startNextCountdown() {
   window.startPostQuestionCountdown(() => {
-    // ✅ When countdown finishes, start the stake timer
+    // ✅ Start stake timer after countdown finishes
     window.pot.startStakeTimer(
-      10000, // 10s stake window
+      10000,
       (timeLeft) => window.showCountdown(timeLeft),
       (amount) => window.revealPot(amount)
     );
 
-    // ✅ Host triggers next round after countdown
     if (window.isHost) {
       socket.emit("next_round", { gameId: window.gameId });
     } else {
