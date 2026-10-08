@@ -32,6 +32,12 @@ function updatePot(amount) {
   }
 }
 
+// Expose pot + helpers globally so Engine can access them
+window.pot = pot;
+window.showCountdown = showCountdown;
+window.revealPot = revealPot;
+window.updatePot = updatePot;
+
 console.log("✅ host-ui.js loaded");
 
 // ✅ Create socket connection
