@@ -6,7 +6,7 @@ class Pot {
     this.potBalance = 0;
     this.profitPool = 0;
     this.stakeOpen = false;
-    this.interval = null; // ✅ track the stake timer
+    this.interval = null; // track the stake timer
 
     players.forEach(p => {
       this.balances[p] = 100; // starting balance
@@ -15,40 +15,47 @@ class Pot {
   }
 
   // Start stake timer, reveal pot when it ends
-  // Start stake timer, reveal pot when it ends
-startStakeTimer(durationMs, onCountdown, onReveal) {
-  // ✅ clear any previous interval
-  if (this.interval) {
-    clearInterval(this.interval);
-    this.interval = null;
-  }
-
-  // ✅ reset pot state for new round
-  this.stakes = {};
-  for (let player in this.balances) {
-    this.stakes[player] = 0;
-  }
-  this.potBalance = 0;
-  this.profitPool = 0;
-
-  this.stakeOpen = true;
-  let timeLeft = Math.floor(durationMs / 1000);
-
-  this.interval = setInterval(() => {
-    if (timeLeft >= 0) {
-      if (onCountdown) onCountdown(timeLeft); // show countdown
-      timeLeft--;
-    } else {
+  startStakeTimer(durationMs, onCountdown, onReveal) {
+    // clear any previous interval
+    if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
-      this.stakeOpen = false;
-      if (onReveal) onReveal(this.potBalance); // reveal pot amount
     }
-  }, 1000);
-}
+
+    this.stakeOpen = true;
+    let timeLeft = Math.floor(durationMs / 1000);
+
+    this.interval = setInterval(() => {
+      if (timeLeft >= 0) {
+        if (onCountdown) onCountdown(timeLeft); // show countdown
+        timeLeft--;
+      } else {
+        clearInterval(this.interval);
+        this.interval = null;
+        this.stakeOpen = false;
+        if (onReveal) onReveal(this.potBalance); // reveal pot amount
+      }
+    }, 1000);
+  }
+
+  // Reset pot state after a round ends
+  resetRound() {
+    this.stakes = {};
+    for (let player in this.balances) {
+      this.stakes[player] = 0;
+    }
+    this.potBalance = 0;
+    this.profitPool = 0;
+    this.stakeOpen = false;
+
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+  }
 
   // Players can only stake while stake timer is open
-  stake(player, amount) {
+  stake(player, amount, onUpdate) {
     if (!this.stakeOpen) {
       console.log("Stake window closed, cannot stake");
       return;
@@ -57,6 +64,7 @@ startStakeTimer(durationMs, onCountdown, onReveal) {
       this.balances[player] -= amount;
       this.stakes[player] += amount;
       this.potBalance += amount;
+      if (onUpdate) onUpdate(this.potBalance); // live update
     }
   }
 
