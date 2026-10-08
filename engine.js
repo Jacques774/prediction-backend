@@ -314,6 +314,15 @@ if (stakeSaveBtn) {
     q.oldBalance = oldBalance;
     q.newBalance = window.balance;
 
+    // ✅ Tell server about this stake
+if (window.socket) {
+  window.socket.emit("stake_placed", {
+    gameId: window.gameId,
+    playerName: window.currentPlayerName,
+    amount
+  });
+}
+
     // ✅ Update balance display
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl) {
