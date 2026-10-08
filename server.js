@@ -50,6 +50,14 @@ app.get("/api/healthz", (req, res) => res.json({ status: "ok" }));
 io.on("connection", (socket) => {
   console.log("🔌 Client connected:", socket.id);
 
+  socket.on("stake_placed", ({ gameId, playerName, amount }) => {
+  const player = Object.values(games[gameId].players).find(p => p.name === playerName);
+  if (player) {
+    player.stake = amount;
+  }
+  console.log(`💰 Stake placed: ${playerName} staked £${amount}`);
+});
+
   // Handle join_game
   socket.on("join_game", ({ gameId, playerName, isHost }) => {
     if (!games[gameId]) {
@@ -121,14 +129,31 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle next round
-  socket.on("next_round", ({ gameId }) => {
-    if (!games[gameId]) return;
-    const ids = Object.keys(RugbyQuestions);
-    const randomId = ids[Math.floor(Math.random() * ids.length)];
-    games[gameId].currentQuestionId = randomId;
-    io.to(gameId).emit("new_question", { id: randomId });
-  });
+  // Helper at top of file
+function calculatePot(gameId) {
+  const game = games[gameId];
+  if (!game) return 0;
+  return Object.values(game.players)
+    .reduce((sum, p) => sum + (p.stake || 0), 0);
+}
+
+// Handle next round
+socket.on("next_round", ({ gameId }) => {
+  if (!games[gameId]) return;
+
+  // ✅ Step 3: Calculate pot before new question
+  const potAmount = calculatePot(gameId);
+  io.to(gameId).emit("pot_reveal", { amount: potAmount });
+
+  // ✅ Reset stakes for next round
+  Object.values(games[gameId].players).forEach(p => p.stake = 0);
+
+  // ✅ Pick next question
+  const ids = Object.keys(RugbyQuestions);
+  const randomId = ids[Math.floor(Math.random() * ids.length)];
+  games[gameId].currentQuestionId = randomId;
+  io.to(gameId).emit("new_question", { id: randomId });
+});
 
   // Handle disconnect
   socket.on("disconnect", () => {
