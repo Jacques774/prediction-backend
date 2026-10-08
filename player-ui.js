@@ -197,3 +197,38 @@ window.startPostQuestionCountdown = function (onDone) {
     }
   }, 1000);
 };
+
+// ============================
+// STAKE COUNTDOWN DISPLAY
+// ============================
+window.showCountdown = function (timeLeft) {
+  const stakeEl = document.getElementById("stakeCountdown");
+  const postEl = document.getElementById("postQuestionCountdown");
+  const potEl = document.getElementById("potAmount");
+
+  // Hide post-question countdown if still visible
+  if (postEl) postEl.style.display = "none";
+
+  // Hide pot while stake timer is active
+  if (potEl) potEl.style.display = "none";
+
+  // Show stake timer
+  if (stakeEl) {
+    stakeEl.style.display = "inline";
+    stakeEl.textContent = `Stake window: ${timeLeft}s`;
+  }
+};
+
+// ============================
+// POT REVEAL
+// ============================
+window.revealPot = function (amount) {
+  const stakeEl = document.getElementById("stakeCountdown");
+  if (stakeEl) stakeEl.style.display = "none";
+
+  const potEl = document.getElementById("potAmount");
+  if (potEl) {
+    potEl.style.display = "inline";
+    potEl.textContent = "Pot: £" + amount.toFixed(2);
+  }
+};
