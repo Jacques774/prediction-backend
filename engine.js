@@ -339,6 +339,12 @@ if (stakeSaveBtn) {
 
     console.log(`✅ Stake saved & balance deducted: £${amount}`);
   };
+
+  socket.emit("stake_placed", {
+  gameId: window.gameId,
+  playerName: window.currentPlayerName,
+  amount
+});
 }
 
 if (stakeCancelBtn) {
