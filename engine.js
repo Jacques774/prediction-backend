@@ -373,14 +373,18 @@ if (stakeCancelBtn) {
 window.showCountdown = function (timeLeft) {
   const stakeEl = document.getElementById("stakeCountdown");
   const postEl = document.getElementById("postQuestionCountdown");
+  const potEl = document.getElementById("potAmount");
 
   // Hide post-question countdown if still visible
   if (postEl) postEl.style.display = "none";
 
+  // Hide pot while stake timer is active
+  if (potEl) potEl.style.display = "none";
+
   // Show stake timer
   if (stakeEl) {
-    stakeEl.style.display = "block";
-    stakeEl.textContent = `${timeLeft}s`;
+    stakeEl.style.display = "inline";
+    stakeEl.textContent = `Stake window: ${timeLeft}s`;
   }
 };
 
