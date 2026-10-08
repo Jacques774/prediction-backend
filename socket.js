@@ -108,3 +108,10 @@ socket.on("new_question", ({ id }) => {
   // Pass the full question object to Engine
   Engine.nextQuestion(q);
 });
+
+// --- Pot reveal from server ---
+socket.on("pot_reveal", ({ amount }) => {
+  console.log("💰 Pot revealed:", amount);
+  window.currentPot = amount;
+  window.revealPot(amount);
+});
