@@ -213,6 +213,11 @@ window.pot.startStakeTimer(
 
   // ✅ Trigger post-question countdown
   this.startNextCountdown();
+
+  // ✅ After outcome resolution, host tells server to start next round
+  if (window.isHost && window.socket) {
+    window.socket.emit("next_round", { gameId: window.gameId });
+  }  
 },
 
 // 🔧 Fixed method
