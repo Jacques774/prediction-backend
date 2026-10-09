@@ -56,15 +56,11 @@ const Timer = {
 const Utils = {
   profit(q) {
     if (q.cashedOut) {
-      // ✅ Use stake directly instead of button text
-      return q.stake * 0.5;
+      return q.stake * 0.5; // refund shown in history
     }
-    if (q.userChoice === q.outcome) {
-      return q.stake * 2; // stake return + profit
-    }
+    // WIN/LOSE handled by pot.js, so no maths here
     return 0;
   },
-
   formatMoney(amount) {
     return Number(amount).toFixed(2);
   }
@@ -151,9 +147,13 @@ window.pot.startStakeTimer(
   q.cashedOut = true;
   q.outcome = "CASHED OUT";
 
-  const result = this.updateBalance("CASHED OUT", q.stake);
-  q.oldBalance = result.oldBalance;
-  q.newBalance = result.newBalance;
+  // ✅ Use pot.js cashout logic
+  window.pot.cashout(window.currentPlayerName, 0.5);
+
+  // ✅ Read balance from pot.balances
+  const newBalance = window.pot.balances[window.currentPlayerName];
+  q.oldBalance = q.oldBalance || newBalance;
+  q.newBalance = newBalance;
 
   window.totalCashouts++;
   document.getElementById("player-cashouts").textContent =
@@ -161,7 +161,7 @@ window.pot.startStakeTimer(
 
   const balanceEl = document.getElementById("player-balance");
   if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    balanceEl.textContent = `Balance: £${Utils.formatMoney(newBalance)}`;
   }
 
   btnYes.disabled = true;
@@ -230,20 +230,6 @@ window.pot.startStakeTimer(
     }
   });
 },
-
-  
-
-  updateBalance(outcome, stake) {
-  const oldBalance = window.balance;
-  let newBalance = oldBalance;
-
-  if (outcome === "CASHED OUT") {
-    newBalance += stake * 0.5;
-  }
-
-  window.balance = newBalance;
-  return { oldBalance, newBalance };
-}
 };
   
 // ============================
