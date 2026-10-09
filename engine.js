@@ -2,14 +2,15 @@ import { RugbyQuestions } from "./questions.js";
 
 
 document.addEventListener("DOMContentLoaded", () => {
-// ============================
-// SAFE GLOBALS
-// ============================
-window.playerName = "";   // must be set when player joins
-let totalCashouts = 0;
+  // ============================
+  // SAFE GLOBALS
+  // ============================
+  window.playerName = "";
+  let balance = 100;
+  let totalCashouts = 0;
 
-let questionCountdown = null;
-let cashoutCountdown = null;
+  let questionCountdown = null;
+  let cashoutCountdown = null;
 
   // ============================
   // ELEMENTS
@@ -55,11 +56,15 @@ const Timer = {
 const Utils = {
   profit(q) {
     if (q.cashedOut) {
-      return q.stake * 0.5; // refund shown in history
+      // ✅ Use stake directly instead of button text
+      return q.stake * 0.5;
     }
-    // WIN/LOSE handled by pot.js, so no maths here
+    if (q.userChoice === q.outcome) {
+      return q.stake * 2; // stake return + profit
+    }
     return 0;
   },
+
   formatMoney(amount) {
     return Number(amount).toFixed(2);
   }
@@ -128,6 +133,10 @@ window.pot.startStakeTimer(
     if (!q) return;
     q.userChoice = choice;
 
+    // ✅ Deduct stake immediately
+    if (q.stake > 0) {
+      window.balance -= q.stake;
+    }
 
     updateActiveCard(q);
     btnYes.disabled = true;
@@ -142,13 +151,9 @@ window.pot.startStakeTimer(
   q.cashedOut = true;
   q.outcome = "CASHED OUT";
 
-  // ✅ Use pot.js cashout logic
-  window.pot.cashout(window.currentPlayerName, 0.5);
-
-  // ✅ Read balance from pot.balances
-  const newBalance = window.pot.balances[window.currentPlayerName];
-  q.oldBalance = q.oldBalance || newBalance;
-  q.newBalance = newBalance;
+  const result = this.updateBalance("CASHED OUT", q.stake);
+  q.oldBalance = result.oldBalance;
+  q.newBalance = result.newBalance;
 
   window.totalCashouts++;
   document.getElementById("player-cashouts").textContent =
@@ -156,7 +161,7 @@ window.pot.startStakeTimer(
 
   const balanceEl = document.getElementById("player-balance");
   if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(newBalance)}`;
+    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
   }
 
   btnYes.disabled = true;
@@ -171,28 +176,26 @@ window.pot.startStakeTimer(
   handleOutcome(outcome) {
   const q = this.currentQuestion;
   if (!q) return;
+
   if (q.outcome !== null) return; // already handled once
   q.outcome = outcome;
 
   if (q.cashedOut) {
     qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
   } else {
-    // ✅ Build winners list
-    const winners = [];
-    if (q.userChoice === outcome) {
-      winners.push(window.currentPlayerName);
-    }
+    let result = (q.userChoice === outcome)
+      ? this.updateBalance("WIN", q.stake)
+      : this.updateBalance("LOSE", q.stake);
 
-    // ✅ Resolve outcome using pot.js maths
-    window.pot.resolveOutcome(winners);
+    q.oldBalance = result.oldBalance;
+    q.newBalance = result.newBalance;
 
-    // ✅ Update balance UI
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.pot.balances[window.currentPlayerName])}`;
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
     }
 
-    Leaderboard.update(window.currentPlayerName, window.pot.balances[window.currentPlayerName]);
+    Leaderboard.update(window.currentPlayerName, window.balance);
     Leaderboard.render();
 
     qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
@@ -201,7 +204,7 @@ window.pot.startStakeTimer(
   History.push(q);
   History.render();
 
-  // ✅ Reset pot for next round
+  // ✅ Reset pot only
   window.pot.resetRound();
 
   // ✅ Trigger post-question countdown
@@ -225,6 +228,24 @@ window.pot.startStakeTimer(
     }
   });
 },
+
+  
+
+  updateBalance(outcome, stake) {
+    const oldBalance = window.balance;
+    let newBalance = oldBalance;
+
+    if (outcome === "WIN") {
+      // Stake was already deducted → add back stake + profit
+      newBalance += stake * 2;
+    } else if (outcome === "CASHED OUT") {
+      newBalance += stake * 0.5;
+    }
+    // LOSE → nothing added
+
+    window.balance = newBalance;
+    return { oldBalance, newBalance };
+  }
 };
   
 // ============================
@@ -263,69 +284,71 @@ window.openStakePopup = function () {
 // ============================
 // STAKE POPUP LOGIC
 // ============================
-stakeSaveBtn.onclick = () => {
-  const amount = Number(stakeInput?.value);
+if (stakeSaveBtn) {
+  stakeSaveBtn.onclick = () => {
+    const amount = Number(stakeInput?.value);
 
-  if (isNaN(amount) || amount <= 0) {
-    alert("Enter a valid stake amount.");
-    return;
-  }
+    if (isNaN(amount) || amount <= 0) {
+      alert("Enter a valid stake amount.");
+      return;
+    }
 
-  const q = Engine.currentQuestion;
-  if (!q) {
-    alert("No active question found.");
-    return;
-  }
+    if (amount > window.balance) {
+      alert("Not enough balance for this stake.");
+      return;
+    }
 
-  // ✅ Check balance from pot
-  if (amount > window.pot.balances[window.playerName]) {
-    alert("Not enough balance for this stake.");
-    return;
-  }
+    const q = Engine.currentQuestion;
+    if (!q) {
+      alert("No active question found.");
+      return;
+    }
 
-  // ✅ Save stake in question
-  q.stake = amount;
+    // ✅ Save stake
+    q.stake = amount;
 
-  // ✅ Deduct balance via pot.js
-  const oldBalance = window.pot.balances[window.playerName];
-  window.pot.stake(window.playerName, amount);
-  const newBalance = window.pot.balances[window.playerName];
+    // ✅ Deduct balance
+    const oldBalance = window.balance;
+    window.balance -= amount;
 
-  q.oldBalance = oldBalance;
-  q.newBalance = newBalance;
+    q.oldBalance = oldBalance;
+    q.newBalance = window.balance;
 
-  // ✅ Tell server about this stake
-  if (window.socket) {
-    window.socket.emit("stake_placed", {
-      gameId: window.gameId,
-      playerName: window.playerName,
-      amount
-    });
-  }
+    // ✅ Tell server about this stake
+if (window.socket) {
+  window.socket.emit("stake_placed", {
+    gameId: window.gameId,
+    playerName: window.currentPlayerName,
+    amount
+  });
+}
 
-  // ✅ Update balance display
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(newBalance)}`;
-  }
+    // ✅ Update balance display
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    }
 
-  // ✅ Update info panel
-  qInfo.innerHTML = `
-    You chose: ${q.userChoice}<br>
-    Stake: £${amount.toFixed(2)}
-  `;
+    // ✅ Update info panel
+    qInfo.innerHTML = `
+      You chose: ${q.userChoice}<br>
+      Stake: £${amount.toFixed(2)}
+    `;
 
-  cashoutBtn.disabled = false;
-  cashoutBtn.textContent = `Cash Out: £${(amount * 0.5).toFixed(2)}`;
+    // Enable cashout
+    cashoutBtn.disabled = false;
+    cashoutBtn.textContent = `Cash Out: £${(amount * 0.5).toFixed(2)}`;
 
-  stakePopup.style.display = "none";
+    // Close popup
+    stakePopup.style.display = "none";
 
-  if (typeof startCashoutTimer === "function") {
-    startCashoutTimer();
-  }
+    if (typeof startCashoutTimer === "function") {
+      startCashoutTimer();
+    }
 
-  console.log(`✅ Stake saved & balance deducted: £${amount}`);
-};
+    console.log(`✅ Stake saved & balance deducted: £${amount}`);
+  };
+}
 
 if (stakeCancelBtn) {
   stakeCancelBtn.onclick = () => {
