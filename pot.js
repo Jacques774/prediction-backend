@@ -42,7 +42,7 @@ startStakeTimer(durationMs, onCountdown, onReveal) {
   }, 1000);
 
   // ✅ Listen for server broadcast once per round
-  window.socket.once("pot_reveal", ({ amount }) => {
+  window.socket.on("pot_reveal", ({ amount }) => {
     if (onReveal) onReveal(amount);
   });
 }
