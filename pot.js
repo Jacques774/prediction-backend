@@ -14,29 +14,38 @@ class Pot {
     });
   }
 
-  // Start stake timer, reveal pot when it ends
-  startStakeTimer(durationMs, onCountdown, onReveal) {
-    // clear any previous interval
-    if (this.interval) {
+// Start stake timer, reveal pot when it ends
+startStakeTimer(durationMs, onCountdown, onReveal) {
+  // clear any previous interval
+  if (this.interval) {
+    clearInterval(this.interval);
+    this.interval = null;
+  }
+
+  this.stakeOpen = true;
+  let timeLeft = Math.floor(durationMs / 1000);
+
+  this.interval = setInterval(() => {
+    if (timeLeft >= 0) {
+      if (onCountdown) onCountdown(timeLeft); // show countdown
+      timeLeft--;
+    } else {
       clearInterval(this.interval);
       this.interval = null;
-    }
+      this.stakeOpen = false;
 
-    this.stakeOpen = true;
-    let timeLeft = Math.floor(durationMs / 1000);
-
-    this.interval = setInterval(() => {
-      if (timeLeft >= 0) {
-        if (onCountdown) onCountdown(timeLeft); // show countdown
-        timeLeft--;
-      } else {
-        clearInterval(this.interval);
-        this.interval = null;
-        this.stakeOpen = false;
-        if (onReveal) onReveal(this.potBalance); // reveal pot amount
+      // ✅ Tell server to calculate pot
+      if (window.socket) {
+        window.socket.emit("pot_reveal", { gameId: window.gameId });
       }
-    }, 1000);
-  }
+    }
+  }, 1000);
+
+  // ✅ Listen for server broadcast once per round
+  window.socket.once("pot_reveal", ({ amount }) => {
+    if (onReveal) onReveal(amount);
+  });
+}
 
   // Reset pot state after a round ends
   resetRound() {
