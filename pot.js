@@ -15,7 +15,7 @@ class Pot {
   }
 
 // Start stake timer, reveal pot when it ends
-startStakeTimer(durationMs, onCountdown) {
+startStakeTimer(durationMs, onCountdown, onReveal) {
   if (this.interval) {
     clearInterval(this.interval);
     this.interval = null;
@@ -26,7 +26,7 @@ startStakeTimer(durationMs, onCountdown) {
 
   this.interval = setInterval(() => {
     if (timeLeft >= 0) {
-      if (onCountdown) onCountdown(timeLeft);   // ✅ countdown updates
+      if (onCountdown) onCountdown(timeLeft);
       timeLeft--;
     } else {
       clearInterval(this.interval);
