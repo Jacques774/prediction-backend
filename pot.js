@@ -8,8 +8,9 @@ class Pot {
     this.stakeOpen = false;
     this.interval = null; // track the stake timer
 
+    // ✅ Every player (including host) starts with £100
     players.forEach(p => {
-      this.balances[p] = 100; // starting balance
+      this.balances[p] = 100;
       this.stakes[p] = 0;
     });
   }
