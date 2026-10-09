@@ -128,3 +128,12 @@ statusDot.style.backgroundColor = socket.connected ? "limegreen" : "red";
 document.querySelector(".top-header").appendChild(statusDot);
 socket.on("connect", () => (statusDot.style.backgroundColor = "limegreen"));
 socket.on("disconnect", () => (statusDot.style.backgroundColor = "red"));
+
+// Host
+const hostSlide = document.getElementById("hostSetupSlide");
+if (hostSlide) {
+  hostSlide.classList.add("slide-away");
+  setTimeout(() => {
+    hostSlide.style.display = "none";
+  }, 700); // match your CSS transition duration
+}
