@@ -1,11 +1,6 @@
 // host-ui.js
 import { RugbyQuestions } from "./questions.js";
-
-
 import Pot from "./pot.js";
-
-// Create pot instance once for the host
-const pot = new Pot([window.currentPlayerName || "Host"]);
 
 // DOM helpers for stake timer + pot reveal
 function showCountdown(timeLeft) {
@@ -32,8 +27,7 @@ function updatePot(amount) {
   }
 }
 
-// Expose pot + helpers globally so Engine can access them
-window.pot = pot;
+// Expose helpers globally so Engine can access them
 window.showCountdown = showCountdown;
 window.revealPot = revealPot;
 window.updatePot = updatePot;
@@ -76,9 +70,12 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // ✅ Save globally so updateBalance can use it
+    // ✅ Save globally
     window.currentPlayerName = hostName;
     window.isHost = true;
+
+    // ✅ Create pot with correct player key
+    window.pot = new Pot([window.currentPlayerName]);
 
     // Host joins only when Start is pressed
     socket.emit("join_game", { gameId, playerName: hostName, isHost: true });
@@ -89,41 +86,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const noBtn = document.getElementById("host-no-btn");
 
     if (yesBtn) {
-  yesBtn.addEventListener("click", () => {
-    console.log("✅ Host chose outcome YES");
-    socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
+      yesBtn.addEventListener("click", () => {
+        console.log("✅ Host chose outcome YES");
+        socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
 
-    // After outcome, trigger next round via server
-    window.startPostQuestionCountdown(() => {
-      socket.emit("next_round", { gameId: window.gameId });
-    });
-  });
-}
+        window.startPostQuestionCountdown(() => {
+          socket.emit("next_round", { gameId: window.gameId });
+        });
+      });
+    }
 
-if (noBtn) {
-  noBtn.addEventListener("click", () => {
-    console.log("✅ Host chose outcome NO");
-    socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
+    if (noBtn) {
+      noBtn.addEventListener("click", () => {
+        console.log("✅ Host chose outcome NO");
+        socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
 
-    // After outcome, trigger next round via server
-    window.startPostQuestionCountdown(() => {
-      socket.emit("next_round", { gameId: window.gameId });
-    });
-  });
-}
+        window.startPostQuestionCountdown(() => {
+          socket.emit("next_round", { gameId: window.gameId });
+        });
+      });
+    }
 
     socket.on("round_outcome", ({ outcome }) => {
-  const result = Engine.handleOutcome(outcome);
+      const result = Engine.handleOutcome(outcome);
 
-  document.getElementById("player-balance").textContent =
-    `Balance: £${Utils.formatMoney(window.balance)}`;
+      document.getElementById("player-balance").textContent =
+        `Balance: £${Utils.formatMoney(window.pot.balances[window.currentPlayerName])}`;
 
-  Leaderboard.update(window.currentPlayerName, window.balance);
-  Leaderboard.render();
+      Leaderboard.update(window.currentPlayerName, window.pot.balances[window.currentPlayerName]);
+      Leaderboard.render();
 
-  // Outcome panel only for host
-  document.getElementById("outcome-panel").textContent = `Outcome: ${outcome}`;
-});
+      document.getElementById("outcome-panel").textContent = `Outcome: ${outcome}`;
+    });
 
     // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
@@ -141,20 +135,15 @@ if (noBtn) {
       dashboard.style.opacity = "1";
     }
 
-    // Update dashboard with host name + balance
-    // ✅ Initialize host balance once
-window.balance = 120; // or whatever starting value you want
+    // ✅ Update dashboard with host name + balance
+    const nameEl = document.getElementById("player-name");
+    const balanceEl = document.getElementById("player-balance");
 
-const nameEl = document.getElementById("player-name");
-const balanceEl = document.getElementById("player-balance");
-
-if (nameEl) nameEl.textContent = `Host: ${hostName}`;
-if (balanceEl) {
-  balanceEl.textContent = "Balance: £" + 
-    (typeof Utils !== "undefined" && Utils.formatMoney
-      ? Utils.formatMoney(window.balance)
-      : window.balance.toFixed(2));
-}
+    if (nameEl) nameEl.textContent = `Host: ${hostName}`;
+    if (balanceEl) {
+      balanceEl.textContent = "Balance: £" +
+        Utils.formatMoney(window.pot.balances[window.currentPlayerName]);
+    }
 
     // Listen for server broadcast
     socket.on("game_starting", ({ host }) => {
