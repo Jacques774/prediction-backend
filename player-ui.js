@@ -146,3 +146,13 @@ socket.on("next_round", ({ gameId }) => {
 socket.on("pot_reveal", ({ amount }) => {
   window.revealPot(amount);
 });
+
+
+// Player
+const playerSlide = document.getElementById("playerSetupSlide");
+if (playerSlide) {
+  playerSlide.classList.add("slide-away");
+  setTimeout(() => {
+    playerSlide.style.display = "none";
+  }, 700);
+  }
