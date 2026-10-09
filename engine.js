@@ -264,71 +264,69 @@ window.openStakePopup = function () {
 // ============================
 // STAKE POPUP LOGIC
 // ============================
-if (stakeSaveBtn) {
-  stakeSaveBtn.onclick = () => {
-    const amount = Number(stakeInput?.value);
+stakeSaveBtn.onclick = () => {
+  const amount = Number(stakeInput?.value);
 
-    if (isNaN(amount) || amount <= 0) {
-      alert("Enter a valid stake amount.");
-      return;
-    }
+  if (isNaN(amount) || amount <= 0) {
+    alert("Enter a valid stake amount.");
+    return;
+  }
 
-    if (amount > window.balance) {
-      alert("Not enough balance for this stake.");
-      return;
-    }
+  const q = Engine.currentQuestion;
+  if (!q) {
+    alert("No active question found.");
+    return;
+  }
 
-    const q = Engine.currentQuestion;
-    if (!q) {
-      alert("No active question found.");
-      return;
-    }
+  // ✅ Check balance from pot
+  if (amount > window.pot.balances[window.playerName]) {
+    alert("Not enough balance for this stake.");
+    return;
+  }
 
-    // ✅ Save stake
-    q.stake = amount;
+  // ✅ Save stake in question
+  q.stake = amount;
 
-    // ✅ Deduct balance
-    const oldBalance = window.balance;
-    window.balance -= amount;
+  // ✅ Deduct balance via pot.js
+  const oldBalance = window.pot.balances[window.playerName];
+  window.pot.stake(window.playerName, amount);
+  const newBalance = window.pot.balances[window.playerName];
 
-    q.oldBalance = oldBalance;
-    q.newBalance = window.balance;
+  q.oldBalance = oldBalance;
+  q.newBalance = newBalance;
 
-    // ✅ Tell server about this stake
-if (window.socket) {
-  window.socket.emit("stake_placed", {
-    gameId: window.gameId,
-    playerName: window.currentPlayerName,
-    amount
-  });
-}
+  // ✅ Tell server about this stake
+  if (window.socket) {
+    window.socket.emit("stake_placed", {
+      gameId: window.gameId,
+      playerName: window.playerName,
+      amount
+    });
+  }
 
-    // ✅ Update balance display
-    const balanceEl = document.getElementById("player-balance");
-    if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-    }
+  // ✅ Update balance display
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl) {
+    balanceEl.textContent = `Balance: £${Utils.formatMoney(newBalance)}`;
+  }
 
-    // ✅ Update info panel
-    qInfo.innerHTML = `
-      You chose: ${q.userChoice}<br>
-      Stake: £${amount.toFixed(2)}
-    `;
+  // ✅ Update info panel
+  qInfo.innerHTML = `
+    You chose: ${q.userChoice}<br>
+    Stake: £${amount.toFixed(2)}
+  `;
 
-    // Enable cashout
-    cashoutBtn.disabled = false;
-    cashoutBtn.textContent = `Cash Out: £${(amount * 0.5).toFixed(2)}`;
+  cashoutBtn.disabled = false;
+  cashoutBtn.textContent = `Cash Out: £${(amount * 0.5).toFixed(2)}`;
 
-    // Close popup
-    stakePopup.style.display = "none";
+  stakePopup.style.display = "none";
 
-    if (typeof startCashoutTimer === "function") {
-      startCashoutTimer();
-    }
+  if (typeof startCashoutTimer === "function") {
+    startCashoutTimer();
+  }
 
-    console.log(`✅ Stake saved & balance deducted: £${amount}`);
-  };
-}
+  console.log(`✅ Stake saved & balance deducted: £${amount}`);
+};
 
 if (stakeCancelBtn) {
   stakeCancelBtn.onclick = () => {
