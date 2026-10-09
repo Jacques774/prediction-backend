@@ -129,10 +129,6 @@ window.pot.startStakeTimer(
     if (!q) return;
     q.userChoice = choice;
 
-    // ✅ Deduct stake immediately
-    if (q.stake > 0) {
-      window.balance -= q.stake;
-    }
 
     updateActiveCard(q);
     btnYes.disabled = true;
