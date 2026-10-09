@@ -1,170 +1,105 @@
 // host-ui.js
 import { RugbyQuestions } from "./questions.js";
 import Pot from "./pot.js";
+import Utils from "./utils.js";
+import Engine from "./engine.js";
+import Leaderboard from "./leaderboard.js";
 
-// DOM helpers for stake timer + pot reveal
+// DOM helpers
 function showCountdown(timeLeft) {
   const countdownEl = document.getElementById("stakeCountdown");
-  if (countdownEl) {
-    countdownEl.textContent = "Stake window: " + timeLeft + "s";
-  }
+  if (countdownEl) countdownEl.textContent = "Stake window: " + timeLeft + "s";
 }
-
 function revealPot(amount) {
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
-  if (countdownEl && potEl) {
-    countdownEl.style.display = "none";
+  if (countdownEl) countdownEl.style.display = "none";
+  if (potEl) {
     potEl.style.display = "inline";
     potEl.textContent = "Pot: £" + amount.toFixed(2);
   }
 }
-
 function updatePot(amount) {
   const potEl = document.getElementById("potAmount");
-  if (potEl) {
-    potEl.textContent = "Pot: £" + amount.toFixed(2);
-  }
+  if (potEl) potEl.textContent = "Pot: £" + amount.toFixed(2);
 }
-
-// Expose helpers globally so Engine can access them
 window.showCountdown = showCountdown;
 window.revealPot = revealPot;
 window.updatePot = updatePot;
 
 console.log("✅ host-ui.js loaded");
 
-// ✅ Create socket connection
+// Socket
 const socket = io();
 window.socket = socket;
 
-// Read ?code= from URL
+// Game code
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("code");
-
-if (!gameId) {
-  console.error("❌ No game code found in URL. Did you come from setup.html?");
-}
 window.gameId = gameId;
 
+// DOMContentLoaded
 document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("host-start-btn");
-  if (!startBtn) {
-    console.error("Start button not found — check ID or script placement.");
-    return;
-  }
+  if (!startBtn) return;
 
   startBtn.addEventListener("click", () => {
-    console.log("🎯 Host Start button clicked!");
-
     const hostNameInput = document.getElementById("host-name-input");
     const hostNameError = document.getElementById("hostNameError");
-    const hostName =
-      hostNameInput && hostNameInput.value.trim()
-        ? hostNameInput.value.trim()
-        : "Host";
-
+    const hostName = hostNameInput.value.trim() || "Host";
     if (!hostNameInput.value.trim()) {
       hostNameError.textContent = "Please enter your name";
       hostNameError.style.display = "block";
       return;
     }
 
-    // ✅ Save globally
     window.currentPlayerName = hostName;
     window.isHost = true;
-
-    // ✅ Create pot with correct player key
     window.pot = new Pot([window.currentPlayerName]);
+    console.log("Pot balances after host join:", window.pot.balances);
 
-    // Host joins only when Start is pressed
     socket.emit("join_game", { gameId, playerName: hostName, isHost: true });
     socket.emit("start_game", { gameId, host: hostName });
 
     // Outcome buttons
     const yesBtn = document.getElementById("host-yes-btn");
     const noBtn = document.getElementById("host-no-btn");
-
-    if (yesBtn) {
-      yesBtn.addEventListener("click", () => {
-        console.log("✅ Host chose outcome YES");
-        socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
-
-        window.startPostQuestionCountdown(() => {
-          socket.emit("next_round", { gameId: window.gameId });
-        });
-      });
-    }
-
-    if (noBtn) {
-      noBtn.addEventListener("click", () => {
-        console.log("✅ Host chose outcome NO");
-        socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
-
-        window.startPostQuestionCountdown(() => {
-          socket.emit("next_round", { gameId: window.gameId });
-        });
-      });
-    }
+    if (yesBtn) yesBtn.onclick = () => Engine.handleOutcome("YES");
+    if (noBtn) noBtn.onclick = () => Engine.handleOutcome("NO");
 
     socket.on("round_outcome", ({ outcome }) => {
-      const result = Engine.handleOutcome(outcome);
-
-      document.getElementById("player-balance").textContent =
-        `Balance: £${Utils.formatMoney(window.pot.balances[window.currentPlayerName])}`;
-
-      Leaderboard.update(window.currentPlayerName, window.pot.balances[window.currentPlayerName]);
-      Leaderboard.render();
-
-      document.getElementById("outcome-panel").textContent = `Outcome: ${outcome}`;
+      Engine.handleOutcome(outcome);
     });
 
-    // Animate + hide setup slide
-    const hostSlide = document.getElementById("hostSetupSlide");
-    if (hostSlide) {
-      hostSlide.classList.add("slide-away");
-      setTimeout(() => {
-        hostSlide.style.display = "none";
-      }, 700);
-    }
-
-    // Show dashboard
+    // Hide setup, show dashboard
+    document.getElementById("hostSetupSlide").style.display = "none";
     const dashboard = document.getElementById("dashboard");
-    if (dashboard) {
-      dashboard.classList.remove("hidden");
-      dashboard.style.opacity = "1";
-    }
+    dashboard.classList.remove("hidden");
+    dashboard.style.opacity = "1";
 
-    // ✅ Update dashboard with host name + balance
     const nameEl = document.getElementById("player-name");
     const balanceEl = document.getElementById("player-balance");
-
     if (nameEl) nameEl.textContent = `Host: ${hostName}`;
     if (balanceEl) {
-      balanceEl.textContent = "Balance: £" +
-        Utils.formatMoney(window.pot.balances[window.currentPlayerName]);
+      const balance = window.pot.balances[window.currentPlayerName] || 0;
+      balanceEl.textContent = "Balance: £" + Utils.formatMoney(balance);
     }
 
-    // Listen for server broadcast
     socket.on("game_starting", ({ host }) => {
-      console.log(`Game starting by host: ${host}`);
-
       startPreCountdown(() => {
         const activeCard = document.getElementById("active-card");
         if (activeCard) activeCard.style.display = "block";
       });
     });
 
-    // Listen for server broadcast of new question
     socket.on("new_question", ({ id }) => {
       const question = RugbyQuestions[id];
-      console.log(`📡 Host received new question: ${question.text}`);
       Engine.nextQuestion(question);
     });
   });
 });
 
-// Countdown helper
+// Pre-countdown only
 window.startPreCountdown = function (onDone) {
   const el = document.getElementById("preCountdown");
   if (!el) return;
@@ -190,8 +125,6 @@ statusDot.style.height = "10px";
 statusDot.style.borderRadius = "50%";
 statusDot.style.marginLeft = "8px";
 statusDot.style.backgroundColor = socket.connected ? "limegreen" : "red";
-
 document.querySelector(".top-header").appendChild(statusDot);
-
 socket.on("connect", () => (statusDot.style.backgroundColor = "limegreen"));
 socket.on("disconnect", () => (statusDot.style.backgroundColor = "red"));
