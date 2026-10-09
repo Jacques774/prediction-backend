@@ -16,7 +16,6 @@ class Pot {
 
 // Start stake timer, reveal pot when it ends
 startStakeTimer(durationMs, onCountdown, onReveal) {
-  // clear any previous interval
   if (this.interval) {
     clearInterval(this.interval);
     this.interval = null;
@@ -27,21 +26,21 @@ startStakeTimer(durationMs, onCountdown, onReveal) {
 
   this.interval = setInterval(() => {
     if (timeLeft >= 0) {
-      if (onCountdown) onCountdown(timeLeft); // show countdown
+      if (onCountdown) onCountdown(timeLeft);
       timeLeft--;
     } else {
       clearInterval(this.interval);
       this.interval = null;
       this.stakeOpen = false;
 
-      // ✅ Tell server to calculate pot
-      if (window.socket) {
+      // ✅ Only host tells server to reveal
+      if (window.isHost && window.socket) {
         window.socket.emit("pot_reveal", { gameId: window.gameId });
       }
     }
   }, 1000);
 
-  // ✅ Listen for server broadcast once per round
+  // ✅ All clients listen for broadcast
   window.socket.on("pot_reveal", ({ amount }) => {
     if (onReveal) onReveal(amount);
   });
