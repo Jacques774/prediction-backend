@@ -2,15 +2,14 @@ import { RugbyQuestions } from "./questions.js";
 
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ============================
-  // SAFE GLOBALS
-  // ============================
-  window.playerName = "";
-  let balance = 100;
-  let totalCashouts = 0;
+// ============================
+// SAFE GLOBALS
+// ============================
+window.playerName = "";   // must be set when player joins
+let totalCashouts = 0;
 
-  let questionCountdown = null;
-  let cashoutCountdown = null;
+let questionCountdown = null;
+let cashoutCountdown = null;
 
   // ============================
   // ELEMENTS
