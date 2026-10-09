@@ -176,26 +176,28 @@ window.pot.startStakeTimer(
   handleOutcome(outcome) {
   const q = this.currentQuestion;
   if (!q) return;
-
   if (q.outcome !== null) return; // already handled once
   q.outcome = outcome;
 
   if (q.cashedOut) {
     qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
   } else {
-    let result = (q.userChoice === outcome)
-      ? this.updateBalance("WIN", q.stake)
-      : this.updateBalance("LOSE", q.stake);
-
-    q.oldBalance = result.oldBalance;
-    q.newBalance = result.newBalance;
-
-    const balanceEl = document.getElementById("player-balance");
-    if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    // ✅ Build winners list
+    const winners = [];
+    if (q.userChoice === outcome) {
+      winners.push(window.currentPlayerName);
     }
 
-    Leaderboard.update(window.currentPlayerName, window.balance);
+    // ✅ Resolve outcome using pot.js maths
+    window.pot.resolveOutcome(winners);
+
+    // ✅ Update balance UI
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.pot.balances[window.currentPlayerName])}`;
+    }
+
+    Leaderboard.update(window.currentPlayerName, window.pot.balances[window.currentPlayerName]);
     Leaderboard.render();
 
     qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
@@ -204,7 +206,7 @@ window.pot.startStakeTimer(
   History.push(q);
   History.render();
 
-  // ✅ Reset pot only
+  // ✅ Reset pot for next round
   window.pot.resetRound();
 
   // ✅ Trigger post-question countdown
@@ -232,20 +234,16 @@ window.pot.startStakeTimer(
   
 
   updateBalance(outcome, stake) {
-    const oldBalance = window.balance;
-    let newBalance = oldBalance;
+  const oldBalance = window.balance;
+  let newBalance = oldBalance;
 
-    if (outcome === "WIN") {
-      // Stake was already deducted → add back stake + profit
-      newBalance += stake * 2;
-    } else if (outcome === "CASHED OUT") {
-      newBalance += stake * 0.5;
-    }
-    // LOSE → nothing added
-
-    window.balance = newBalance;
-    return { oldBalance, newBalance };
+  if (outcome === "CASHED OUT") {
+    newBalance += stake * 0.5;
   }
+
+  window.balance = newBalance;
+  return { oldBalance, newBalance };
+}
 };
   
 // ============================
