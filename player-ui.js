@@ -203,8 +203,10 @@ window.startPostQuestionCountdown = function (onDone) {
 // ============================
 window.showCountdown = function (timeLeft) {
   const stakeEl = document.getElementById("stakeCountdown");
+  const postEl = document.getElementById("postQuestionCountdown");
   const potEl = document.getElementById("potAmount");
 
+  
   // Hide pot while stake timer is active
   if (potEl) potEl.style.display = "none";
 
