@@ -233,32 +233,8 @@ window.revealPot = function (amount) {
   }
 };
 
-// ============================
-// POT OBJECT FOR PLAYER
-// ============================
-window.pot = {
-  startStakeTimer(duration, onTick, onEnd) {
-    let timeLeft = duration / 1000; // convert ms → seconds
-    if (window.stakeInterval) clearInterval(window.stakeInterval);
-
-    // Initial tick
-    onTick(timeLeft);
-
-    window.stakeInterval = setInterval(() => {
-      timeLeft--;
-      onTick(timeLeft);
-      if (timeLeft <= 0) {
-        clearInterval(window.stakeInterval);
-        window.stakeInterval = null;
-        onEnd(0); // reveal pot with amount 0 or server‑sent value
-      }
-    }, 1000);
-  },
-
-  resetRound() {
-    const stakeEl = document.getElementById("stakeCountdown");
-    const potEl = document.getElementById("potAmount");
-    if (stakeEl) stakeEl.style.display = "none";
-    if (potEl) potEl.style.display = "none";
-  }
-};
+// ✅ Listen for pot reveal from server
+socket.on("pot_reveal", ({ amount }) => {
+  console.log("💰 Player received pot reveal:", amount);
+  window.revealPot(amount);   // update the pot UI correctly
+});
