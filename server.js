@@ -80,7 +80,8 @@ socket.on("pot_reveal", ({ gameId }) => {
       name: playerName,
       balance: 120,
       wins: 0,
-      cashouts: 0
+      cashouts: 0,
+      stake: 0 
     };
 
     if (isHost) {
@@ -137,6 +138,20 @@ socket.on("pot_reveal", ({ gameId }) => {
       games[gameId].lastOutcome = outcome;
     }
   });
+
+socket.on("stake_placed", ({ gameId, playerName, amount }) => {
+  const player = Object.values(games[gameId].players)
+    .find(p => p.name === playerName);
+  if (player) {
+    player.stake = amount;
+    player.balance -= amount;
+    io.to(gameId).emit("stake_update", {
+      playerName,
+      amount,
+      balance: player.balance
+    });
+  }
+});
 
   // Handle next round
   socket.on("next_round", ({ gameId }) => {
