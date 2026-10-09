@@ -26,7 +26,7 @@ startStakeTimer(durationMs, onCountdown, onReveal) {
 
   this.interval = setInterval(() => {
     if (timeLeft >= 0) {
-      if (onCountdown) onCountdown(timeLeft);
+      if (onCountdown) onCountdown(timeLeft);   // countdown updates
       timeLeft--;
     } else {
       clearInterval(this.interval);
@@ -40,8 +40,8 @@ startStakeTimer(durationMs, onCountdown, onReveal) {
     }
   }, 1000);
 
-  // ✅ All clients listen for broadcast
-  window.socket.on("pot_reveal", ({ amount }) => {
+  // ✅ All clients listen for broadcast once per round
+  window.socket.once("pot_reveal", ({ amount }) => {
     if (onReveal) onReveal(amount);
   });
 }
