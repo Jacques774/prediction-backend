@@ -85,6 +85,19 @@ window.pot = new Pot([window.currentPlayerName]);
     dashboard.classList.remove("hidden");
     dashboard.style.opacity = "1";
 
+    // ✅ Update dashboard with player name + balance
+const nameEl = document.getElementById("player-name");
+const balanceEl = document.getElementById("player-balance");
+
+if (nameEl) {
+  nameEl.textContent = `Player: ${window.currentPlayerName}`;
+}
+if (balanceEl) {
+  balanceEl.textContent = `Balance: £${Utils.formatMoney(
+    window.pot.balances[window.currentPlayerName]
+  )}`;
+}
+
     // Starting balance already set in pot.js
 balanceEl.textContent = `Balance: £${Utils.formatMoney(window.pot.balances[playerName])}`;
     const nameEl = document.getElementById("player-name");
