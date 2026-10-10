@@ -1,12 +1,30 @@
 import { RugbyQuestions } from "./questions.js";
 
+import Pot from "./pot.js";
+
+function initGame(players) {
+  // ✅ Create a new Pot with all players (host included)
+  window.pot = new Pot(players);
+
+  // ✅ Update UI for each player with starting balance
+  players.forEach(p => {
+    const balance = window.pot.balances[p];
+    const el = document.getElementById(`${p}-balance`);
+    if (el) {
+      el.innerText = "Balance: £" + balance;
+    }
+  });
+}
+
+// Example usage at game start:
+const players = ["Host", "Alice", "Bob"];
+initGame(players);
 
 document.addEventListener("DOMContentLoaded", () => {
   // ============================
   // SAFE GLOBALS
   // ============================
   window.playerName = "";
-  let balance = 100;
   let totalCashouts = 0;
 
   let questionCountdown = null;
@@ -135,7 +153,7 @@ window.pot.startStakeTimer(
 
     // ✅ Deduct stake immediately
     if (q.stake > 0) {
-      window.balance -= q.stake;
+      window.pot.balances[window.currentPlayerName] -= q.stake;
     }
 
     updateActiveCard(q);
@@ -151,19 +169,32 @@ window.pot.startStakeTimer(
   q.cashedOut = true;
   q.outcome = "CASHED OUT";
 
+  // ✅ Update balance through pot
   const result = this.updateBalance("CASHED OUT", q.stake);
   q.oldBalance = result.oldBalance;
   q.newBalance = result.newBalance;
 
+  // ✅ Track cashouts
   window.totalCashouts++;
   document.getElementById("player-cashouts").textContent =
     `Cash-outs: ${window.totalCashouts}`;
 
+  // ✅ Refresh balance display from pot
   const balanceEl = document.getElementById("player-balance");
   if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+    balanceEl.textContent = `Balance: £${Utils.formatMoney(
+      window.pot.balances[window.currentPlayerName]
+    )}`;
   }
 
+  // ✅ Update leaderboard from pot
+  Leaderboard.update(
+    window.currentPlayerName,
+    window.pot.balances[window.currentPlayerName]
+  );
+  Leaderboard.render();
+
+  // ✅ Disable buttons
   btnYes.disabled = true;
   btnNo.disabled = true;
   cashoutBtn.disabled = true;
@@ -177,34 +208,44 @@ window.pot.startStakeTimer(
   const q = this.currentQuestion;
   if (!q) return;
 
-  if (q.outcome !== null) return; // already handled once
+  // ✅ Prevent duplicate processing
+  if (q.outcome !== null) return;
   q.outcome = outcome;
 
   if (q.cashedOut) {
     qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
   } else {
-    let result = (q.userChoice === outcome)
+    // ✅ Update balance through pot
+    const result = (q.userChoice === outcome)
       ? this.updateBalance("WIN", q.stake)
       : this.updateBalance("LOSE", q.stake);
 
     q.oldBalance = result.oldBalance;
     q.newBalance = result.newBalance;
 
+    // ✅ Refresh balance display from pot
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(
+        window.pot.balances[window.currentPlayerName]
+      )}`;
     }
 
-    Leaderboard.update(window.currentPlayerName, window.balance);
+    // ✅ Update leaderboard from pot
+    Leaderboard.update(
+      window.currentPlayerName,
+      window.pot.balances[window.currentPlayerName]
+    );
     Leaderboard.render();
 
     qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
   }
 
+  // ✅ Log history
   History.push(q);
   History.render();
 
-  // ✅ Reset pot only
+  // ✅ Reset pot for next round
   window.pot.resetRound();
 
   // ✅ Trigger post-question countdown
@@ -232,20 +273,21 @@ window.pot.startStakeTimer(
   
 
   updateBalance(outcome, stake) {
-    const oldBalance = window.balance;
-    let newBalance = oldBalance;
+  const player = window.currentPlayerName;
+  const oldBalance = window.pot.balances[player];
+  let newBalance = oldBalance;
 
-    if (outcome === "WIN") {
-      // Stake was already deducted → add back stake + profit
-      newBalance += stake * 2;
-    } else if (outcome === "CASHED OUT") {
-      newBalance += stake * 0.5;
-    }
-    // LOSE → nothing added
-
-    window.balance = newBalance;
-    return { oldBalance, newBalance };
+  if (outcome === "WIN") {
+    // Stake was already deducted → add back stake + profit
+    newBalance += stake * 2;
+  } else if (outcome === "CASHED OUT") {
+    newBalance += stake * 0.5;
   }
+  // LOSE → nothing added
+
+  window.pot.balances[player] = newBalance;
+  return { oldBalance, newBalance };
+}
 };
   
 // ============================
@@ -293,7 +335,10 @@ if (stakeSaveBtn) {
       return;
     }
 
-    if (amount > window.balance) {
+    const player = window.currentPlayerName;
+
+    // ✅ Check balance from pot
+    if (amount > window.pot.balances[player]) {
       alert("Not enough balance for this stake.");
       return;
     }
@@ -307,26 +352,25 @@ if (stakeSaveBtn) {
     // ✅ Save stake
     q.stake = amount;
 
-    // ✅ Deduct balance
-    const oldBalance = window.balance;
-    window.balance -= amount;
-
+    // ✅ Deduct balance directly from pot
+    const oldBalance = window.pot.balances[player];
+    window.pot.balances[player] -= amount;
     q.oldBalance = oldBalance;
-    q.newBalance = window.balance;
+    q.newBalance = window.pot.balances[player];
 
     // ✅ Tell server about this stake
-if (window.socket) {
-  window.socket.emit("stake_placed", {
-    gameId: window.gameId,
-    playerName: window.currentPlayerName,
-    amount
-  });
-}
+    if (window.socket) {
+      window.socket.emit("stake_placed", {
+        gameId: window.gameId,
+        playerName: player,
+        amount
+      });
+    }
 
     // ✅ Update balance display
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.pot.balances[player])}`;
     }
 
     // ✅ Update info panel
