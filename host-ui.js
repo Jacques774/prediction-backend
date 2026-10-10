@@ -4,9 +4,6 @@ import { RugbyQuestions } from "./questions.js";
 
 import Pot from "./pot.js";
 
-// Create pot instance once for the host
-const pot = new Pot([window.currentPlayerName || "Host"]);
-
 // DOM helpers for stake timer + pot reveal
 function showCountdown(timeLeft) {
   const countdownEl = document.getElementById("stakeCountdown");
@@ -97,6 +94,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ✅ Save globally so updateBalance can use it
     window.currentPlayerName = hostName;
     window.isHost = true;
+
+    
+// ✅ Create pot with correct host key
+window.pot = new Pot([window.currentPlayerName]);
 
     // Host joins only when Start is pressed
     socket.emit("join_game", { gameId, playerName: hostName, isHost: true });
