@@ -116,9 +116,12 @@ if (noBtn) {
   const result = Engine.handleOutcome(outcome);
 
   document.getElementById("player-balance").textContent =
-    `Balance: £${Utils.formatMoney(window.balance)}`;
+  `Balance: £${Utils.formatMoney(window.pot.balances[window.currentPlayerName])}`;
 
-  Leaderboard.update(window.currentPlayerName, window.balance);
+  Leaderboard.update(
+  window.currentPlayerName,
+  window.pot.balances[window.currentPlayerName]
+);
   Leaderboard.render();
 
   // Outcome panel only for host
@@ -141,10 +144,6 @@ if (noBtn) {
       dashboard.style.opacity = "1";
     }
 
-    // Update dashboard with host name + balance
-    // ✅ Initialize host balance once
-window.balance = 120; // or whatever starting value you want
-
 const nameEl = document.getElementById("player-name");
 const balanceEl = document.getElementById("player-balance");
 
@@ -152,8 +151,8 @@ if (nameEl) nameEl.textContent = `Host: ${hostName}`;
 if (balanceEl) {
   balanceEl.textContent = "Balance: £" + 
     (typeof Utils !== "undefined" && Utils.formatMoney
-      ? Utils.formatMoney(window.balance)
-      : window.balance.toFixed(2));
+      ? Utils.formatMoney(window.pot.balances[window.currentPlayerName])
+      : window.pot.balances[window.currentPlayerName].toFixed(2));
 }
 
     // Listen for server broadcast
