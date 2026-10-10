@@ -6,8 +6,6 @@ import { RugbyQuestions } from "./questions.js";
 
 import Pot from "./pot.js";
 
-// Create pot instance once for the player
-const pot = new Pot([window.currentPlayerName || "Player"]);
 
 // DOM helpers for stake timer + pot reveal
 function showCountdown(timeLeft) {
@@ -74,6 +72,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.gameId = gameId;
     window.isHost = false;
 
+    
+// ✅ Create pot with correct player key
+window.pot = new Pot([window.currentPlayerName]);
+
     // Emit join event
     socket.emit("join_game", { gameId, playerName, isHost: false });
 
@@ -89,8 +91,10 @@ balanceEl.textContent = `Balance: £${Utils.formatMoney(window.pot.balances[play
     const balanceEl = document.getElementById("player-balance");
     if (nameEl) nameEl.textContent = `Player: ${playerName}`;
     if (balanceEl) {
-      balanceEl.textContent = `Balance: £${Utils.formatMoney(window.balance)}`;
-    }
+  balanceEl.textContent = `Balance: £${Utils.formatMoney(
+    window.pot.balances[window.currentPlayerName]
+  )}`;
+}
   });
 });
 
@@ -175,8 +179,11 @@ socket.on("round_outcome", ({ outcome }) => {
   document.getElementById("player-balance").textContent =
   `Balance: £${Utils.formatMoney(window.pot.balances[window.currentPlayerName])}`;
 
-  Leaderboard.update(window.currentPlayerName, window.balance);
-  Leaderboard.render();
+  Leaderboard.update(
+  window.currentPlayerName,
+  window.pot.balances[window.currentPlayerName]
+);
+Leaderboard.render();
 
   // Show outcome text (optional)
   const outcomeEl = document.getElementById("player-outcome");
