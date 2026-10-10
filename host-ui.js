@@ -60,6 +60,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  // Listen for server broadcast
+    socket.on("game_starting", ({ host }) => {
+      console.log(`Game starting by host: ${host}`);
+
+      startPreCountdown(() => {
+        const activeCard = document.getElementById("active-card");
+        if (activeCard) activeCard.style.display = "block";
+      });
+    });
+
+  
   startBtn.addEventListener("click", () => {
     console.log("🎯 Host Start button clicked!");
 
@@ -154,16 +165,6 @@ if (balanceEl) {
       ? Utils.formatMoney(window.pot.balances[window.currentPlayerName])
       : window.pot.balances[window.currentPlayerName].toFixed(2));
 }
-
-    // Listen for server broadcast
-    socket.on("game_starting", ({ host }) => {
-      console.log(`Game starting by host: ${host}`);
-
-      startPreCountdown(() => {
-        const activeCard = document.getElementById("active-card");
-        if (activeCard) activeCard.style.display = "block";
-      });
-    });
 
     // Listen for server broadcast of new question
     socket.on("new_question", ({ id }) => {
