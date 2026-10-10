@@ -70,6 +70,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
+  // Listen for server broadcast of new question
+    socket.on("new_question", ({ id }) => {
+      const question = RugbyQuestions[id];
+      console.log(`📡 Host received new question: ${question.text}`);
+      Engine.nextQuestion(question);
+    });
+
   
   startBtn.addEventListener("click", () => {
     console.log("🎯 Host Start button clicked!");
@@ -166,12 +173,6 @@ if (balanceEl) {
       : window.pot.balances[window.currentPlayerName].toFixed(2));
 }
 
-    // Listen for server broadcast of new question
-    socket.on("new_question", ({ id }) => {
-      const question = RugbyQuestions[id];
-      console.log(`📡 Host received new question: ${question.text}`);
-      Engine.nextQuestion(question);
-    });
   });
 });
 
