@@ -83,8 +83,8 @@ document.addEventListener("DOMContentLoaded", () => {
     dashboard.classList.remove("hidden");
     dashboard.style.opacity = "1";
 
-    // Set starting balance when player joins
-    window.balance = 100; // or whatever starting value you want
+    // Starting balance already set in pot.js
+balanceEl.textContent = `Balance: £${Utils.formatMoney(window.pot.balances[playerName])}`;
     const nameEl = document.getElementById("player-name");
     const balanceEl = document.getElementById("player-balance");
     if (nameEl) nameEl.textContent = `Player: ${playerName}`;
@@ -173,7 +173,7 @@ socket.on("round_outcome", ({ outcome }) => {
   const result = Engine.handleOutcome(outcome);
 
   document.getElementById("player-balance").textContent =
-    `Balance: £${Utils.formatMoney(window.balance)}`;
+  `Balance: £${Utils.formatMoney(window.pot.balances[window.currentPlayerName])}`;
 
   Leaderboard.update(window.currentPlayerName, window.balance);
   Leaderboard.render();
