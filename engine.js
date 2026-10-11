@@ -163,46 +163,28 @@ window.pot.startStakeTimer(
     cashoutBtn.disabled = true;
   },
 
-  cashout() {
-  const q = this.currentQuestion;
-  clearInterval(window.cashoutCountdown);
-  q.cashedOut = true;
-  q.outcome = "CASHED OUT";
+    cashout() {
+    const q = this.currentQuestion;
+    clearInterval(window.cashoutCountdown);
+    q.cashedOut = true;
+    q.outcome = "CASHED OUT";
 
-  // ✅ Update balance through pot
-  const result = this.updateBalance("CASHED OUT", q.stake);
-  q.oldBalance = result.oldBalance;
-  q.newBalance = result.newBalance;
+    // 📡 Tell server to process the cashout
+    const cashoutAmount = q.stake * 0.5; // or custom amount
+    if (window.socket) {
+      window.socket.emit("cashout", {
+        gameId: window.gameId,
+        playerName: window.currentPlayerName,
+        amount: cashoutAmount
+      });
+    }
 
-  // ✅ Track cashouts
-  window.totalCashouts++;
-  document.getElementById("player-cashouts").textContent =
-    `Cash-outs: ${window.totalCashouts}`;
+    // Disable buttons
+    btnYes.disabled = true;
+    btnNo.disabled = true;
+    cashoutBtn.disabled = true;
+  },
 
-  // ✅ Refresh balance display from pot
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(
-      window.pot.balances[window.currentPlayerName]
-    )}`;
-  }
-
-  // ✅ Update leaderboard from pot
-  Leaderboard.update(
-    window.currentPlayerName,
-    window.pot.balances[window.currentPlayerName]
-  );
-  Leaderboard.render();
-
-  // ✅ Disable buttons
-  btnYes.disabled = true;
-  btnNo.disabled = true;
-  cashoutBtn.disabled = true;
-
-  // ✅ Log cash‑out immediately in history
-  History.push(q);
-  History.render();
-},
 
   handleOutcome(outcome) {
   const q = this.currentQuestion;
@@ -420,26 +402,45 @@ if (stakeCancelBtn) {
   };
 }
 
+    // ============================
+  // STAKE & POT COUNTDOWN DISPLAY
   // ============================
-// STAKE COUNTDOWN DISPLAY
-// ============================
-window.showCountdown = function (timeLeft) {
-  const stakeEl = document.getElementById("stakeCountdown");
-  const postEl = document.getElementById("postQuestionCountdown");
-  const potEl = document.getElementById("potAmount");
+  window.updatePot = function (amount) {
+    const potEl = document.getElementById("potAmount");
+    if (potEl) {
+      potEl.textContent = `Pot: £${Utils.formatMoney(amount)}`;
+    }
+  };
 
-  // Hide post-question countdown if still visible
-  if (postEl) postEl.style.display = "none";
+  window.revealPot = function (amount) {
+    const stakeEl = document.getElementById("stakeCountdown");
+    const potEl = document.getElementById("potAmount");
 
-  // Hide pot while stake timer is active
-  if (potEl) potEl.style.display = "none";
+    if (stakeEl) stakeEl.style.display = "none";
+    if (potEl) {
+      potEl.style.display = "inline";
+      window.updatePot(amount);
+    }
+  };
 
-  // Show stake timer
-  if (stakeEl) {
-    stakeEl.style.display = "inline";
-    stakeEl.textContent = `Stake window: ${timeLeft}s`;
-  }
-};
+  window.showCountdown = function (timeLeft) {
+    const stakeEl = document.getElementById("stakeCountdown");
+    const postEl = document.getElementById("postQuestionCountdown");
+    const potEl = document.getElementById("potAmount");
+
+    // Hide post-question countdown if still visible
+    if (postEl) postEl.style.display = "none";
+
+    // Hide pot while stake timer is active
+    if (potEl) potEl.style.display = "none";
+
+    // Show stake timer
+    if (stakeEl) {
+      stakeEl.style.display = "inline";
+      stakeEl.textContent = `Stake window: ${timeLeft}s`;
+    }
+  };
+
 
 // ============================
 // UI HELPERS
