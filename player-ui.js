@@ -3,9 +3,7 @@
 // ============================
 
 import { RugbyQuestions } from "./questions.js";
-
 import Pot from "./pot.js";
-
 
 // DOM helpers for stake timer + pot reveal
 function showCountdown(timeLeft) {
@@ -33,16 +31,15 @@ function updatePot(amount) {
   }
 }
 
-// Expose pot + helpers globally so Engine can access them
-window.pot = pot;
+// Expose helpers globally so Engine can access them
 window.showCountdown = showCountdown;
 window.revealPot = revealPot;
 window.updatePot = updatePot;
 
 console.log("✅ player-ui.js loaded");
 
-// ✅ Create socket connection
-const socket = io();
+// ✅ Connect to your Render backend correctly
+const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -72,9 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.gameId = gameId;
     window.isHost = false;
 
-    
-// ✅ Create pot with correct player key
-window.pot = new Pot([window.currentPlayerName]);
+    // ✅ Create pot with correct player key
+    window.pot = new Pot([window.currentPlayerName]);
 
     // Emit join event
     socket.emit("join_game", { gameId, playerName, isHost: false });
@@ -85,16 +81,16 @@ window.pot = new Pot([window.currentPlayerName]);
     dashboard.classList.remove("hidden");
     dashboard.style.opacity = "1";
 
-    // Starting balance already set in pot.js
-balanceEl.textContent = `Balance: £${Utils.formatMoney(window.pot.balances[playerName])}`;
+    // ✅ Get DOM elements FIRST before referencing them
     const nameEl = document.getElementById("player-name");
     const balanceEl = document.getElementById("player-balance");
+
+    const startingBal = window.pot.balances[window.currentPlayerName] || 100;
+
     if (nameEl) nameEl.textContent = `Player: ${playerName}`;
     if (balanceEl) {
-  balanceEl.textContent = `Balance: £${Utils.formatMoney(
-    window.pot.balances[window.currentPlayerName]
-  )}`;
-}
+      balanceEl.textContent = `Balance: £${Number(startingBal).toFixed(2)}`;
+    }
   });
 });
 
@@ -152,7 +148,8 @@ statusDot.style.borderRadius = "50%";
 statusDot.style.marginLeft = "8px";
 statusDot.style.backgroundColor = socket.connected ? "limegreen" : "red";
 
-document.querySelector(".top-header").appendChild(statusDot);
+const topHeader = document.querySelector(".top-header");
+if (topHeader) topHeader.appendChild(statusDot);
 
 socket.on("connect", () => (statusDot.style.backgroundColor = "limegreen"));
 socket.on("disconnect", () => (statusDot.style.backgroundColor = "red"));
@@ -168,30 +165,30 @@ socket.on("game_starting", ({ host }) => {
   startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
     if (activeCard) activeCard.style.display = "block";
-    // ✅ Wait for server to send new_question
   });
 });
 
 // 🔑 Round outcome broadcast
 socket.on("round_outcome", ({ outcome }) => {
-  const result = Engine.handleOutcome(outcome);
+  if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
+    Engine.handleOutcome(outcome);
+  }
 
-  document.getElementById("player-balance").textContent =
-  `Balance: £${Utils.formatMoney(window.pot.balances[window.currentPlayerName])}`;
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl && window.pot && window.currentPlayerName) {
+    const currentBal = window.pot.balances[window.currentPlayerName] || 0;
+    balanceEl.textContent = `Balance: £${Number(currentBal).toFixed(2)}`;
+  }
 
-  Leaderboard.update(
-  window.currentPlayerName,
-  window.pot.balances[window.currentPlayerName]
-);
-Leaderboard.render();
+  if (typeof Leaderboard !== "undefined" && window.currentPlayerName) {
+    Leaderboard.update(window.currentPlayerName, window.pot.balances[window.currentPlayerName]);
+    Leaderboard.render();
+  }
 
-  // Show outcome text (optional)
   const outcomeEl = document.getElementById("player-outcome");
   if (outcomeEl) outcomeEl.textContent = `Outcome: ${outcome}`;
 
-  // 🔧 Add countdown before next question
   window.startPostQuestionCountdown(() => {
-    // Players don’t emit next_round — they just wait for server’s new_question
     console.log("⏳ Player finished post-question countdown, waiting for server...");
   });
 });
@@ -199,10 +196,15 @@ Leaderboard.render();
 // 🔑 New question broadcast
 socket.on("new_question", ({ id }) => {
   const question = RugbyQuestions[id];
+  if (!question) {
+    console.error("❌ Question not found for ID:", id);
+    return;
+  }
   console.log(`📡 Player received new question: ${question.text}`);
 
-  // ✅ Use Engine to handle the resolved question
-  Engine.nextQuestion(question);
+  if (typeof Engine !== "undefined" && typeof Engine.nextQuestion === "function") {
+    Engine.nextQuestion(question);
+  }
 
   const activeCard = document.getElementById("active-card");
   if (activeCard) activeCard.style.display = "block";
@@ -212,24 +214,23 @@ socket.on("new_question", ({ id }) => {
 socket.on("next_round", ({ gameId }) => {
   console.log("📡 Player received next_round for game:", gameId);
 
-  // Run post-question countdown locally
   window.startPostQuestionCountdown(() => {
-    // Start stake timer after countdown finishes
-    window.pot.startStakeTimer(
-      10000, // 10s stake window
-      (timeLeft) => window.showCountdown(timeLeft),
-      (amount) => window.revealPot(amount)
-    );
+    if (window.pot) {
+      window.pot.startStakeTimer(
+        10000,
+        (timeLeft) => window.showCountdown(timeLeft),
+        (amount) => window.revealPot(amount)
+      );
+    }
   });
 });
 
-
 // Countdown helper for next question
 window.startPostQuestionCountdown = function (onDone) {
-  const el = document.getElementById("postQuestionCountdown"); // ✅ match HTML
+  const el = document.getElementById("postQuestionCountdown");
   if (!el) return;
   el.style.display = "block";
-  let count = 5; // or however many seconds you want
+  let count = 5;
   el.textContent = count;
   const interval = setInterval(() => {
     count--;
@@ -237,7 +238,7 @@ window.startPostQuestionCountdown = function (onDone) {
     if (count < 0) {
       clearInterval(interval);
       el.style.display = "none";
-      onDone();
+      if (typeof onDone === "function") onDone();
     }
   }, 1000);
 };
@@ -247,14 +248,10 @@ window.startPostQuestionCountdown = function (onDone) {
 // ============================
 window.showCountdown = function (timeLeft) {
   const stakeEl = document.getElementById("stakeCountdown");
-  const postEl = document.getElementById("postQuestionCountdown");
   const potEl = document.getElementById("potAmount");
 
-  
-  // Hide pot while stake timer is active
   if (potEl) potEl.style.display = "none";
 
-  // Show stake timer
   if (stakeEl) {
     stakeEl.style.display = "inline";
     stakeEl.textContent = `Stake window: ${timeLeft}s`;
@@ -275,8 +272,7 @@ window.revealPot = function (amount) {
   }
 };
 
-// ✅ Listen for pot reveal from server
 socket.on("pot_reveal", ({ amount }) => {
   console.log("💰 Player received pot reveal:", amount);
-  window.revealPot(amount);   // update the pot UI correctly
+  window.revealPot(amount);
 });
