@@ -176,9 +176,13 @@ socket.on("stake_placed", ({ gameId, playerName, amount }) => {
   }
 });
 
-  // Handle next round
+    // Handle next round
   socket.on("next_round", ({ gameId }) => {
     if (!games[gameId]) return;
+
+    // ✅ Reset stakes when the new round begins
+    Object.values(games[gameId].players).forEach(p => p.stake = 0);
+
     const ids = Object.keys(RugbyQuestions);
     const randomId = ids[Math.floor(Math.random() * ids.length)];
     games[gameId].currentQuestionId = randomId;
