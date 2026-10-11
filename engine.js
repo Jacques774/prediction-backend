@@ -531,7 +531,7 @@ if (hostNoBtn) {
 
 // Cashout timer
 window.startCashoutTimer = function () {
-  let timeLeft = 10;
+  let timeLeft = 20;
   cashoutTimerEl.textContent = `${timeLeft}s`;
   cashoutCountdown = setInterval(() => {
     timeLeft--;
