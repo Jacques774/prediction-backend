@@ -77,19 +77,39 @@ startStakeTimer(durationMs, onCountdown, onReveal) {
     }
   }
 
-  // Cash‑out: refund part, remainder stays in pot as profit
-  cashout(player, percent = 0.5, onUpdate) {
-    if (this.stakes[player] > 0) {
-      let refund = this.stakes[player] * percent;
-      let remainder = this.stakes[player] - refund;
-      this.balances[player] += refund;
-      this.profitPool += remainder;
-      this.potBalance -= this.stakes[player];
-      this.potBalance += remainder;
-      this.stakes[player] = 0; // player is out
-      if (onUpdate) onUpdate(this.potBalance); // broadcast updated pot
+    // Cash‑out: player withdraws an absolute amount from their stake.
+  // The remainder stays in the pot as profit.
+  cashout(player, cashoutAmount, onUpdate) {
+    const currentStake = this.stakes[player] || 0;
+
+    if (currentStake <= 0) {
+      console.log(`${player} has no active stake to cash out.`);
+      return this.potBalance;
     }
+
+    // Ensure they can't cash out more than they have staked
+    let refund = Math.min(cashoutAmount, currentStake);
+    let remainder = currentStake - refund;
+
+    // Update balances and pool
+    this.balances[player] += refund;
+    this.profitPool += remainder;
+
+    // Adjust total pot balance (subtract the money refunded to the player, add the remainder left behind)
+    this.potBalance -= refund; 
+
+    // Clear or reduce their active stake
+    this.stakes[player] -= refund; 
+
+    console.log(`💰 ${player} cashed out £${refund}. £${remainder} left in pot as profit.`);
+
+    if (onUpdate) {
+      onUpdate(this.potBalance); // Broadcast updated pot balance
+    }
+
+    return this.potBalance;
   }
+
 
   // Resolve round: winners get stake + proportional share of profit pool
   resolveOutcome(winners) {
