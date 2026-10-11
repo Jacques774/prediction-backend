@@ -78,11 +78,18 @@ socket.on("leaderboard_update", (players) => {
 
     window.Leaderboard.update(playerName, balance);
 
-    // Optional: update dashboard fields if you want per-player info
-    document.getElementById("player-name").textContent = `Player: ${playerName}`;
-    document.getElementById("player-balance").textContent = `Balance: ${balance}`;
-    document.getElementById("player-wins").textContent = `Wins: ${wins}`;
-    document.getElementById("player-cashouts").textContent = `Cash-outs: ${cashouts}`;
+    // ✅ ONLY update the dashboard header if this entry belongs to the current user
+    if (window.currentPlayerName && playerName.trim().toLowerCase() === window.currentPlayerName.trim().toLowerCase()) {
+      const nameEl = document.getElementById("player-name");
+      const balanceEl = document.getElementById("player-balance");
+      const winsEl = document.getElementById("player-wins");
+      const cashoutsEl = document.getElementById("player-cashouts");
+
+      if (nameEl) nameEl.textContent = `Player: ${playerName}`;
+      if (balanceEl) balanceEl.textContent = `Balance: £${typeof balance === 'number' ? balance.toFixed(2) : balance}`;
+      if (winsEl) winsEl.textContent = `Wins: ${wins}`;
+      if (cashoutsEl) cashoutsEl.textContent = `Cash-outs: ${cashouts}`;
+    }
   });
 
   // Let leaderboard.js handle rendering the full list
