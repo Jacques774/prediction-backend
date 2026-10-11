@@ -50,7 +50,7 @@ app.get("/api/healthz", (req, res) => res.json({ status: "ok" }));
 io.on("connection", (socket) => {
   console.log("🔌 Client connected:", socket.id);
 
-  // --- Pot reveal ---
+// --- Pot reveal ---
 socket.on("pot_reveal", ({ gameId }) => {
   if (!games[gameId]) return;
 
@@ -60,12 +60,11 @@ socket.on("pot_reveal", ({ gameId }) => {
 
   // Broadcast pot to all clients
   io.to(gameId).emit("pot_reveal", { amount: potAmount });
-
-  // Reset stakes immediately so next round starts fresh
-  Object.values(games[gameId].players).forEach(p => p.stake = 0);
+  io.to(gameId).emit("pot_update", { amount: potAmount });
 
   console.log(`💰 Pot revealed for ${gameId}: £${potAmount}`);
 });
+
 
   // Handle join_game
   socket.on("join_game", ({ gameId, playerName, isHost }) => {
