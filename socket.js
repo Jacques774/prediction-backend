@@ -115,3 +115,11 @@ socket.on("new_question", ({ id }) => {
   // Pass the full question object to Engine
   Engine.nextQuestion(q);
 });
+
+// --- Pot updates (live pot changes from stakings or cashouts) ---
+socket.on("pot_update", ({ amount }) => {
+  console.log("💰 Pot updated:", amount);
+  if (typeof window.updatePot === "function") {
+    window.updatePot(amount);
+  }
+});
