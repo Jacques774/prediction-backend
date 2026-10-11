@@ -107,7 +107,7 @@ window.Engine = {
 
     this.currentQuestion = { 
       ...q, 
-      timer: 15, 
+      timer: 30, 
       stake: 0, 
       userChoice: null, 
       outcome: null, 
@@ -531,7 +531,7 @@ if (hostNoBtn) {
 
 // Cashout timer
 window.startCashoutTimer = function () {
-  let timeLeft = 5;
+  let timeLeft = 10;
   cashoutTimerEl.textContent = `${timeLeft}s`;
   cashoutCountdown = setInterval(() => {
     timeLeft--;
