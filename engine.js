@@ -163,14 +163,21 @@ window.pot.startStakeTimer(
     cashoutBtn.disabled = true;
   },
 
-    cashout() {
+      cashout() {
     const q = this.currentQuestion;
+    if (!q || q.cashedOut) return;
+
     clearInterval(window.cashoutCountdown);
     q.cashedOut = true;
     q.outcome = "CASHED OUT";
 
-    // 📡 Tell server to process the cashout
-    const cashoutAmount = q.stake * 0.5; // or custom amount
+    // 1. Calculate refund amount (50% of stake)
+    const cashoutAmount = q.stake * 0.5;
+
+    // ✅ 2. Reduce local stake so it matches the server deduction
+    q.stake -= cashoutAmount;
+
+    // 📡 3. Tell server to process the cash-out
     if (window.socket) {
       window.socket.emit("cashout", {
         gameId: window.gameId,
@@ -179,11 +186,21 @@ window.pot.startStakeTimer(
       });
     }
 
+    // ✅ 4. Update the info card immediately to show remaining stake or cash-out status
+    if (qInfo) {
+      qInfo.innerHTML = `
+        You chose: ${q.userChoice}<br>
+        Status: <span style="color: orange;">CASHED OUT</span><br>
+        Refund: £${cashoutAmount.toFixed(2)}
+      `;
+    }
+
     // Disable buttons
     btnYes.disabled = true;
     btnNo.disabled = true;
     cashoutBtn.disabled = true;
   },
+
 
 
   handleOutcome(outcome) {
@@ -405,12 +422,14 @@ if (stakeCancelBtn) {
     // ============================
   // STAKE & POT COUNTDOWN DISPLAY
   // ============================
-  window.updatePot = function (amount) {
+    window.updatePot = function (amount) {
     const potEl = document.getElementById("potAmount");
     if (potEl) {
+      potEl.style.display = "inline"; // ✅ Force pot to show when updated
       potEl.textContent = `Pot: £${Utils.formatMoney(amount)}`;
     }
   };
+
 
   window.revealPot = function (amount) {
     const stakeEl = document.getElementById("stakeCountdown");
