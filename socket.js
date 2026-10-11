@@ -99,6 +99,17 @@ socket.on("leaderboard_update", (players) => {
 // --- Cashout updates ---
 socket.on("cashout_update", ({ playerName, balance }) => {
   console.log(`${playerName} cashed out. New balance: £${balance}`);
+
+  // ✅ Update local pot balance tracker if it's the current player
+  if (window.currentPlayerName && playerName.trim().toLowerCase() === window.currentPlayerName.trim().toLowerCase()) {
+    if (window.pot && window.pot.balances) {
+      window.pot.balances[playerName] = balance;
+    }
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${typeof balance === 'number' ? balance.toFixed(2) : balance}`;
+    }
+  }
 });
 
 // --- New question from server ---
@@ -121,5 +132,12 @@ socket.on("pot_update", ({ amount }) => {
   console.log("💰 Pot updated:", amount);
   if (typeof window.updatePot === "function") {
     window.updatePot(amount);
+  } else {
+    // Fallback if updatePot isn't defined yet
+    const potEl = document.getElementById("potAmount");
+    if (potEl) {
+      potEl.style.display = "inline";
+      potEl.textContent = `Pot: £${Number(amount).toFixed(2)}`;
+    }
   }
 });
