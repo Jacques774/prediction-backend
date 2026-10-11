@@ -100,16 +100,40 @@ socket.on("pot_reveal", ({ gameId }) => {
     io.to(gameId).emit("prediction_made", { player: playerName, choice });
   });
 
-  // Handle cashout
+    // Handle cashout
   socket.on("cashout", ({ gameId, playerName, amount }) => {
-    const player = Object.values(games[gameId].players).find(p => p.name === playerName);
-    if (player) {
-      player.balance += amount;
-      player.cashouts += 1;
-      io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
-      broadcastLeaderboard(gameId);
-    }
+    const game = games[gameId];
+    if (!game) return;
+
+    const player = Object.values(game.players).find(p => p.name === playerName);
+    if (!player) return;
+
+    // Ensure player has an active stake to cash out from
+    const currentStake = player.stake || 0;
+    if (currentStake <= 0) return;
+
+    // Calculate refund and remainder (profit left in pot)
+    const refund = Math.min(amount, currentStake);
+    const remainder = currentStake - refund;
+
+    // Update player balance and stats
+    player.balance += refund;
+    player.cashouts += 1;
+    player.stake -= refund; // Reduce their active stake
+
+    // Calculate the new total pot balance for the room
+    const currentPotAmount = Object.values(game.players).reduce((sum, p) => sum + (p.stake || 0), 0);
+
+    // 📡 Broadcast updated cashout info and the new live pot amount to everyone in the room
+    io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
+    io.to(gameId).emit("pot_update", { amount: currentPotAmount });
+
+    // Refresh leaderboards
+    broadcastLeaderboard(gameId);
+
+    console.log(`💰 ${playerName} cashed out £${refund}. New pot balance: £${currentPotAmount}`);
   });
+
 
   // Handle start_game
   socket.on("start_game", ({ gameId, host }) => {
