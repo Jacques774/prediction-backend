@@ -20,14 +20,15 @@ function revealPot(amount) {
   if (countdownEl && potEl) {
     countdownEl.style.display = "none";
     potEl.style.display = "inline";
-    potEl.textContent = "Pot: £" + amount.toFixed(2);
+    potEl.textContent = "Pot: £" + Number(amount).toFixed(2);
   }
 }
 
 function updatePot(amount) {
   const potEl = document.getElementById("potAmount");
   if (potEl) {
-    potEl.textContent = "Pot: £" + amount.toFixed(2);
+    potEl.style.display = "inline";
+    potEl.textContent = "Pot: £" + Number(amount).toFixed(2);
   }
 }
 
@@ -60,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const gameId = codeInput.value.trim();
 
     if (!playerName || !gameId) {
-      nameError.style.display = "block";
+      if (nameError) nameError.style.display = "block";
       return;
     }
 
@@ -69,23 +70,27 @@ document.addEventListener("DOMContentLoaded", () => {
     window.gameId = gameId;
     window.isHost = false;
 
-    // ✅ Create pot with correct player key
+    // ✅ Create pot with correct player key (£120 starting balance matching server)
     window.pot = new Pot([window.currentPlayerName]);
 
     // Emit join event
     socket.emit("join_game", { gameId, playerName, isHost: false });
 
     // Hide setup, show dashboard
-    document.getElementById("playerSetupSlide").style.display = "none";
+    const setupSlide = document.getElementById("playerSetupSlide");
+    if (setupSlide) setupSlide.style.display = "none";
+    
     const dashboard = document.getElementById("dashboard");
-    dashboard.classList.remove("hidden");
-    dashboard.style.opacity = "1";
+    if (dashboard) {
+      dashboard.classList.remove("hidden");
+      dashboard.style.opacity = "1";
+    }
 
     // ✅ Get DOM elements FIRST before referencing them
     const nameEl = document.getElementById("player-name");
     const balanceEl = document.getElementById("player-balance");
 
-    const startingBal = window.pot.balances[window.currentPlayerName] || 100;
+    const startingBal = window.pot.balances[window.currentPlayerName] || 120;
 
     if (nameEl) nameEl.textContent = `Player: ${playerName}`;
     if (balanceEl) {
@@ -109,8 +114,10 @@ window.sendPrediction = function (choice) {
 
 // Cashout helper
 window.cashout = function () {
-  const amount = parseInt(document.getElementById("cashout-amount").value, 10);
+  const cashoutInput = document.getElementById("cashout-amount");
+  const amount = cashoutInput ? parseInt(cashoutInput.value, 10) : 0;
   if (!amount || amount <= 0) return;
+  
   socket.emit("cashout", {
     gameId: window.gameId,
     playerName: window.currentPlayerName,
@@ -139,7 +146,6 @@ window.startPreCountdown = function (onDone) {
 // ============================
 // Status dot
 // ============================
-
 const statusDot = document.createElement("div");
 statusDot.id = "socket-status";
 statusDot.style.width = "10px";
@@ -210,7 +216,7 @@ socket.on("new_question", ({ id }) => {
   if (activeCard) activeCard.style.display = "block";
 });
 
-// 🔑 Next round broadcast from host
+// 🔑 Next round broadcast from host/server
 socket.on("next_round", ({ gameId }) => {
   console.log("📡 Player received next_round for game:", gameId);
 
@@ -268,11 +274,6 @@ window.revealPot = function (amount) {
   const potEl = document.getElementById("potAmount");
   if (potEl) {
     potEl.style.display = "inline";
-    potEl.textContent = "Pot: £" + amount.toFixed(2);
+    potEl.textContent = "Pot: £" + Number(amount).toFixed(2);
   }
 };
-
-socket.on("pot_reveal", ({ amount }) => {
-  console.log("💰 Player received pot reveal:", amount);
-  window.revealPot(amount);
-});
