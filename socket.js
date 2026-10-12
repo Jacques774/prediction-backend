@@ -129,15 +129,11 @@ socket.on("new_question", ({ id }) => {
 
 // --- Pot updates (live pot changes from stakings or cashouts) ---
 socket.on("pot_update", ({ amount }) => {
-  console.log("💰 Pot updated:", amount);
-  if (typeof window.updatePot === "function") {
-    window.updatePot(amount);
-  } else {
-    // Fallback if updatePot isn't defined yet
-    const potEl = document.getElementById("potAmount");
-    if (potEl) {
-      potEl.style.display = "inline";
-      potEl.textContent = `Pot: £${Number(amount).toFixed(2)}`;
-    }
+  console.log("💰 Pot updated from server:", amount);
+  const potEl = document.getElementById("potAmount");
+  if (potEl) {
+    potEl.style.display = "inline";
+    potEl.textContent = `Pot: £${Number(amount).toFixed(2)}`;
   }
 });
+
