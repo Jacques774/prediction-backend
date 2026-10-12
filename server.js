@@ -163,18 +163,30 @@ socket.on("pot_reveal", ({ gameId }) => {
   });
 
 socket.on("stake_placed", ({ gameId, playerName, amount }) => {
-  const player = Object.values(games[gameId].players)
+  const game = games[gameId];
+  if (!game) return;
+
+  const player = Object.values(game.players)
     .find(p => p.name === playerName);
+
   if (player) {
     player.stake = amount;
     player.balance -= amount;
+
+    // ✅ Calculate current total pot across all players and broadcast it
+    const currentPotAmount = Object.values(game.players).reduce((sum, p) => sum + (p.stake || 0), 0);
+    io.to(gameId).emit("pot_update", { amount: currentPotAmount });
+
     io.to(gameId).emit("stake_update", {
       playerName,
       amount,
       balance: player.balance
     });
+
+    console.log(`🎯 Stake placed by ${playerName}: £${amount}. Current Pot: £${currentPotAmount}`);
   }
 });
+
 
     // Handle next round
   socket.on("next_round", ({ gameId }) => {
