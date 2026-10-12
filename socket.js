@@ -1,4 +1,3 @@
-// socket.js
 const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
@@ -93,12 +92,14 @@ socket.on("leaderboard_update", (players) => {
   });
 
   // Let leaderboard.js handle rendering the full list
-  window.Leaderboard.render();
+  if (typeof window.Leaderboard.render === "function") {
+    window.Leaderboard.render();
+  }
 });
 
 // --- Cashout updates ---
 socket.on("cashout_update", ({ playerName, balance }) => {
-  console.log(`${playerName} cashed out. New balance: £${balance}`);
+  console.log(`💰 ${playerName} cashed out. New balance: £${balance}`);
 
   // ✅ Update local pot balance tracker if it's the current player
   if (window.currentPlayerName && playerName.trim().toLowerCase() === window.currentPlayerName.trim().toLowerCase()) {
@@ -116,24 +117,28 @@ socket.on("cashout_update", ({ playerName, balance }) => {
 socket.on("new_question", ({ id }) => {
   console.log("📡 New question ID received:", id);
 
-  // Look up the question text locally
   const q = RugbyQuestions[id];
   if (!q) {
     console.error("❌ Question not found for ID:", id);
     return;
   }
 
-  // Pass the full question object to Engine
   Engine.nextQuestion(q);
 });
 
 // --- Pot updates (live pot changes from stakings or cashouts) ---
 socket.on("pot_update", ({ amount }) => {
   console.log("💰 Pot updated from server:", amount);
+
+  // 1. Force the pot element to visible display on all clients
   const potEl = document.getElementById("potAmount");
   if (potEl) {
     potEl.style.display = "inline";
     potEl.textContent = `Pot: £${Number(amount).toFixed(2)}`;
   }
-});
 
+  // 2. Delegate to engine helper if initialized
+  if (typeof window.updatePot === "function") {
+    window.updatePot(amount);
+  }
+});
