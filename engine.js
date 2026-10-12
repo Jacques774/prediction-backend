@@ -163,7 +163,7 @@ window.pot.startStakeTimer(
     cashoutBtn.disabled = true;
   },
 
-      cashout() {
+        cashout() {
     const q = this.currentQuestion;
     if (!q || q.cashedOut) return;
 
@@ -171,13 +171,20 @@ window.pot.startStakeTimer(
     q.cashedOut = true;
     q.outcome = "CASHED OUT";
 
-    // 1. Calculate refund amount (50% of stake)
-    const cashoutAmount = q.stake * 0.5;
-
-    // ✅ 2. Reduce local stake so it matches the server deduction
+    const cashoutAmount = q.stake * 0.5; 
     q.stake -= cashoutAmount;
 
-    // 📡 3. Tell server to process the cash-out
+    // 🚀 INSTANT LOCAL UPDATE: Subtract immediately on your phone screen
+    const potEl = document.getElementById("potAmount");
+    if (potEl) {
+      const currentText = potEl.textContent.replace(/[^0-9.]/g, "");
+      const currentPot = parseFloat(currentText) || 0;
+      const newPot = Math.max(0, currentPot - cashoutAmount);
+      potEl.style.display = "inline";
+      potEl.textContent = `Pot: £${newPot.toFixed(2)}`;
+    }
+
+    // 📡 Tell server to process the cashout for the multiplayer room
     if (window.socket) {
       window.socket.emit("cashout", {
         gameId: window.gameId,
@@ -186,20 +193,12 @@ window.pot.startStakeTimer(
       });
     }
 
-    // ✅ 4. Update the info card immediately to show remaining stake or cash-out status
-    if (qInfo) {
-      qInfo.innerHTML = `
-        You chose: ${q.userChoice}<br>
-        Status: <span style="color: orange;">CASHED OUT</span><br>
-        Refund: £${cashoutAmount.toFixed(2)}
-      `;
-    }
-
     // Disable buttons
     btnYes.disabled = true;
     btnNo.disabled = true;
     cashoutBtn.disabled = true;
   },
+
 
 
 
