@@ -1,4 +1,3 @@
-// pot.js
 class Pot {
   constructor(players) {
     this.balances = {};
@@ -8,44 +7,47 @@ class Pot {
     this.stakeOpen = false;
     this.interval = null; // track the stake timer
 
-    // ✅ Every player (including host) starts with £100
+    // ✅ Match server starting balance (£120)
     players.forEach(p => {
-      this.balances[p] = 100;
+      this.balances[p] = 120;
       this.stakes[p] = 0;
     });
   }
 
-// Start stake timer, reveal pot when it ends
-startStakeTimer(durationMs, onCountdown, onReveal) {
-  if (this.interval) {
-    clearInterval(this.interval);
-    this.interval = null;
-  }
-
-  this.stakeOpen = true;
-  let timeLeft = Math.floor(durationMs / 1000);
-
-  this.interval = setInterval(() => {
-    if (timeLeft >= 0) {
-      if (onCountdown) onCountdown(timeLeft);   // countdown updates
-      timeLeft--;
-    } else {
+  // Start stake timer, reveal pot when it ends
+  startStakeTimer(durationMs, onCountdown, onReveal) {
+    if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
-      this.stakeOpen = false;
-
-      // ✅ Only host tells server to reveal
-      if (window.isHost && window.socket) {
-        window.socket.emit("pot_reveal", { gameId: window.gameId });
-      }
     }
-  }, 1000);
 
-  // ✅ All clients listen for broadcast once per round
-  window.socket.once("pot_reveal", ({ amount }) => {
-    if (onReveal) onReveal(amount);
-  });
-}
+    this.stakeOpen = true;
+    let timeLeft = Math.floor(durationMs / 1000);
+
+    this.interval = setInterval(() => {
+      if (timeLeft >= 0) {
+        if (onCountdown) onCountdown(timeLeft);   // countdown updates
+        timeLeft--;
+      } else {
+        clearInterval(this.interval);
+        this.interval = null;
+        this.stakeOpen = false;
+
+        // ✅ Only host tells server to reveal
+        if (window.isHost && window.socket) {
+          window.socket.emit("pot_reveal", { gameId: window.gameId });
+        }
+      }
+    }, 1000);
+
+    // ✅ Clean up any old pot_reveal listeners before attaching a new one to prevent stacking
+    if (window.socket) {
+      window.socket.off("pot_reveal");
+      window.socket.once("pot_reveal", ({ amount }) => {
+        if (onReveal) onReveal(amount);
+      });
+    }
+  }
 
   // Reset pot state after a round ends
   resetRound() {
@@ -77,7 +79,7 @@ startStakeTimer(durationMs, onCountdown, onReveal) {
     }
   }
 
-    // Cash‑out: player withdraws an absolute amount from their stake.
+  // Cash‑out: player withdraws an absolute amount from their stake.
   // The remainder stays in the pot as profit.
   cashout(player, cashoutAmount, onUpdate) {
     const currentStake = this.stakes[player] || 0;
@@ -87,29 +89,22 @@ startStakeTimer(durationMs, onCountdown, onReveal) {
       return this.potBalance;
     }
 
-    // Ensure they can't cash out more than they have staked
     let refund = Math.min(cashoutAmount, currentStake);
     let remainder = currentStake - refund;
 
-    // Update balances and pool
     this.balances[player] += refund;
     this.profitPool += remainder;
-
-    // Adjust total pot balance (subtract the money refunded to the player, add the remainder left behind)
     this.potBalance -= refund; 
-
-    // Clear or reduce their active stake
     this.stakes[player] -= refund; 
 
     console.log(`💰 ${player} cashed out £${refund}. £${remainder} left in pot as profit.`);
 
     if (onUpdate) {
-      onUpdate(this.potBalance); // Broadcast updated pot balance
+      onUpdate(this.potBalance); 
     }
 
     return this.potBalance;
   }
-
 
   // Resolve round: winners get stake + proportional share of profit pool
   resolveOutcome(winners) {
