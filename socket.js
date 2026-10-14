@@ -101,30 +101,17 @@ socket.on("cashout_update", ({ playerName, balance }) => {
   console.log(`${playerName} cashed out. New balance: £${balance}`);
 });
 
-// --- Pot updates (Stakes placed & Cash outs) ---
-socket.on("pot_update", ({ amount }) => {
-  console.log("💰 Pot updated from server:", amount);
-
-  if (window.pot) {
-    window.pot.potBalance = amount;
-  }
-
-  const potEl = document.getElementById("potAmount");
-  if (potEl) {
-    potEl.style.display = "inline";
-    potEl.textContent = `Pot: £${Number(amount).toFixed(2)}`;
-  }
-});
-
 // --- New question from server ---
 socket.on("new_question", ({ id }) => {
-  console.log("📡 New question ID received in socket.js:", id);
+  console.log("📡 New question ID received:", id);
 
-  // Safely tell Engine to handle the new question if it's available
-  if (window.Engine && typeof window.Engine.handleServerQuestion === "function") {
-    window.Engine.handleServerQuestion(id);
-  } else {
-    console.error("❌ Engine or handleServerQuestion not found yet!");
+  // Look up the question text locally
+  const q = RugbyQuestions[id];
+  if (!q) {
+    console.error("❌ Question not found for ID:", id);
+    return;
   }
-});
 
+  // Pass the full question object to Engine
+  Engine.nextQuestion(q);
+});
