@@ -120,13 +120,14 @@ socket.on("pot_update", ({ amount }) => {
 socket.on("new_question", ({ id }) => {
   console.log("📡 New question ID received:", id);
 
-  // Look up the question text locally
-  const q = RugbyQuestions[id];
-  if (!q) {
-    console.error("❌ Question not found for ID:", id);
-    return;
+  // Check if RugbyQuestions is globally available, otherwise handle safely
+  if (typeof RugbyQuestions !== "undefined" && RugbyQuestions[id]) {
+    const q = RugbyQuestions[id];
+    if (window.Engine) {
+      window.Engine.nextQuestion(q);
+    }
+  } else {
+    console.error("❌ RugbyQuestions not found globally. Make sure questions.js is loaded before socket.js or loaded as a module.");
   }
-
-  // Pass the full question object to Engine
-  Engine.nextQuestion(q);
 });
+
