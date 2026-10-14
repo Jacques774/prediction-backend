@@ -508,7 +508,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Cashout timer
   window.startCashoutTimer = function () {
-    let timeLeft = 5;
+    let timeLeft = 15;
     if (cashoutTimerEl) cashoutTimerEl.textContent = `${timeLeft}s`;
     cashoutCountdown = setInterval(() => {
       timeLeft--;
