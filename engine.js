@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================
   const Timer = {
     start(question, onTick, onEnd) {
-      let timeLeft = question.timer || 15;
+      let timeLeft = question.timer || 30;
       onTick(timeLeft);
       const interval = setInterval(() => {
         timeLeft--;
