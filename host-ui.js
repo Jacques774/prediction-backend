@@ -1,13 +1,11 @@
-// host-ui.js
 import { RugbyQuestions } from "./questions.js";
-
-
 import Pot from "./pot.js";
 
 // DOM helpers for stake timer + pot reveal
 function showCountdown(timeLeft) {
   const countdownEl = document.getElementById("stakeCountdown");
   if (countdownEl) {
+    countdownEl.style.display = "inline";
     countdownEl.textContent = "Stake window: " + timeLeft + "s";
   }
 }
@@ -18,27 +16,26 @@ function revealPot(amount) {
   if (countdownEl && potEl) {
     countdownEl.style.display = "none";
     potEl.style.display = "inline";
-    potEl.textContent = "Pot: £" + amount.toFixed(2);
+    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
 }
 
 function updatePot(amount) {
   const potEl = document.getElementById("potAmount");
   if (potEl) {
-    potEl.textContent = "Pot: £" + amount.toFixed(2);
+    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
 }
 
-// Expose pot + helpers globally so Engine can access them
-window.pot = pot;
+// Expose helpers globally so Engine can access them
 window.showCountdown = showCountdown;
 window.revealPot = revealPot;
 window.updatePot = updatePot;
 
 console.log("✅ host-ui.js loaded");
 
-// ✅ Create socket connection
-const socket = io();
+// ✅ Create socket connection to Render backend
+const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
 // Read ?code= from URL
@@ -58,23 +55,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Listen for server broadcast
-    socket.on("game_starting", ({ host }) => {
-      console.log(`Game starting by host: ${host}`);
+  socket.on("game_starting", ({ host }) => {
+    console.log(`Game starting by host: ${host}`);
 
-      startPreCountdown(() => {
-        const activeCard = document.getElementById("active-card");
-        if (activeCard) activeCard.style.display = "block";
-      });
+    startPreCountdown(() => {
+      const activeCard = document.getElementById("active-card");
+      if (activeCard) activeCard.style.display = "block";
     });
+  });
 
   // Listen for server broadcast of new question
-    socket.on("new_question", ({ id }) => {
-      const question = RugbyQuestions[id];
-      console.log(`📡 Host received new question: ${question.text}`);
+  socket.on("new_question", ({ id }) => {
+    const question = RugbyQuestions[id];
+    if (!question) return;
+    console.log(`📡 Host received new question: ${question.text}`);
+    if (typeof Engine !== "undefined" && typeof Engine.nextQuestion === "function") {
       Engine.nextQuestion(question);
-    });
+    }
+  });
 
-  
   startBtn.addEventListener("click", () => {
     console.log("🎯 Host Start button clicked!");
 
@@ -85,21 +84,22 @@ document.addEventListener("DOMContentLoaded", () => {
         ? hostNameInput.value.trim()
         : "Host";
 
-    if (!hostNameInput.value.trim()) {
-      hostNameError.textContent = "Please enter your name";
-      hostNameError.style.display = "block";
+    if (!hostNameInput || !hostNameInput.value.trim()) {
+      if (hostNameError) {
+        hostNameError.textContent = "Please enter your name";
+        hostNameError.style.display = "block";
+      }
       return;
     }
 
-    // ✅ Save globally so updateBalance can use it
+    // Save globally so Engine/Pot can use it
     window.currentPlayerName = hostName;
     window.isHost = true;
 
-    
-// ✅ Create pot with correct host key
-window.pot = new Pot([window.currentPlayerName]);
+    // ✅ Initialize pot with host name
+    window.pot = new Pot([window.currentPlayerName]);
 
-    // Host joins only when Start is pressed
+    // Host joins and starts game
     socket.emit("join_game", { gameId, playerName: hostName, isHost: true });
     socket.emit("start_game", { gameId, host: hostName });
 
@@ -108,44 +108,49 @@ window.pot = new Pot([window.currentPlayerName]);
     const noBtn = document.getElementById("host-no-btn");
 
     if (yesBtn) {
-  yesBtn.addEventListener("click", () => {
-    console.log("✅ Host chose outcome YES");
-    socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
+      yesBtn.addEventListener("click", () => {
+        console.log("✅ Host chose outcome YES");
+        socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
 
-    // After outcome, trigger next round via server
-    window.startPostQuestionCountdown(() => {
-      socket.emit("next_round", { gameId: window.gameId });
-    });
-  });
-}
+        window.startPostQuestionCountdown(() => {
+          socket.emit("next_round", { gameId: window.gameId });
+        });
+      });
+    }
 
-if (noBtn) {
-  noBtn.addEventListener("click", () => {
-    console.log("✅ Host chose outcome NO");
-    socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
+    if (noBtn) {
+      noBtn.addEventListener("click", () => {
+        console.log("✅ Host chose outcome NO");
+        socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
 
-    // After outcome, trigger next round via server
-    window.startPostQuestionCountdown(() => {
-      socket.emit("next_round", { gameId: window.gameId });
-    });
-  });
-}
+        window.startPostQuestionCountdown(() => {
+          socket.emit("next_round", { gameId: window.gameId });
+        });
+      });
+    }
 
     socket.on("round_outcome", ({ outcome }) => {
-  const result = Engine.handleOutcome(outcome);
+      if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
+        Engine.handleOutcome(outcome);
+      }
 
-  document.getElementById("player-balance").textContent =
-  `Balance: £${Utils.formatMoney(window.pot.balances[window.currentPlayerName])}`;
+      const balanceEl = document.getElementById("player-balance");
+      if (balanceEl && window.pot && window.pot.balances[window.currentPlayerName] !== undefined) {
+        const bal = window.pot.balances[window.currentPlayerName];
+        balanceEl.textContent = `Balance: £${Number(bal).toFixed(2)}`;
+      }
 
-  Leaderboard.update(
-  window.currentPlayerName,
-  window.pot.balances[window.currentPlayerName]
-);
-  Leaderboard.render();
+      if (typeof Leaderboard !== "undefined" && Leaderboard.update && window.pot) {
+        Leaderboard.update(
+          window.currentPlayerName,
+          window.pot.balances[window.currentPlayerName]
+        );
+        if (Leaderboard.render) Leaderboard.render();
+      }
 
-  // Outcome panel only for host
-  document.getElementById("outcome-panel").textContent = `Outcome: ${outcome}`;
-});
+      const outcomePanel = document.getElementById("outcome-panel");
+      if (outcomePanel) outcomePanel.textContent = `Outcome: ${outcome}`;
+    });
 
     // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
@@ -163,24 +168,24 @@ if (noBtn) {
       dashboard.style.opacity = "1";
     }
 
-const nameEl = document.getElementById("player-name");
-const balanceEl = document.getElementById("player-balance");
+    const nameEl = document.getElementById("player-name");
+    const balanceEl = document.getElementById("player-balance");
 
-if (nameEl) nameEl.textContent = `Host: ${hostName}`;
-if (balanceEl) {
-  balanceEl.textContent = "Balance: £" + 
-    (typeof Utils !== "undefined" && Utils.formatMoney
-      ? Utils.formatMoney(window.pot.balances[window.currentPlayerName])
-      : window.pot.balances[window.currentPlayerName].toFixed(2));
-}
-
+    if (nameEl) nameEl.textContent = `Host: ${hostName}`;
+    if (balanceEl && window.pot) {
+      const startingBal = window.pot.balances[window.currentPlayerName] || 100;
+      balanceEl.textContent = `Balance: £${Number(startingBal).toFixed(2)}`;
+    }
   });
 });
 
 // Countdown helper
 window.startPreCountdown = function (onDone) {
   const el = document.getElementById("preCountdown");
-  if (!el) return;
+  if (!el) {
+    if (typeof onDone === "function") onDone();
+    return;
+  }
   el.style.display = "block";
   let count = 3;
   el.textContent = count;
@@ -190,7 +195,7 @@ window.startPreCountdown = function (onDone) {
     if (count < 0) {
       clearInterval(interval);
       el.style.display = "none";
-      onDone();
+      if (typeof onDone === "function") onDone();
     }
   }, 1000);
 };
@@ -204,7 +209,8 @@ statusDot.style.borderRadius = "50%";
 statusDot.style.marginLeft = "8px";
 statusDot.style.backgroundColor = socket.connected ? "limegreen" : "red";
 
-document.querySelector(".top-header").appendChild(statusDot);
+const topHeader = document.querySelector(".top-header");
+if (topHeader) topHeader.appendChild(statusDot);
 
 socket.on("connect", () => (statusDot.style.backgroundColor = "limegreen"));
 socket.on("disconnect", () => (statusDot.style.backgroundColor = "red"));
