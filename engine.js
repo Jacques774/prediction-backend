@@ -539,6 +539,26 @@ if (hostNoBtn) {
   };
 }
 
+  // ============================
+  // SOCKET: LISTEN FOR NEW QUESTIONS
+  // ============================
+  if (window.socket) {
+    window.socket.on("new_question", ({ id }) => {
+      console.log("📡 New question ID received from server:", id);
+
+      const q = RugbyQuestions[id];
+      if (!q) {
+        console.error("❌ Question not found for ID:", id);
+        return;
+      }
+
+      // Trigger the engine to display the question card
+      window.Engine.nextQuestion(q);
+    });
+  }
+
+
+  
 // Cashout timer
 window.startCashoutTimer = function () {
   let timeLeft = 5;
