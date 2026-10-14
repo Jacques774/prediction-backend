@@ -15,11 +15,11 @@ app.use(express.json());
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: "*" } });
 
-// ✅ Needed for ES modules (__dirname equivalent)
+// ✅ ES modules __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve static files (CSS, JS, images) from the project directory
+// Serve static files from the project directory
 app.use(express.static(__dirname));
 
 // ✅ Serve pages
@@ -46,6 +46,28 @@ app.post("/api/create-game", (req, res) => {
 
 app.get("/api/healthz", (req, res) => res.json({ status: "ok" }));
 
+// Helper: Calculate total pot from active stakes
+function getGamePot(gameId) {
+  if (!games[gameId]) return 0;
+  return Object.values(games[gameId].players)
+    .reduce((sum, p) => sum + (p.stake || 0), 0);
+}
+
+// ✅ Helper: Broadcast leaderboard
+function broadcastLeaderboard(gameId) {
+  const game = games[gameId];
+  if (!game) return;
+
+  const players = Object.values(game.players).map(p => ({
+    name: p.name,
+    balance: p.balance,
+    wins: p.wins,
+    cashouts: p.cashouts
+  }));
+
+  io.to(gameId).emit("leaderboard_update", players);
+}
+
 // ✅ Socket.IO handlers
 io.on("connection", (socket) => {
   console.log("🔌 Client connected:", socket.id);
@@ -54,12 +76,13 @@ io.on("connection", (socket) => {
   socket.on("pot_reveal", ({ gameId }) => {
     if (!games[gameId]) return;
 
-    // Calculate total pot from current round stakes
-    const potAmount = Object.values(games[gameId].players)
-      .reduce((sum, p) => sum + (p.stake || 0), 0);
+    const potAmount = getGamePot(gameId);
 
     // Broadcast pot to all clients
     io.to(gameId).emit("pot_reveal", { amount: potAmount });
+
+    // Reset stakes immediately so next round starts fresh
+    Object.values(games[gameId].players).forEach(p => p.stake = 0);
 
     console.log(`💰 Pot revealed for ${gameId}: £${potAmount}`);
   });
@@ -75,7 +98,7 @@ io.on("connection", (socket) => {
 
     games[gameId].players[socket.id] = {
       name: playerName,
-      balance: 120,
+      balance: 100,
       wins: 0,
       cashouts: 0,
       stake: 0 
@@ -97,53 +120,48 @@ io.on("connection", (socket) => {
     io.to(gameId).emit("prediction_made", { player: playerName, choice });
   });
 
-  // Handle cashout
-  socket.on("cashout", ({ gameId, playerName, amount }) => {
-    if (!games[gameId]) return;
-
-    const player = Object.values(games[gameId].players).find(p => p.name === playerName);
-    if (player && (player.stake || 0) > 0) {
-      const refund = Math.min(amount, player.stake);
-
-      // Deduct from stake and add to balance
-      player.stake -= refund;
-      player.balance += refund;
-      player.cashouts += 1;
-
-      // Calculate new pot total across all remaining active stakes
-      const currentPotAmount = Object.values(games[gameId].players)
-        .reduce((sum, p) => sum + (p.stake || 0), 0);
-
-      // Broadcast individual cashout, leaderboard update, and new pot total to room
-      io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
-      io.to(gameId).emit("pot_update", { amount: currentPotAmount });
-      broadcastLeaderboard(gameId);
-
-      console.log(`💰 ${playerName} cashed out £${refund} in ${gameId}. New pot: £${currentPotAmount}`);
-    }
-  });
-
-  // Handle stake placed
+  // Handle stake_placed
   socket.on("stake_placed", ({ gameId, playerName, amount }) => {
     if (!games[gameId]) return;
-
     const player = Object.values(games[gameId].players).find(p => p.name === playerName);
     if (player) {
       player.stake = amount;
       player.balance -= amount;
 
-      // Calculate new pot total across all player stakes
-      const currentPotAmount = Object.values(games[gameId].players)
-        .reduce((sum, p) => sum + (p.stake || 0), 0);
+      const newPot = getGamePot(gameId);
 
+      // Broadcast stake and live pot update to room
       io.to(gameId).emit("stake_update", {
         playerName,
         amount,
         balance: player.balance
       });
+      io.to(gameId).emit("pot_update", { amount: newPot });
 
-      // Broadcast new total pot amount to room
-      io.to(gameId).emit("pot_update", { amount: currentPotAmount });
+      broadcastLeaderboard(gameId);
+    }
+  });
+
+  // ✅ Handle cashout (Refunds 50%, updates pot, & broadcasts instantly)
+  socket.on("cashout", ({ gameId, playerName, amount }) => {
+    if (!games[gameId]) return;
+
+    const player = Object.values(games[gameId].players).find(p => p.name === playerName);
+    if (player) {
+      const refund = amount * 0.5;
+
+      player.balance += refund;
+      player.cashouts += 1;
+      player.stake = 0; // Remove player's active stake
+
+      const newPot = getGamePot(gameId);
+
+      // Broadcast updated pot & cashout notification
+      io.to(gameId).emit("pot_update", { amount: newPot });
+      io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
+
+      broadcastLeaderboard(gameId);
+      console.log(`💸 ${playerName} cashed out. Refund: £${refund}. New Pot: £${newPot}`);
     }
   });
 
@@ -156,12 +174,10 @@ io.on("connection", (socket) => {
       games[gameId].started = true;
       io.to(gameId).emit("game_started", { host });
 
-      // ✅ Pick random ID from RugbyQuestions
       const ids = Object.keys(RugbyQuestions);
       const randomId = ids[Math.floor(Math.random() * ids.length)];
       games[gameId].currentQuestionId = randomId;
 
-      // Broadcast only ID
       io.to(gameId).emit("new_question", { id: randomId });
     }, 4000);
   });
@@ -178,10 +194,6 @@ io.on("connection", (socket) => {
   // Handle next round
   socket.on("next_round", ({ gameId }) => {
     if (!games[gameId]) return;
-
-    // Reset stakes for the new round
-    Object.values(games[gameId].players).forEach(p => p.stake = 0);
-
     const ids = Object.keys(RugbyQuestions);
     const randomId = ids[Math.floor(Math.random() * ids.length)];
     games[gameId].currentQuestionId = randomId;
@@ -201,21 +213,6 @@ io.on("connection", (socket) => {
     }
   });
 });
-
-// ✅ Helper: broadcast leaderboard
-function broadcastLeaderboard(gameId) {
-  const game = games[gameId];
-  if (!game) return;
-
-  const players = Object.values(game.players).map(p => ({
-    name: p.name,
-    balance: p.balance,
-    wins: p.wins,
-    cashouts: p.cashouts
-  }));
-
-  io.to(gameId).emit("leaderboard_update", players);
-}
 
 // ✅ Start server
 const PORT = process.env.PORT || 3000;
