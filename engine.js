@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       this.currentQuestion = { 
         ...q, 
-        timer: 15, 
+        timer: 30, 
         stake: 0, 
         userChoice: null, 
         outcome: null, 
