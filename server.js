@@ -19,7 +19,7 @@ const io = new Server(httpServer, { cors: { origin: "*" } });
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve static files from the project directory
+// Serve static files from project directory
 app.use(express.static(__dirname));
 
 // ✅ Serve pages
@@ -191,9 +191,18 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle next round
+  // ✅ Handle next round (Resets active stakes & zeroes pot for all clients)
   socket.on("next_round", ({ gameId }) => {
     if (!games[gameId]) return;
+
+    // Reset stakes on server
+    Object.values(games[gameId].players).forEach(p => {
+      p.stake = 0;
+    });
+
+    // Zero out pot for all clients
+    io.to(gameId).emit("pot_update", { amount: 0 });
+
     const ids = Object.keys(RugbyQuestions);
     const randomId = ids[Math.floor(Math.random() * ids.length)];
     games[gameId].currentQuestionId = randomId;
