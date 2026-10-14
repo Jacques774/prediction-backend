@@ -1,4 +1,3 @@
-// socket.js
 const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
@@ -40,7 +39,9 @@ window.sendPrediction = sendPrediction;
 
 // --- Host outcome resolution ---
 socket.on("host_resolve", ({ outcome }) => {
-  Engine.handleOutcome(outcome);
+  if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
+    Engine.handleOutcome(outcome);
+  }
 });
 
 // --- Leaderboard object for arrows ---
@@ -63,6 +64,10 @@ window.Leaderboard = {
     if (current > old) return "up";
     if (current < old) return "down";
     return "same";
+  },
+
+  render() {
+    // Defined or handled in leaderboard.js if separate
   }
 };
 
@@ -71,14 +76,13 @@ socket.on("leaderboard_update", (players) => {
   console.log("Leaderboard payload:", JSON.stringify(players, null, 2));
 
   players.forEach(p => {
-    const playerName = p.name;   // server always sends 'name'
+    const playerName = p.name;   
     const balance = p.balance;
     const wins = p.wins;
     const cashouts = p.cashouts;
 
     window.Leaderboard.update(playerName, balance);
 
-    // ✅ ONLY update the dashboard header if this entry belongs to the current user
     if (window.currentPlayerName && playerName.trim().toLowerCase() === window.currentPlayerName.trim().toLowerCase()) {
       const nameEl = document.getElementById("player-name");
       const balanceEl = document.getElementById("player-balance");
@@ -92,8 +96,9 @@ socket.on("leaderboard_update", (players) => {
     }
   });
 
-  // Let leaderboard.js handle rendering the full list
-  window.Leaderboard.render();
+  if (typeof window.Leaderboard.render === "function") {
+    window.Leaderboard.render();
+  }
 });
 
 // --- Cashout updates ---
@@ -101,17 +106,37 @@ socket.on("cashout_update", ({ playerName, balance }) => {
   console.log(`${playerName} cashed out. New balance: £${balance}`);
 });
 
+// --- ✅ Real-time Pot Update Listener ---
+socket.on("pot_update", ({ amount }) => {
+  console.log("💰 Pot updated from server:", amount);
+
+  if (window.pot) {
+    window.pot.potBalance = amount;
+  }
+
+  const potEl = document.getElementById("potAmount");
+  if (potEl) {
+    potEl.style.display = "inline";
+    potEl.textContent = `Pot: £${Number(amount).toFixed(2)}`;
+  }
+});
+
 // --- New question from server ---
 socket.on("new_question", ({ id }) => {
   console.log("📡 New question ID received:", id);
 
-  // Look up the question text locally
+  if (typeof RugbyQuestions === "undefined") {
+    console.error("❌ RugbyQuestions is not loaded.");
+    return;
+  }
+
   const q = RugbyQuestions[id];
   if (!q) {
     console.error("❌ Question not found for ID:", id);
     return;
   }
 
-  // Pass the full question object to Engine
-  Engine.nextQuestion(q);
+  if (typeof Engine !== "undefined" && typeof Engine.nextQuestion === "function") {
+    Engine.nextQuestion(q);
+  }
 });
