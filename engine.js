@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // ✅ Extended stake window to 30 seconds (30000ms) for testing live pots
       if (window.pot && typeof window.pot.startStakeTimer === "function") {
         window.pot.startStakeTimer(
-          30000,
+          10000,
           (timeLeft) => window.showCountdown(timeLeft),
           (amount) => window.revealPot(amount)
         );
