@@ -163,46 +163,57 @@ window.pot.startStakeTimer(
     cashoutBtn.disabled = true;
   },
 
-  cashout() {
-  const q = this.currentQuestion;
-  clearInterval(window.cashoutCountdown);
-  q.cashedOut = true;
-  q.outcome = "CASHED OUT";
+    cashout() {
+    const q = this.currentQuestion;
+    if (!q || q.stake <= 0) return;
 
-  // ✅ Update balance through pot
-  const result = this.updateBalance("CASHED OUT", q.stake);
-  q.oldBalance = result.oldBalance;
-  q.newBalance = result.newBalance;
+    clearInterval(window.cashoutCountdown);
+    q.cashedOut = true;
+    q.outcome = "CASHED OUT";
 
-  // ✅ Track cashouts
-  window.totalCashouts++;
-  document.getElementById("player-cashouts").textContent =
-    `Cash-outs: ${window.totalCashouts}`;
+    // 📡 Emit cashout to the server so it updates the server store, pot, and broadcasts to everyone
+    if (window.socket && window.gameId && window.currentPlayerName) {
+      window.socket.emit("cashout", {
+        gameId: window.gameId,
+        playerName: window.currentPlayerName,
+        amount: q.stake
+      });
+    }
 
-  // ✅ Refresh balance display from pot
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Utils.formatMoney(
+    // ✅ Update balance through pot
+    const result = this.updateBalance("CASHED OUT", q.stake);
+    q.oldBalance = result.oldBalance;
+    q.newBalance = result.newBalance;
+
+    // ✅ Track cashouts
+    window.totalCashouts++;
+    document.getElementById("player-cashouts").textContent =
+      `Cash-outs: ${window.totalCashouts}`;
+
+    // ✅ Refresh balance display from pot
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Utils.formatMoney(
+        window.pot.balances[window.currentPlayerName]
+      )}`;
+    }
+
+    // ✅ Update leaderboard from pot
+    Leaderboard.update(
+      window.currentPlayerName,
       window.pot.balances[window.currentPlayerName]
-    )}`;
-  }
+    );
+    Leaderboard.render();
 
-  // ✅ Update leaderboard from pot
-  Leaderboard.update(
-    window.currentPlayerName,
-    window.pot.balances[window.currentPlayerName]
-  );
-  Leaderboard.render();
+    // ✅ Disable buttons
+    btnYes.disabled = true;
+    btnNo.disabled = true;
+    cashoutBtn.disabled = true;
 
-  // ✅ Disable buttons
-  btnYes.disabled = true;
-  btnNo.disabled = true;
-  cashoutBtn.disabled = true;
-
-  // ✅ Log cash‑out immediately in history
-  History.push(q);
-  History.render();
-},
+    // ✅ Log cash‑out immediately in history
+    History.push(q);
+    History.render();
+  },
 
   handleOutcome(outcome) {
   const q = this.currentQuestion;
