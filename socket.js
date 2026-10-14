@@ -45,31 +45,31 @@ socket.on("host_resolve", ({ outcome }) => {
 });
 
 // --- Leaderboard object for arrows ---
-window.Leaderboard = {
-  scores: {},
-  lastScores: {},
+if (!window.Leaderboard) {
+  window.Leaderboard = {
+    scores: {},
+    lastScores: {},
 
-  update(name, balance) {
-    if (this.scores[name] !== undefined) {
-      this.lastScores[name] = this.scores[name];
-    } else {
-      this.lastScores[name] = balance;
-    }
-    this.scores[name] = balance;
-  },
+    update(name, balance) {
+      if (this.scores[name] !== undefined) {
+        this.lastScores[name] = this.scores[name];
+      } else {
+        this.lastScores[name] = balance;
+      }
+      this.scores[name] = balance;
+    },
 
-  movement(name) {
-    const old = this.lastScores[name] || 0;
-    const current = this.scores[name] || 0;
-    if (current > old) return "up";
-    if (current < old) return "down";
-    return "same";
-  },
+    movement(name) {
+      const old = this.lastScores[name] || 0;
+      const current = this.scores[name] || 0;
+      if (current > old) return "up";
+      if (current < old) return "down";
+      return "same";
+    },
 
-  render() {
-    // Defined or handled in leaderboard.js if separate
-  }
-};
+    render() {}
+  };
+}
 
 // --- Leaderboard updates ---
 socket.on("leaderboard_update", (players) => {
@@ -81,8 +81,16 @@ socket.on("leaderboard_update", (players) => {
     const wins = p.wins;
     const cashouts = p.cashouts;
 
-    window.Leaderboard.update(playerName, balance);
+    // Sync local pot object balances if initialized
+    if (window.pot && window.pot.balances) {
+      window.pot.balances[playerName] = balance;
+    }
 
+    if (window.Leaderboard && typeof window.Leaderboard.update === "function") {
+      window.Leaderboard.update(playerName, balance);
+    }
+
+    // Update active player's HUD if this is their account
     if (window.currentPlayerName && playerName.trim().toLowerCase() === window.currentPlayerName.trim().toLowerCase()) {
       const nameEl = document.getElementById("player-name");
       const balanceEl = document.getElementById("player-balance");
@@ -96,17 +104,21 @@ socket.on("leaderboard_update", (players) => {
     }
   });
 
-  if (typeof window.Leaderboard.render === "function") {
+  if (window.Leaderboard && typeof window.Leaderboard.render === "function") {
     window.Leaderboard.render();
   }
 });
 
 // --- Cashout updates ---
 socket.on("cashout_update", ({ playerName, balance }) => {
-  console.log(`${playerName} cashed out. New balance: £${balance}`);
+  console.log(`💸 ${playerName} cashed out. New balance: £${balance}`);
+  
+  if (window.pot && window.pot.balances) {
+    window.pot.balances[playerName] = balance;
+  }
 });
 
-// --- ✅ Real-time Pot Update Listener ---
+// --- ✅ Real-time Pot Update Listener (Forced Sync & Display) ---
 socket.on("pot_update", ({ amount }) => {
   console.log("💰 Pot updated from server:", amount);
 
@@ -115,7 +127,11 @@ socket.on("pot_update", ({ amount }) => {
   }
 
   const potEl = document.getElementById("potAmount");
+  const stakeEl = document.getElementById("stakeCountdown");
+
   if (potEl) {
+    // Hide stake countdown if pot is updating live, force pot display visible
+    if (stakeEl) stakeEl.style.display = "none";
     potEl.style.display = "inline";
     potEl.textContent = `Pot: £${Number(amount).toFixed(2)}`;
   }
