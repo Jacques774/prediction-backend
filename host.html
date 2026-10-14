@@ -130,15 +130,18 @@
   </div>
 </div>
 
-<!-- Load Socket.IO client once -->
+<!-- Load Socket.IO client first -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-<!-- Then your own scripts -->
+<!-- Load foundational globals first -->
 <script src="socket.js"></script>
-<script type="module" src="engine.js"></script>
 <script src="leaderboard.js"></script>
 <script src="history.js"></script>
+
+<!-- Then load your ES modules (Engine and Host UI) -->
+<script type="module" src="engine.js"></script>
 <script type="module" src="host-ui.js"></script>
+
 
 
 </body>
