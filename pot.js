@@ -1,53 +1,53 @@
-// pot.js
 class Pot {
-  constructor(players) {
+  constructor(players = []) {
     this.balances = {};
     this.stakes = {};
     this.potBalance = 0;
     this.profitPool = 0;
     this.stakeOpen = false;
-    this.interval = null; // track the stake timer
+    this.interval = null;
 
-    // ✅ Every player (including host) starts with £100
+    // Default player initializations
     players.forEach(p => {
       this.balances[p] = 100;
       this.stakes[p] = 0;
     });
   }
 
-// Start stake timer, reveal pot when it ends
-startStakeTimer(durationMs, onCountdown, onReveal) {
-  if (this.interval) {
-    clearInterval(this.interval);
-    this.interval = null;
-  }
-
-  this.stakeOpen = true;
-  let timeLeft = Math.floor(durationMs / 1000);
-
-  this.interval = setInterval(() => {
-    if (timeLeft >= 0) {
-      if (onCountdown) onCountdown(timeLeft);   // countdown updates
-      timeLeft--;
-    } else {
+  // Start stake timer, reveal pot when it ends
+  startStakeTimer(durationMs, onCountdown, onReveal) {
+    if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
-      this.stakeOpen = false;
-
-      // ✅ Only host tells server to reveal
-      if (window.isHost && window.socket) {
-        window.socket.emit("pot_reveal", { gameId: window.gameId });
-      }
     }
-  }, 1000);
 
-  // ✅ All clients listen for broadcast once per round
-  window.socket.once("pot_reveal", ({ amount }) => {
-    if (onReveal) onReveal(amount);
-  });
-}
+    this.stakeOpen = true;
+    let timeLeft = Math.floor(durationMs / 1000);
 
-  // Reset pot state after a round ends
+    this.interval = setInterval(() => {
+      if (timeLeft >= 0) {
+        if (onCountdown) onCountdown(timeLeft);
+        timeLeft--;
+      } else {
+        clearInterval(this.interval);
+        this.interval = null;
+        this.stakeOpen = false;
+
+        // Only host requests reveal from backend
+        if (window.isHost && window.socket) {
+          window.socket.emit("pot_reveal", { gameId: window.gameId });
+        }
+      }
+    }, 1000);
+
+    if (window.socket) {
+      window.socket.once("pot_reveal", ({ amount }) => {
+        if (onReveal) onReveal(amount);
+      });
+    }
+  }
+
+  // Reset pot state after round ends
   resetRound() {
     this.stakes = {};
     for (let player in this.balances) {
@@ -63,45 +63,50 @@ startStakeTimer(durationMs, onCountdown, onReveal) {
     }
   }
 
-  // Players can only stake while stake timer is open
+  // Log active stake
   stake(player, amount, onUpdate) {
-    if (!this.stakeOpen) {
-      console.log("Stake window closed, cannot stake");
-      return;
+    if (this.balances[player] === undefined) {
+      this.balances[player] = 100;
     }
+    if (this.stakes[player] === undefined) {
+      this.stakes[player] = 0;
+    }
+
     if (this.balances[player] >= amount) {
       this.balances[player] -= amount;
       this.stakes[player] += amount;
       this.potBalance += amount;
-      if (onUpdate) onUpdate(this.potBalance); // live update
+      if (onUpdate) onUpdate(this.potBalance);
     }
   }
 
-  // Cash‑out: refund part, remainder stays in pot as profit
+  // Cash-out refund calculation and pot adjustment
   cashout(player, percent = 0.5, onUpdate) {
     if (this.stakes[player] > 0) {
       let refund = this.stakes[player] * percent;
       let remainder = this.stakes[player] - refund;
+
       this.balances[player] += refund;
       this.profitPool += remainder;
       this.potBalance -= this.stakes[player];
       this.potBalance += remainder;
-      this.stakes[player] = 0; // player is out
-      if (onUpdate) onUpdate(this.potBalance); // broadcast updated pot
+      this.stakes[player] = 0; // Reset active stake
+
+      if (onUpdate) onUpdate(this.potBalance);
     }
   }
 
-  // Resolve round: winners get stake + proportional share of profit pool
+  // Resolve outcome at round end
   resolveOutcome(winners) {
     if (winners.length === 0) {
       return "No winners, pot rolls over.";
     }
 
-    let totalStake = winners.reduce((sum, p) => sum + this.stakes[p], 0);
+    let totalStake = winners.reduce((sum, p) => sum + (this.stakes[p] || 0), 0);
 
     winners.forEach(p => {
-      let stakeReturn = this.stakes[p];
-      let share = (stakeReturn / totalStake) * this.profitPool;
+      let stakeReturn = this.stakes[p] || 0;
+      let share = totalStake > 0 ? (stakeReturn / totalStake) * this.profitPool : 0;
       this.balances[p] += stakeReturn + share;
       this.stakes[p] = 0;
     });
