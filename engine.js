@@ -112,9 +112,10 @@ document.addEventListener("DOMContentLoaded", () => {
         window.stakeInterval = null;
       }
 
+      // ✅ Extended stake window to 30 seconds (30000ms) for testing live pots
       if (window.pot && typeof window.pot.startStakeTimer === "function") {
         window.pot.startStakeTimer(
-          10000,
+          30000,
           (timeLeft) => window.showCountdown(timeLeft),
           (amount) => window.revealPot(amount)
         );
@@ -242,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.startPostQuestionCountdown(() => {
         if (window.pot) {
           window.pot.startStakeTimer(
-            10000,
+            30000,
             (timeLeft) => window.showCountdown(timeLeft),
             (amount) => window.revealPot(amount)
           );
@@ -334,6 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.pot.stake(player, amount, (newPotBalance) => {
           const potEl = document.getElementById("potAmount");
           if (potEl) {
+            potEl.style.display = "inline";
             potEl.textContent = `Pot: £${Number(newPotBalance).toFixed(2)}`;
           }
         });
@@ -402,7 +404,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ============================
-  // STAKE COUNTDOWN DISPLAY
+  // STAKE COUNTDOWN DISPLAY (Fixed to keep pot visible)
   // ============================
   window.showCountdown = function (timeLeft) {
     const stakeEl = document.getElementById("stakeCountdown");
@@ -410,7 +412,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const potEl = document.getElementById("potAmount");
 
     if (postEl) postEl.style.display = "none";
-    if (potEl) potEl.style.display = "none";
+
+    // Only hide pot if balance is 0
+    if (potEl && (!window.pot || window.pot.potBalance === 0)) {
+      potEl.style.display = "none";
+    }
 
     if (stakeEl) {
       stakeEl.style.display = "inline";
