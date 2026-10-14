@@ -116,4 +116,15 @@ socket.on("pot_update", ({ amount }) => {
   }
 });
 
+// --- New question from server ---
+socket.on("new_question", ({ id }) => {
+  console.log("📡 New question ID received in socket.js:", id);
+
+  // Safely tell Engine to handle the new question if it's available
+  if (window.Engine && typeof window.Engine.handleServerQuestion === "function") {
+    window.Engine.handleServerQuestion(id);
+  } else {
+    console.error("❌ Engine or handleServerQuestion not found yet!");
+  }
+});
 
