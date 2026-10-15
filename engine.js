@@ -243,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.startPostQuestionCountdown(() => {
         if (window.pot) {
           window.pot.startStakeTimer(
-            30000,
+            10000,
             (timeLeft) => window.showCountdown(timeLeft),
             (amount) => window.revealPot(amount)
           );
