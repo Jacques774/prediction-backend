@@ -74,6 +74,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // ✅ FIXED: Real-time Pot Update Listener for Host Screen
+  socket.on("pot_update", ({ amount }) => {
+    console.log("💰 Pot updated on Host screen:", amount);
+    if (window.pot) {
+      window.pot.potBalance = amount;
+    }
+    const potEl = document.getElementById("potAmount");
+    if (potEl) {
+      potEl.style.display = "inline";
+      potEl.textContent = `Pot: £${Number(amount || 0).toFixed(2)}`;
+    }
+  });
+
   startBtn.addEventListener("click", () => {
     console.log("🎯 Host Start button clicked!");
 
