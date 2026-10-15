@@ -20,14 +20,14 @@ function revealPot(amount) {
   if (countdownEl && potEl) {
     countdownEl.style.display = "none";
     potEl.style.display = "inline";
-    potEl.textContent = "Pot: £" + amount.toFixed(2);
+    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
 }
 
 function updatePot(amount) {
   const potEl = document.getElementById("potAmount");
   if (potEl) {
-    potEl.textContent = "Pot: £" + amount.toFixed(2);
+    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
 }
 
@@ -225,6 +225,22 @@ socket.on("next_round", ({ gameId }) => {
   });
 });
 
+// 🔑 ✅ Real-time Pot Update Listener (Catch Cash-out & Stake reductions)
+socket.on("pot_update", ({ amount }) => {
+  console.log("💰 Player received pot update from server:", amount);
+  if (window.pot) {
+    window.pot.potBalance = amount;
+  }
+
+  const potEl = document.getElementById("potAmount");
+  if (potEl) {
+    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
+    if (amount > 0) {
+      potEl.style.display = "inline";
+    }
+  }
+});
+
 // Countdown helper for next question
 window.startPostQuestionCountdown = function (onDone) {
   const el = document.getElementById("postQuestionCountdown");
@@ -244,13 +260,16 @@ window.startPostQuestionCountdown = function (onDone) {
 };
 
 // ============================
-// STAKE COUNTDOWN DISPLAY
+// STAKE COUNTDOWN DISPLAY (Fixed)
 // ============================
 window.showCountdown = function (timeLeft) {
   const stakeEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
 
-  if (potEl) potEl.style.display = "none";
+  // Only hide pot if the pot balance is literally 0
+  if (potEl && (!window.pot || window.pot.potBalance === 0)) {
+    potEl.style.display = "none";
+  }
 
   if (stakeEl) {
     stakeEl.style.display = "inline";
@@ -268,7 +287,7 @@ window.revealPot = function (amount) {
   const potEl = document.getElementById("potAmount");
   if (potEl) {
     potEl.style.display = "inline";
-    potEl.textContent = "Pot: £" + amount.toFixed(2);
+    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
 };
 
