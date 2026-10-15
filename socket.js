@@ -118,7 +118,7 @@ socket.on("cashout_update", ({ playerName, balance }) => {
   }
 });
 
-// --- ✅ Real-time Pot Update Listener (Forced Sync & Display) ---
+// --- ✅ Real-time Pot Update Listener (Clean display sync) ---
 socket.on("pot_update", ({ amount }) => {
   console.log("💰 Pot updated from server:", amount);
 
@@ -127,13 +127,13 @@ socket.on("pot_update", ({ amount }) => {
   }
 
   const potEl = document.getElementById("potAmount");
-  const stakeEl = document.getElementById("stakeCountdown");
 
   if (potEl) {
-    // Hide stake countdown if pot is updating live, force pot display visible
-    if (stakeEl) stakeEl.style.display = "none";
-    potEl.style.display = "inline";
-    potEl.textContent = `Pot: £${Number(amount).toFixed(2)}`;
+    potEl.textContent = `Pot: £${Number(amount || 0).toFixed(2)}`;
+    // Keep visible whenever pot > 0
+    if (amount > 0) {
+      potEl.style.display = "inline";
+    }
   }
 });
 
