@@ -36,6 +36,7 @@ app.post("/api/create-game", (req, res) => {
   games[code] = {
     players: {},
     hostId: null,
+    potBalance: 0, // ✅ Persistent pot tracker for the room
     predictions: { YES: 0, NO: 0 },
     started: false,
     currentQuestionId: null,
@@ -46,11 +47,10 @@ app.post("/api/create-game", (req, res) => {
 
 app.get("/api/healthz", (req, res) => res.json({ status: "ok" }));
 
-// Helper: Calculate total pot from active stakes
+// Helper: Get persistent pot balance
 function getGamePot(gameId) {
   if (!games[gameId]) return 0;
-  return Object.values(games[gameId].players)
-    .reduce((sum, p) => sum + (p.stake || 0), 0);
+  return games[gameId].potBalance || 0;
 }
 
 // ✅ Helper: Broadcast leaderboard
@@ -128,7 +128,9 @@ io.on("connection", (socket) => {
       player.stake = amount;
       player.balance -= amount;
 
-      const newPot = getGamePot(gameId);
+      // ✅ Add stake to room's persistent pot balance
+      games[gameId].potBalance = (games[gameId].potBalance || 0) + amount;
+      const newPot = games[gameId].potBalance;
 
       // Broadcast stake and live pot update to room
       io.to(gameId).emit("stake_update", {
@@ -142,7 +144,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // ✅ Handle cashout (Refunds 50%, updates pot, & broadcasts instantly)
+  // ✅ Handle cashout (Refunds 50%, retains remaining 50% in the persistent pot)
   socket.on("cashout", ({ gameId, playerName, amount }) => {
     if (!games[gameId]) return;
 
@@ -154,14 +156,16 @@ io.on("connection", (socket) => {
       player.cashouts += 1;
       player.stake = 0; // Remove player's active stake
 
-      const newPot = getGamePot(gameId);
+      // ✅ Deduct only the 50% refund from pot, leaving the other 50% intact
+      games[gameId].potBalance = Math.max(0, (games[gameId].potBalance || 0) - refund);
+      const newPot = games[gameId].potBalance;
 
       // Broadcast updated pot & cashout notification
       io.to(gameId).emit("pot_update", { amount: newPot });
       io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
 
       broadcastLeaderboard(gameId);
-      console.log(`💸 ${playerName} cashed out. Refund: £${refund}. New Pot: £${newPot}`);
+      console.log(`💸 ${playerName} cashed out. Refund: £${refund}. Remaining Pot: £${newPot}`);
     }
   });
 
@@ -195,7 +199,8 @@ io.on("connection", (socket) => {
   socket.on("next_round", ({ gameId }) => {
     if (!games[gameId]) return;
 
-    // Reset stakes on server
+    // Reset persistent pot & individual stakes on server
+    games[gameId].potBalance = 0;
     Object.values(games[gameId].players).forEach(p => {
       p.stake = 0;
     });
