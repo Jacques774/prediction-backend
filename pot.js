@@ -14,8 +14,8 @@ class Pot {
     });
   }
 
-  // Start stake timer, reveal pot when it ends
-  startStakeTimer(durationMs, onCountdown, onReveal) {
+  // ✅ Start stake timer with default 10,000ms (10s) duration
+  startStakeTimer(durationMs = 10000, onCountdown, onReveal) {
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
@@ -40,7 +40,9 @@ class Pot {
       }
     }, 1000);
 
+    // ✅ Attach pot_reveal listener cleanly (remove old one first)
     if (window.socket) {
+      window.socket.off("pot_reveal");
       window.socket.once("pot_reveal", ({ amount }) => {
         if (onReveal) onReveal(amount);
       });
