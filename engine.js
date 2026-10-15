@@ -112,12 +112,16 @@ document.addEventListener("DOMContentLoaded", () => {
         window.stakeInterval = null;
       }
 
-      // ✅ Extended stake window to 30 seconds (30000ms) for testing live pots
+      // ✅ 10s Stake window: Lock YES/NO buttons when timer expires
       if (window.pot && typeof window.pot.startStakeTimer === "function") {
         window.pot.startStakeTimer(
           10000,
           (timeLeft) => window.showCountdown(timeLeft),
-          (amount) => window.revealPot(amount)
+          (amount) => {
+            window.revealPot(amount);
+            if (btnYes) btnYes.disabled = true;
+            if (btnNo) btnNo.disabled = true;
+          }
         );
       }
     },
@@ -245,7 +249,11 @@ document.addEventListener("DOMContentLoaded", () => {
           window.pot.startStakeTimer(
             10000,
             (timeLeft) => window.showCountdown(timeLeft),
-            (amount) => window.revealPot(amount)
+            (amount) => {
+              window.revealPot(amount);
+              if (btnYes) btnYes.disabled = true;
+              if (btnNo) btnNo.disabled = true;
+            }
           );
         }
 
