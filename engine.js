@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.stakeInterval = null;
       }
 
-      // ✅ 10s Stake window: Lock YES/NO buttons when timer expires
+      // ✅ 10s Stake window: Lock YES/NO buttons & start cashout timer when stake window expires
       if (window.pot && typeof window.pot.startStakeTimer === "function") {
         window.pot.startStakeTimer(
           10000,
@@ -121,6 +121,14 @@ document.addEventListener("DOMContentLoaded", () => {
             window.revealPot(amount);
             if (btnYes) btnYes.disabled = true;
             if (btnNo) btnNo.disabled = true;
+
+            // Start cashout timer unified when stake window finishes (if player staked)
+            const activeQ = Engine.currentQuestion;
+            if (activeQ && activeQ.stake > 0 && !activeQ.cashedOut) {
+              if (typeof startCashoutTimer === "function") {
+                startCashoutTimer();
+              }
+            }
           }
         );
       }
@@ -253,6 +261,14 @@ document.addEventListener("DOMContentLoaded", () => {
               window.revealPot(amount);
               if (btnYes) btnYes.disabled = true;
               if (btnNo) btnNo.disabled = true;
+
+              // Start cashout timer unified when stake window finishes (if player staked)
+              const activeQ = Engine.currentQuestion;
+              if (activeQ && activeQ.stake > 0 && !activeQ.cashedOut) {
+                if (typeof startCashoutTimer === "function") {
+                  startCashoutTimer();
+                }
+              }
             }
           );
         }
@@ -377,9 +393,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (stakePopup) stakePopup.style.display = "none";
 
-      if (typeof startCashoutTimer === "function") {
-        startCashoutTimer();
-      }
+      // ❌ Removed startCashoutTimer() here so timers don't trigger per-stake!
 
       console.log(`✅ Stake saved & balance deducted: £${amount}`);
     };
