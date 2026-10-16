@@ -231,6 +231,21 @@ window.startPreCountdown = function (onDone) {
   }, 1000);
 };
 
+// 🔑 Direct Authoritative Balance Update from Server
+socket.on("balance_update", ({ balance }) => {
+  console.log("💰 Host received direct balance update:", balance);
+  
+  if (window.pot && window.currentPlayerName) {
+    window.pot.balances[window.currentPlayerName] = balance;
+  }
+
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl) {
+    balanceEl.textContent = `Balance: £${Number(balance).toFixed(2)}`;
+  }
+});
+
+
 // Status dot
 const statusDot = document.createElement("div");
 statusDot.id = "socket-status";
