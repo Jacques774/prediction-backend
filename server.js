@@ -209,9 +209,17 @@ io.on("connection", (socket) => {
         const p = playersList.find(x => x.name.trim().toLowerCase() === wName.trim().toLowerCase());
         if (p && p.stake > 0) {
           let shareRatio = p.stake / totalWinningStakes;
-          let payout = currentPot * shareRatio; // If everyone wins, payout == stake (0 profit). If there are losers, payout > stake (includes profit).
+          let payout = currentPot * shareRatio; 
           p.balance += payout;
           p.wins += 1;
+
+          // ✅ Send direct balance update to this specific player's socket
+          const socketEntry = Object.entries(game.players).find(([sId, playerData]) => 
+            playerData.name.trim().toLowerCase() === wName.trim().toLowerCase()
+          );
+          if (socketEntry) {
+            io.to(socketEntry[0]).emit("balance_update", { balance: p.balance });
+          }
         }
       });
       // Reset pot balance to 0 on successful win resolution
