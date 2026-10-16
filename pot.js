@@ -131,6 +131,13 @@ class Pot {
     // Reset pot balance after payout
     this.potBalance = 0;
     this.stakes = {};
+
+    // ✅ Explicitly clear and hide the pot display on screen
+    const potEl = document.getElementById("potAmount");
+    if (potEl) {
+      potEl.textContent = "Pot: £0.00";
+      potEl.style.display = "none";
+    }
   }
 }
 
