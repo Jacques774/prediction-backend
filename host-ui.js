@@ -38,9 +38,10 @@ console.log("✅ host-ui.js loaded");
 const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
-// Read ?code= from URL
+// Read ?code= and optional ?buyin= from URL
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("code");
+const buyInAmount = Number(urlParams.get("buyin")) || 100;
 
 if (!gameId) {
   console.error("❌ No game code found in URL. Did you come from setup.html?");
@@ -64,6 +65,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Listen for joined players and add them to local pot balance tracker
+  socket.on("player_joined", ({ playerName }) => {
+    console.log(`🎮 Player joined host session: ${playerName}`);
+    if (window.pot && window.pot.balances) {
+      if (window.pot.balances[playerName] === undefined) {
+        window.pot.balances[playerName] = buyInAmount;
+        window.pot.stakes[playerName] = 0;
+      }
+    }
+  });
+
   // Listen for server broadcast of new question
   socket.on("new_question", ({ id }) => {
     const question = RugbyQuestions[id];
@@ -74,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ✅ FIXED: Real-time Pot Update Listener for Host Screen
+  // Real-time Pot Update Listener for Host Screen
   socket.on("pot_update", ({ amount }) => {
     console.log("💰 Pot updated on Host screen:", amount);
     if (window.pot) {
@@ -87,6 +99,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // ✅ Round Outcome socket handler (supports server winner list)
+  socket.on("round_outcome", ({ outcome, winners }) => {
+    if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
+      Engine.handleOutcome(outcome, winners);
+    }
+
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl && window.pot && window.pot.balances[window.currentPlayerName] !== undefined) {
+      const bal = window.pot.balances[window.currentPlayerName];
+      balanceEl.textContent = `Balance: £${Number(bal).toFixed(2)}`;
+    }
+
+    if (typeof Leaderboard !== "undefined" && Leaderboard.update && window.pot) {
+      Leaderboard.update(
+        window.currentPlayerName,
+        window.pot.balances[window.currentPlayerName]
+      );
+      if (Leaderboard.render) Leaderboard.render();
+    }
+
+    const outcomePanel = document.getElementById("outcome-panel");
+    if (outcomePanel) outcomePanel.textContent = `Outcome: ${outcome}`;
+  });
+
+  // ============================
+  // OUTCOME BUTTONS
+  // ============================
+  const yesBtn = document.getElementById("host-yes-btn");
+  const noBtn = document.getElementById("host-no-btn");
+
+  if (yesBtn) {
+    yesBtn.addEventListener("click", () => {
+      console.log("✅ Host chose outcome YES");
+      socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
+
+      window.startPostQuestionCountdown(() => {
+        socket.emit("next_round", { gameId: window.gameId });
+      });
+    });
+  }
+
+  if (noBtn) {
+    noBtn.addEventListener("click", () => {
+      console.log("✅ Host chose outcome NO");
+      socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
+
+      window.startPostQuestionCountdown(() => {
+        socket.emit("next_round", { gameId: window.gameId });
+      });
+    });
+  }
+
+  // ============================
+  // START BUTTON CLICK
+  // ============================
   startBtn.addEventListener("click", () => {
     console.log("🎯 Host Start button clicked!");
 
@@ -109,61 +176,12 @@ document.addEventListener("DOMContentLoaded", () => {
     window.currentPlayerName = hostName;
     window.isHost = true;
 
-    // ✅ Initialize pot with host name
-    window.pot = new Pot([window.currentPlayerName]);
+    // ✅ Initialize pot with host name & configured buy-in amount
+    window.pot = new Pot([window.currentPlayerName], buyInAmount);
 
     // Host joins and starts game
     socket.emit("join_game", { gameId, playerName: hostName, isHost: true });
     socket.emit("start_game", { gameId, host: hostName });
-
-    // Outcome buttons
-    const yesBtn = document.getElementById("host-yes-btn");
-    const noBtn = document.getElementById("host-no-btn");
-
-    if (yesBtn) {
-      yesBtn.addEventListener("click", () => {
-        console.log("✅ Host chose outcome YES");
-        socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
-
-        window.startPostQuestionCountdown(() => {
-          socket.emit("next_round", { gameId: window.gameId });
-        });
-      });
-    }
-
-    if (noBtn) {
-      noBtn.addEventListener("click", () => {
-        console.log("✅ Host chose outcome NO");
-        socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
-
-        window.startPostQuestionCountdown(() => {
-          socket.emit("next_round", { gameId: window.gameId });
-        });
-      });
-    }
-
-    socket.on("round_outcome", ({ outcome }) => {
-      if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
-        Engine.handleOutcome(outcome);
-      }
-
-      const balanceEl = document.getElementById("player-balance");
-      if (balanceEl && window.pot && window.pot.balances[window.currentPlayerName] !== undefined) {
-        const bal = window.pot.balances[window.currentPlayerName];
-        balanceEl.textContent = `Balance: £${Number(bal).toFixed(2)}`;
-      }
-
-      if (typeof Leaderboard !== "undefined" && Leaderboard.update && window.pot) {
-        Leaderboard.update(
-          window.currentPlayerName,
-          window.pot.balances[window.currentPlayerName]
-        );
-        if (Leaderboard.render) Leaderboard.render();
-      }
-
-      const outcomePanel = document.getElementById("outcome-panel");
-      if (outcomePanel) outcomePanel.textContent = `Outcome: ${outcome}`;
-    });
 
     // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
@@ -186,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (nameEl) nameEl.textContent = `Host: ${hostName}`;
     if (balanceEl && window.pot) {
-      const startingBal = window.pot.balances[window.currentPlayerName] || 100;
+      const startingBal = window.pot.balances[window.currentPlayerName] || buyInAmount;
       balanceEl.textContent = `Balance: £${Number(startingBal).toFixed(2)}`;
     }
   });
