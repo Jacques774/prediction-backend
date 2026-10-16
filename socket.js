@@ -1,7 +1,9 @@
 const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
-// --- Player & Host joins ---
+// ============================
+// LOBBY & PLAYER JOINS
+// ============================
 socket.on("host_joined", ({ playerName }) => {
   const list = document.getElementById("host-player-list");
   if (list) {
@@ -20,7 +22,9 @@ socket.on("player_joined", ({ playerName }) => {
   }
 });
 
-// --- Send prediction (YES/NO) ---
+// ============================
+// PREDICTIONS & STAKES
+// ============================
 function sendPrediction(choice) {
   const gameId = window.gameId;
   const playerName = window.currentPlayerName || "Player";
@@ -37,14 +41,76 @@ function sendPrediction(choice) {
 }
 window.sendPrediction = sendPrediction;
 
-// --- Host outcome resolution ---
+// ✅ NEW: Listen for other players placing stakes in real time
+socket.on("remote_stake_placed", ({ playerName, amount }) => {
+  if (window.pot && playerName !== window.currentPlayerName) {
+    window.pot.stakes[playerName] = (window.pot.stakes[playerName] || 0) + amount;
+    window.pot.potBalance += amount;
+  }
+});
+
+// ✅ NEW: Listen for other players cashing out in real time
+socket.on("remote_cashout", ({ playerName, amount }) => {
+  if (window.pot && playerName !== window.currentPlayerName) {
+    const refund = amount * 0.5;
+    window.pot.potBalance -= refund;
+    window.pot.stakes[playerName] = 0;
+
+    const potEl = document.getElementById("potAmount");
+    if (potEl) {
+      potEl.textContent = `Pot: £${Number(window.pot.potBalance).toFixed(2)}`;
+    }
+  }
+});
+
+// ============================
+// POT & REVEAL LISTENERS
+// ============================
+socket.on("pot_update", ({ amount }) => {
+  console.log("💰 Pot updated from server:", amount);
+
+  if (window.pot) {
+    window.pot.potBalance = amount;
+  }
+
+  const potEl = document.getElementById("potAmount");
+  if (potEl) {
+    potEl.textContent = `Pot: £${Number(amount || 0).toFixed(2)}`;
+    if (amount > 0) {
+      potEl.style.display = "inline";
+    }
+  }
+});
+
+// ✅ Clean pot_reveal response handling
+socket.on("pot_reveal", ({ amount }) => {
+  console.log("🔓 Pot revealed:", amount);
+  if (window.pot) {
+    window.pot.revealPot(amount);
+  }
+});
+
+// ============================
+// HOST RESOLUTION & ROUND END
+// ============================
+// Handles simple outcome push
 socket.on("host_resolve", ({ outcome }) => {
   if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
     Engine.handleOutcome(outcome);
   }
 });
 
-// --- Leaderboard object for arrows ---
+// ✅ NEW: Handles full round resolution with server winner list
+socket.on("round_outcome", ({ outcome, winners }) => {
+  console.log(`🏁 Round outcome resolved: ${outcome}`, winners);
+  if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
+    Engine.handleOutcome(outcome, winners);
+  }
+});
+
+// ============================
+// LEADERBOARD & BALANCE SYNC
+// ============================
 if (!window.Leaderboard) {
   window.Leaderboard = {
     scores: {},
@@ -71,7 +137,6 @@ if (!window.Leaderboard) {
   };
 }
 
-// --- Leaderboard updates ---
 socket.on("leaderboard_update", (players) => {
   console.log("Leaderboard payload:", JSON.stringify(players, null, 2));
 
@@ -81,7 +146,6 @@ socket.on("leaderboard_update", (players) => {
     const wins = p.wins;
     const cashouts = p.cashouts;
 
-    // Sync local pot object balances if initialized
     if (window.pot && window.pot.balances) {
       window.pot.balances[playerName] = balance;
     }
@@ -90,7 +154,6 @@ socket.on("leaderboard_update", (players) => {
       window.Leaderboard.update(playerName, balance);
     }
 
-    // Update active player's HUD if this is their account
     if (window.currentPlayerName && playerName.trim().toLowerCase() === window.currentPlayerName.trim().toLowerCase()) {
       const nameEl = document.getElementById("player-name");
       const balanceEl = document.getElementById("player-balance");
@@ -109,7 +172,6 @@ socket.on("leaderboard_update", (players) => {
   }
 });
 
-// --- Cashout updates ---
 socket.on("cashout_update", ({ playerName, balance }) => {
   console.log(`💸 ${playerName} cashed out. New balance: £${balance}`);
   
@@ -118,26 +180,9 @@ socket.on("cashout_update", ({ playerName, balance }) => {
   }
 });
 
-// --- ✅ Real-time Pot Update Listener (Clean display sync) ---
-socket.on("pot_update", ({ amount }) => {
-  console.log("💰 Pot updated from server:", amount);
-
-  if (window.pot) {
-    window.pot.potBalance = amount;
-  }
-
-  const potEl = document.getElementById("potAmount");
-
-  if (potEl) {
-    potEl.textContent = `Pot: £${Number(amount || 0).toFixed(2)}`;
-    // Keep visible whenever pot > 0
-    if (amount > 0) {
-      potEl.style.display = "inline";
-    }
-  }
-});
-
-// --- New question from server ---
+// ============================
+// QUESTION FLOW
+// ============================
 socket.on("new_question", ({ id }) => {
   console.log("📡 New question ID received:", id);
 
