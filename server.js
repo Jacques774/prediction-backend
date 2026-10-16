@@ -36,8 +36,7 @@ app.post("/api/create-game", (req, res) => {
   games[code] = {
     players: {},
     hostId: null,
-    potBalance: 0, // ✅ Persistent pot tracker for the room
-    predictions: { YES: 0, NO: 0 },
+    potBalance: 0, 
     started: false,
     currentQuestionId: null,
     lastOutcome: null
@@ -47,13 +46,12 @@ app.post("/api/create-game", (req, res) => {
 
 app.get("/api/healthz", (req, res) => res.json({ status: "ok" }));
 
-// Helper: Get persistent pot balance
 function getGamePot(gameId) {
   if (!games[gameId]) return 0;
   return games[gameId].potBalance || 0;
 }
 
-// ✅ Helper: Broadcast leaderboard
+// ✅ Broadcast leaderboard
 function broadcastLeaderboard(gameId) {
   const game = games[gameId];
   if (!game) return;
@@ -75,15 +73,8 @@ io.on("connection", (socket) => {
   // --- Pot reveal ---
   socket.on("pot_reveal", ({ gameId }) => {
     if (!games[gameId]) return;
-
     const potAmount = getGamePot(gameId);
-
-    // Broadcast pot to all clients
     io.to(gameId).emit("pot_reveal", { amount: potAmount });
-
-    // Reset stakes immediately so next round starts fresh
-    Object.values(games[gameId].players).forEach(p => p.stake = 0);
-
     console.log(`💰 Pot revealed for ${gameId}: £${potAmount}`);
   });
 
@@ -101,7 +92,8 @@ io.on("connection", (socket) => {
       balance: 100,
       wins: 0,
       cashouts: 0,
-      stake: 0 
+      stake: 0,
+      choice: null // Track active round prediction choice
     };
 
     if (isHost) {
@@ -114,9 +106,14 @@ io.on("connection", (socket) => {
     broadcastLeaderboard(gameId);
   });
 
-  // Handle prediction
+  // Handle prediction (save choice on server state)
   socket.on("prediction", ({ gameId, playerName, choice }) => {
-    console.log(`📡 Prediction from ${playerName} in ${gameId}: ${choice}`);
+    if (!games[gameId]) return;
+    const player = Object.values(games[gameId].players).find(p => p.name === playerName);
+    if (player) {
+      player.choice = choice;
+      console.log(`📡 Prediction recorded for ${playerName}: ${choice}`);
+    }
     io.to(gameId).emit("prediction_made", { player: playerName, choice });
   });
 
@@ -128,23 +125,17 @@ io.on("connection", (socket) => {
       player.stake = amount;
       player.balance -= amount;
 
-      // ✅ Add stake to room's persistent pot balance
       games[gameId].potBalance = (games[gameId].potBalance || 0) + amount;
       const newPot = games[gameId].potBalance;
 
-      // Broadcast stake and live pot update to room
-      io.to(gameId).emit("stake_update", {
-        playerName,
-        amount,
-        balance: player.balance
-      });
+      io.to(gameId).emit("remote_stake_placed", { playerName, amount });
       io.to(gameId).emit("pot_update", { amount: newPot });
 
       broadcastLeaderboard(gameId);
     }
   });
 
-  // ✅ Handle cashout (Refunds 50%, retains remaining 50% in the persistent pot)
+  // Handle cashout
   socket.on("cashout", ({ gameId, playerName, amount }) => {
     if (!games[gameId]) return;
 
@@ -154,13 +145,13 @@ io.on("connection", (socket) => {
 
       player.balance += refund;
       player.cashouts += 1;
-      player.stake = 0; // Remove player's active stake
+      player.stake = 0; 
+      player.choice = null;
 
-      // ✅ Deduct only the 50% refund from pot, leaving the other 50% intact
       games[gameId].potBalance = Math.max(0, (games[gameId].potBalance || 0) - refund);
       const newPot = games[gameId].potBalance;
 
-      // Broadcast updated pot & cashout notification
+      io.to(gameId).emit("remote_cashout", { playerName, amount });
       io.to(gameId).emit("pot_update", { amount: newPot });
       io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
 
@@ -186,27 +177,33 @@ io.on("connection", (socket) => {
     }, 4000);
   });
 
-  // Handle round outcome
+  // ✅ Handle round outcome & determine winners for proportional payout
   socket.on("round_outcome", ({ gameId, outcome }) => {
+    if (!games[gameId]) return;
     console.log(`✅ Outcome for ${gameId}: ${outcome}`);
-    io.to(gameId).emit("round_outcome", { outcome });
-    if (games[gameId]) {
-      games[gameId].lastOutcome = outcome;
-    }
+    games[gameId].lastOutcome = outcome;
+
+    // Filter players who guessed correctly AND did not cash out (stake > 0)
+    const winners = [];
+    Object.values(games[gameId].players).forEach(p => {
+      if (p.choice === outcome && p.stake > 0) {
+        winners.push(p.name);
+      }
+    });
+
+    // Broadcast outcome and winners list to all clients
+    io.to(gameId).emit("round_outcome", { outcome, winners });
   });
 
-  // ✅ Handle next round (Resets active stakes & zeroes pot for all clients)
+  // ✅ Handle next round (Preserves rollover pot if no winners, clears round stakes)
   socket.on("next_round", ({ gameId }) => {
     if (!games[gameId]) return;
 
-    // Reset persistent pot & individual stakes on server
-    games[gameId].potBalance = 0;
+    // Reset individual stakes and choices, but KEEP potBalance intact for rollovers!
     Object.values(games[gameId].players).forEach(p => {
       p.stake = 0;
+      p.choice = null;
     });
-
-    // Zero out pot for all clients
-    io.to(gameId).emit("pot_update", { amount: 0 });
 
     const ids = Object.keys(RugbyQuestions);
     const randomId = ids[Math.floor(Math.random() * ids.length)];
@@ -228,6 +225,5 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ Start server
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
