@@ -183,16 +183,45 @@ io.on("connection", (socket) => {
     console.log(`✅ Outcome for ${gameId}: ${outcome}`);
     games[gameId].lastOutcome = outcome;
 
+    const game = games[gameId];
+    const playersList = Object.values(game.players);
+
     // Filter players who guessed correctly AND did not cash out (stake > 0)
     const winners = [];
-    Object.values(games[gameId].players).forEach(p => {
+    playersList.forEach(p => {
       if (p.choice === outcome && p.stake > 0) {
         winners.push(p.name);
       }
     });
 
+    let totalWinningStakes = 0;
+    winners.forEach(wName => {
+      const p = playersList.find(x => x.name === wName);
+      if (p) totalWinningStakes += p.stake;
+    });
+
+    // If there are valid winners, distribute the pot proportionally on the server too
+    if (winners.length > 0 && totalWinningStakes > 0) {
+      const currentPot = game.potBalance || 0;
+      winners.forEach(wName => {
+        const p = playersList.find(x => x.name === wName);
+        if (p && p.stake > 0) {
+          let shareRatio = p.stake / totalWinningStakes;
+          let payout = currentPot * shareRatio;
+          p.balance += payout;
+          p.wins += 1;
+        }
+      });
+      // Reset pot balance to 0 on successful win resolution
+      game.potBalance = 0;
+      io.to(gameId).emit("pot_update", { amount: 0 });
+    } else {
+      console.log("❌ No winners or 0 winning stakes, pot rolls over.");
+    }
+
     // Broadcast outcome and winners list to all clients
     io.to(gameId).emit("round_outcome", { outcome, winners });
+    broadcastLeaderboard(gameId);
   });
 
   // ✅ Handle next round (Preserves rollover pot if no winners, clears round stakes)
