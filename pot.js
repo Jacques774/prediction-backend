@@ -6,7 +6,7 @@ class Pot {
     this.stakeOpen = false;
     this.interval = null;
 
-    // Default player initializations
+    // Default player initializations fixed at £100
     players.forEach(p => {
       this.balances[p] = 100;
       this.stakes[p] = 0;
@@ -39,7 +39,7 @@ class Pot {
       }
     }, 1000);
 
-    // ✅ Attach pot_reveal listener cleanly (remove old one first)
+    // Attach pot_reveal listener cleanly
     if (window.socket) {
       window.socket.off("pot_reveal");
       window.socket.once("pot_reveal", ({ amount }) => {
@@ -48,13 +48,21 @@ class Pot {
     }
   }
 
-  // Reset pot state after round ends
+  // Safe pot reveal UI helper
+  revealPot(amount) {
+    const potEl = document.getElementById("potAmount");
+    if (potEl) {
+      potEl.style.display = "inline";
+      potEl.textContent = `Pot: £${Number(amount || this.potBalance).toFixed(2)}`;
+    }
+  }
+
+  // ✅ Reset round state (Keeps potBalance intact for rollovers!)
   resetRound() {
     this.stakes = {};
     for (let player in this.balances) {
       this.stakes[player] = 0;
     }
-    this.potBalance = 0;
     this.stakeOpen = false;
 
     if (this.interval) {
@@ -85,10 +93,9 @@ class Pot {
     let originalStake = this.stakes[player] || 0;
     if (originalStake > 0) {
       let refund = originalStake * percent;
-      let remainder = originalStake - refund; // Stays in the pot automatically
 
       this.balances[player] += refund;
-      this.potBalance -= refund; // Reduce pot only by the refund paid out
+      this.potBalance -= refund; // 50% refund paid out, 50% stays in pot for survivors
       this.stakes[player] = 0; // Reset active stake
 
       if (onUpdate) onUpdate(this.potBalance);
@@ -111,7 +118,7 @@ class Pot {
       return;
     }
 
-    // Distribute the FULL active pot proportionally based on relative stake size
+    // Distribute FULL active pot proportionally based on relative stake size
     winners.forEach(p => {
       let stake = this.stakes[p] || 0;
       if (stake > 0) {
@@ -121,10 +128,10 @@ class Pot {
       }
     });
 
-    // Reset pot balance after payout, and clear round stakes
+    // Reset pot balance after payout
     this.potBalance = 0;
     this.stakes = {};
   }
 }
 
-export default     Pot;
+export default Pot;
