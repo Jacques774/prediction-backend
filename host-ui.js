@@ -245,6 +245,18 @@ socket.on("balance_update", ({ balance }) => {
   }
 });
 
+// 🔑 Real-time Leaderboard Sync (Displays all players and balances only)
+socket.on("leaderboard_update", (players) => {
+  console.log("📊 Host received leaderboard update from server:", players);
+
+  const leaderboardList = document.getElementById("leaderboard-list");
+  if (leaderboardList) {
+    const sorted = [...players].sort((a, b) => b.balance - a.balance);
+    leaderboardList.innerHTML = sorted
+      .map(p => `<li><strong>${p.name}</strong>: £${Number(p.balance).toFixed(2)}</li>`)
+      .join("");
+  }
+});
 
 // Status dot
 const statusDot = document.createElement("div");
