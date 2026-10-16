@@ -185,18 +185,20 @@ io.on("connection", (socket) => {
 
     const game = games[gameId];
     const playersList = Object.values(game.players);
+    const normalizedOutcome = outcome ? outcome.trim().toUpperCase() : "";
 
-    // Filter players who guessed correctly AND did not cash out (stake > 0)
+    // Filter players who guessed correctly (case-insensitive) AND did not cash out (stake > 0)
     const winners = [];
     playersList.forEach(p => {
-      if (p.choice === outcome && p.stake > 0) {
+      const playerChoice = p.choice ? p.choice.trim().toUpperCase() : "";
+      if (playerChoice === normalizedOutcome && p.stake > 0) {
         winners.push(p.name);
       }
     });
 
     let totalWinningStakes = 0;
     winners.forEach(wName => {
-      const p = playersList.find(x => x.name === wName);
+      const p = playersList.find(x => x.name.trim().toLowerCase() === wName.trim().toLowerCase());
       if (p) totalWinningStakes += p.stake;
     });
 
@@ -204,7 +206,7 @@ io.on("connection", (socket) => {
     if (winners.length > 0 && totalWinningStakes > 0) {
       const currentPot = game.potBalance || 0;
       winners.forEach(wName => {
-        const p = playersList.find(x => x.name === wName);
+        const p = playersList.find(x => x.name.trim().toLowerCase() === wName.trim().toLowerCase());
         if (p && p.stake > 0) {
           let shareRatio = p.stake / totalWinningStakes;
           let payout = currentPot * shareRatio;
