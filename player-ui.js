@@ -310,3 +310,18 @@ socket.on("pot_reveal", ({ amount }) => {
   console.log("💰 Player received pot reveal:", amount);
   window.revealPot(amount);
 });
+
+// 🔑 Direct Authoritative Balance Update from Server
+socket.on("balance_update", ({ balance }) => {
+  console.log("💰 Player received direct balance update:", balance);
+  
+  if (window.pot && window.currentPlayerName) {
+    window.pot.balances[window.currentPlayerName] = balance;
+  }
+
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl) {
+    balanceEl.textContent = `Balance: £${Number(balance).toFixed(2)}`;
+  }
+});
+
