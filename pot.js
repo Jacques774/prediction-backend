@@ -3,7 +3,6 @@ class Pot {
     this.balances = {};
     this.stakes = {};
     this.potBalance = 0;
-    this.profitPool = 0;
     this.stakeOpen = false;
     this.interval = null;
 
@@ -56,7 +55,6 @@ class Pot {
       this.stakes[player] = 0;
     }
     this.potBalance = 0;
-    this.profitPool = 0;
     this.stakeOpen = false;
 
     if (this.interval) {
@@ -84,38 +82,49 @@ class Pot {
 
   // Cash-out refund calculation and pot adjustment
   cashout(player, percent = 0.5, onUpdate) {
-    if (this.stakes[player] > 0) {
-      let refund = this.stakes[player] * percent;
-      let remainder = this.stakes[player] - refund;
+    let originalStake = this.stakes[player] || 0;
+    if (originalStake > 0) {
+      let refund = originalStake * percent;
+      let remainder = originalStake - refund; // Stays in the pot automatically
 
       this.balances[player] += refund;
-      this.profitPool += remainder;
-      this.potBalance -= this.stakes[player];
-      this.potBalance += remainder;
+      this.potBalance -= refund; // Reduce pot only by the refund paid out
       this.stakes[player] = 0; // Reset active stake
 
       if (onUpdate) onUpdate(this.potBalance);
     }
   }
 
-  // Resolve outcome at round end
+  // Resolve outcome at round end using full proportional pot distribution
   resolveOutcome(winners) {
-    if (winners.length === 0) {
-      return "No winners, pot rolls over.";
+    if (!winners || winners.length === 0) {
+      console.log("❌ No winners, pot rolls over.");
+      this.stakes = {}; // Clear round stakes, keep potBalance intact for rollover!
+      return;
     }
 
-    let totalStake = winners.reduce((sum, p) => sum + (this.stakes[p] || 0), 0);
+    let totalWinningStakes = winners.reduce((sum, p) => sum + (this.stakes[p] || 0), 0);
 
+    if (totalWinningStakes === 0) {
+      console.log("❌ All winners cashed out, pot rolls over.");
+      this.stakes = {}; // Clear round stakes, keep potBalance intact for rollover!
+      return;
+    }
+
+    // Distribute the FULL active pot proportionally based on relative stake size
     winners.forEach(p => {
-      let stakeReturn = this.stakes[p] || 0;
-      let share = totalStake > 0 ? (stakeReturn / totalStake) * this.profitPool : 0;
-      this.balances[p] += stakeReturn + share;
-      this.stakes[p] = 0;
+      let stake = this.stakes[p] || 0;
+      if (stake > 0) {
+        let shareRatio = stake / totalWinningStakes;
+        let totalPayout = this.potBalance * shareRatio;
+        this.balances[p] += totalPayout;
+      }
     });
 
+    // Reset pot balance after payout, and clear round stakes
     this.potBalance = 0;
-    this.profitPool = 0;
+    this.stakes = {};
   }
 }
 
-export default Pot;
+export default     Pot;
