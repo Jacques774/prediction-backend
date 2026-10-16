@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.stakeInterval = null;
       }
 
-      // ✅ 10s Stake window: Lock YES/NO buttons & start cashout timer when stake window expires
+      // ✅ 10s Stake window
       if (window.pot && typeof window.pot.startStakeTimer === "function") {
         window.pot.startStakeTimer(
           10000,
@@ -117,7 +117,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (btnYes) btnYes.disabled = true;
             if (btnNo) btnNo.disabled = true;
 
-            // Start cashout timer unified when stake window finishes (if player staked)
             const activeQ = Engine.currentQuestion;
             if (activeQ && activeQ.stake > 0 && !activeQ.cashedOut) {
               if (typeof startCashoutTimer === "function") {
@@ -141,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (cashoutBtn) cashoutBtn.disabled = true;
     },
 
-    // ✅ CASHOUT: Refund 50%, retains remainder in pot for survivors
+    // ✅ CASHOUT
     cashout() {
       const q = this.currentQuestion;
       if (!q || q.stake <= 0) return;
@@ -150,7 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
       q.cashedOut = true;
       q.outcome = "CASHED OUT";
 
-      // Execute cash-out via Pot class
       if (window.pot) {
         window.pot.cashout(window.currentPlayerName, 0.5, (newPotBalance) => {
           const potEl = document.getElementById("potAmount");
@@ -161,7 +159,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      // Sync with socket server
       if (window.socket && window.gameId && window.currentPlayerName) {
         window.socket.emit("cashout", {
           gameId: window.gameId,
@@ -170,7 +167,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      // Track cash-outs and refresh player balance UI
       window.totalCashouts++;
       const cashoutEl = document.getElementById("player-cashouts");
       if (cashoutEl) cashoutEl.textContent = `Cash-outs: ${window.totalCashouts}`;
@@ -182,7 +178,6 @@ document.addEventListener("DOMContentLoaded", () => {
         )}`;
       }
 
-      // Update leaderboard
       if (typeof Leaderboard !== "undefined" && Leaderboard.update) {
         Leaderboard.update(
           window.currentPlayerName,
@@ -204,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION
     handleOutcome(outcome, serverWinners = null) {
       const q = this.currentQuestion;
-      if (!q || q.outcome !== null) return;
+      if (!q || q.outcome !== null) return; // Prevent duplicate resolution!
       q.outcome = outcome;
 
       const player = window.currentPlayerName;
@@ -212,7 +207,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (q.cashedOut) {
         if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
       } else {
-        // Determine winning players (uses server list if provided, otherwise checks local prediction)
         let winningPlayers = [];
         if (Array.isArray(serverWinners)) {
           winningPlayers = serverWinners;
@@ -220,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
           winningPlayers.push(player);
         }
 
-        // Execute proportional pot distribution via Pot class
+        // Execute proportional pot distribution
         if (window.pot && typeof window.pot.resolveOutcome === "function") {
           window.pot.resolveOutcome(winningPlayers);
         }
@@ -290,7 +284,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // MULTIPLAYER SOCKET SYNC
   // ============================
   if (window.socket) {
-    // Listen for remote stakes placed by other players
     window.socket.on("remote_stake_placed", ({ playerName, amount }) => {
       if (window.pot && playerName !== window.currentPlayerName) {
         window.pot.stakes[playerName] = (window.pot.stakes[playerName] || 0) + amount;
@@ -298,7 +291,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Listen for remote cash-outs from other players
     window.socket.on("remote_cashout", ({ playerName, amount }) => {
       if (window.pot && playerName !== window.currentPlayerName) {
         const refund = amount * 0.5;
@@ -307,7 +299,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Listen for round resolution from host/server
     window.socket.on("round_outcome", ({ outcome, winners }) => {
       Engine.handleOutcome(outcome, winners);
     });
@@ -335,7 +326,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.openStakePopup = function () {
-    console.log("🔔 openStakePopup called");
     if (!stakePopup) return;
     stakePopup.style.display = "flex";
     if (stakeInput) stakeInput.value = "";
@@ -365,7 +355,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       q.stake = amount;
 
-      // Register stake in Pot object and update pot UI live
       if (window.pot) {
         window.pot.stake(player, amount, (newPotBalance) => {
           const potEl = document.getElementById("potAmount");
@@ -376,7 +365,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      // Sync stake with socket server
       if (window.socket) {
         window.socket.emit("stake_placed", {
           gameId: window.gameId,
@@ -403,7 +391,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (stakePopup) stakePopup.style.display = "none";
-      console.log(`✅ Stake saved & balance deducted: £${amount}`);
     };
   }
 
@@ -428,8 +415,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (btnYes) btnYes.disabled = false;
       if (btnNo) btnNo.disabled = false;
       if (cashoutBtn) cashoutBtn.disabled = true;
-
-      console.log("❌ Stake cancelled (no balance deducted yet)");
     };
   }
 
@@ -503,7 +488,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ============================
-  // HOST OUTCOME PANEL
+  // HOST OUTCOME PANEL (ONLY EMIT TO SOCKET)
   // ============================
   window.openHostOutcome = function (questionText) {
     const panel = document.querySelector(".host-outcome-panel");
@@ -524,7 +509,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (hostYesBtn) {
     hostYesBtn.onclick = () => {
       window.closeHostOutcome();
-      Engine.handleOutcome("YES");
+      // ✅ DO NOT call Engine.handleOutcome locally! Let the socket broadcast trigger it once for everyone.
       if (window.socket && window.gameId) {
         window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
       }
@@ -534,7 +519,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (hostNoBtn) {
     hostNoBtn.onclick = () => {
       window.closeHostOutcome();
-      Engine.handleOutcome("NO");
+      // ✅ DO NOT call Engine.handleOutcome locally! Let the socket broadcast trigger it once for everyone.
       if (window.socket && window.gameId) {
         window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
       }
