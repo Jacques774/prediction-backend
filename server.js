@@ -177,7 +177,7 @@ io.on("connection", (socket) => {
     }, 4000);
   });
 
-  // ✅ Handle round outcome & determine winners for proportional payout
+  // ✅ Handle round outcome & determine winners for proportional parimutuel payout
   socket.on("round_outcome", ({ gameId, outcome }) => {
     if (!games[gameId]) return;
     console.log(`✅ Outcome for ${gameId}: ${outcome}`);
@@ -202,14 +202,14 @@ io.on("connection", (socket) => {
       if (p) totalWinningStakes += p.stake;
     });
 
-    // If there are valid winners, distribute the pot proportionally on the server too
+    // If there are valid winners, distribute the pot proportionally
     if (winners.length > 0 && totalWinningStakes > 0) {
       const currentPot = game.potBalance || 0;
       winners.forEach(wName => {
         const p = playersList.find(x => x.name.trim().toLowerCase() === wName.trim().toLowerCase());
         if (p && p.stake > 0) {
           let shareRatio = p.stake / totalWinningStakes;
-          let payout = currentPot * shareRatio;
+          let payout = currentPot * shareRatio; // If everyone wins, payout == stake (0 profit). If there are losers, payout > stake (includes profit).
           p.balance += payout;
           p.wins += 1;
         }
