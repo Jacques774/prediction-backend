@@ -38,7 +38,7 @@ window.updatePot = updatePot;
 
 console.log("✅ player-ui.js loaded");
 
-// ✅ Connect to your Render backend correctly
+// ✅ Connect to Render backend
 const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
@@ -56,11 +56,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const codeInput = document.getElementById("game-code-input");
     const nameError = document.getElementById("playerNameError");
 
-    const playerName = nameInput.value.trim();
-    const gameId = codeInput.value.trim();
+    const playerName = nameInput ? nameInput.value.trim() : "";
+    const gameId = codeInput ? codeInput.value.trim() : "";
 
     if (!playerName || !gameId) {
-      nameError.style.display = "block";
+      if (nameError) nameError.style.display = "block";
       return;
     }
 
@@ -69,23 +69,31 @@ document.addEventListener("DOMContentLoaded", () => {
     window.gameId = gameId;
     window.isHost = false;
 
-    // ✅ Create pot with correct player key
-    window.pot = new Pot([window.currentPlayerName]);
+    // Check for custom buy-in in URL if passed
+    const urlParams = new URLSearchParams(window.location.search);
+    const buyInAmount = Number(urlParams.get("buyin")) || 100;
+
+    // ✅ Initialize pot with player name & buy-in amount
+    window.pot = new Pot([window.currentPlayerName], buyInAmount);
 
     // Emit join event
     socket.emit("join_game", { gameId, playerName, isHost: false });
 
     // Hide setup, show dashboard
-    document.getElementById("playerSetupSlide").style.display = "none";
-    const dashboard = document.getElementById("dashboard");
-    dashboard.classList.remove("hidden");
-    dashboard.style.opacity = "1";
+    const setupSlide = document.getElementById("playerSetupSlide");
+    if (setupSlide) setupSlide.style.display = "none";
 
-    // ✅ Get DOM elements FIRST before referencing them
+    const dashboard = document.getElementById("dashboard");
+    if (dashboard) {
+      dashboard.classList.remove("hidden");
+      dashboard.style.opacity = "1";
+    }
+
+    // Get DOM elements
     const nameEl = document.getElementById("player-name");
     const balanceEl = document.getElementById("player-balance");
 
-    const startingBal = window.pot.balances[window.currentPlayerName] || 100;
+    const startingBal = window.pot.balances[window.currentPlayerName] || buyInAmount;
 
     if (nameEl) nameEl.textContent = `Player: ${playerName}`;
     if (balanceEl) {
@@ -100,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Prediction helper
 window.sendPrediction = function (choice) {
+  if (!socket || !window.gameId || !window.currentPlayerName) return;
   socket.emit("prediction", {
     gameId: window.gameId,
     playerName: window.currentPlayerName,
@@ -107,21 +116,20 @@ window.sendPrediction = function (choice) {
   });
 };
 
-// Cashout helper
+// Cashout helper (connects through Engine)
 window.cashout = function () {
-  const amount = parseInt(document.getElementById("cashout-amount").value, 10);
-  if (!amount || amount <= 0) return;
-  socket.emit("cashout", {
-    gameId: window.gameId,
-    playerName: window.currentPlayerName,
-    amount
-  });
+  if (typeof Engine !== "undefined" && typeof Engine.cashout === "function") {
+    Engine.cashout();
+  }
 };
 
 // Countdown helper
 window.startPreCountdown = function (onDone) {
   const el = document.getElementById("preCountdown");
-  if (!el) return;
+  if (!el) {
+    if (typeof onDone === "function") onDone();
+    return;
+  }
   el.style.display = "block";
   let count = 3;
   el.textContent = count;
@@ -131,7 +139,7 @@ window.startPreCountdown = function (onDone) {
     if (count < 0) {
       clearInterval(interval);
       el.style.display = "none";
-      onDone();
+      if (typeof onDone === "function") onDone();
     }
   }, 1000);
 };
@@ -162,16 +170,16 @@ socket.on("disconnect", () => (statusDot.style.backgroundColor = "red"));
 socket.on("game_starting", ({ host }) => {
   console.log(`Game starting by host: ${host}`);
 
-  startPreCountdown(() => {
+  window.startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
     if (activeCard) activeCard.style.display = "block";
   });
 });
 
-// 🔑 Round outcome broadcast
-socket.on("round_outcome", ({ outcome }) => {
+// 🔑 Round outcome broadcast (Accepts server winners list)
+socket.on("round_outcome", ({ outcome, winners }) => {
   if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
-    Engine.handleOutcome(outcome);
+    Engine.handleOutcome(outcome, winners);
   }
 
   const balanceEl = document.getElementById("player-balance");
@@ -180,9 +188,9 @@ socket.on("round_outcome", ({ outcome }) => {
     balanceEl.textContent = `Balance: £${Number(currentBal).toFixed(2)}`;
   }
 
-  if (typeof Leaderboard !== "undefined" && window.currentPlayerName) {
-    Leaderboard.update(window.currentPlayerName, window.pot.balances[window.currentPlayerName]);
-    Leaderboard.render();
+  if (typeof Leaderboard !== "undefined" && Leaderboard.update && window.currentPlayerName) {
+    Leaderboard.update(window.currentPlayerName, window.pot ? window.pot.balances[window.currentPlayerName] : 0);
+    if (Leaderboard.render) Leaderboard.render();
   }
 
   const outcomeEl = document.getElementById("player-outcome");
@@ -195,6 +203,11 @@ socket.on("round_outcome", ({ outcome }) => {
 
 // 🔑 New question broadcast
 socket.on("new_question", ({ id }) => {
+  if (typeof RugbyQuestions === "undefined") {
+    console.error("❌ RugbyQuestions is not loaded.");
+    return;
+  }
+
   const question = RugbyQuestions[id];
   if (!question) {
     console.error("❌ Question not found for ID:", id);
@@ -225,7 +238,7 @@ socket.on("next_round", ({ gameId }) => {
   });
 });
 
-// 🔑 ✅ Real-time Pot Update Listener (Catch Cash-out & Stake reductions)
+// 🔑 Real-time Pot Update Listener
 socket.on("pot_update", ({ amount }) => {
   console.log("💰 Player received pot update from server:", amount);
   if (window.pot) {
@@ -242,11 +255,14 @@ socket.on("pot_update", ({ amount }) => {
 });
 
 // Countdown helper for next question
-window.startPostQuestionCountdown = function (onDone) {
+window.startPostQuestionCountdown = function (onDone, duration = 5) {
   const el = document.getElementById("postQuestionCountdown");
-  if (!el) return;
+  if (!el) {
+    if (typeof onDone === "function") onDone();
+    return;
+  }
   el.style.display = "block";
-  let count = 5;
+  let count = duration;
   el.textContent = count;
   const interval = setInterval(() => {
     count--;
@@ -260,13 +276,12 @@ window.startPostQuestionCountdown = function (onDone) {
 };
 
 // ============================
-// STAKE COUNTDOWN DISPLAY (Fixed)
+// STAKE COUNTDOWN DISPLAY
 // ============================
 window.showCountdown = function (timeLeft) {
   const stakeEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
 
-  // Only hide pot if the pot balance is literally 0
   if (potEl && (!window.pot || window.pot.potBalance === 0)) {
     potEl.style.display = "none";
   }
