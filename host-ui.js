@@ -245,18 +245,51 @@ socket.on("balance_update", ({ balance }) => {
   }
 });
 
-// 🔑 Real-time Leaderboard Sync (Displays all players and balances only)
+// Global memory to track previous rankings across updates
+window.previousRanks = window.previousRanks || {};
+
+// 🔑 Real-time Leaderboard Sync with Ranking Numbers & Movement Arrows
 socket.on("leaderboard_update", (players) => {
   console.log("📊 Host received leaderboard update from server:", players);
 
   const leaderboardList = document.getElementById("leaderboard-list");
-  if (leaderboardList) {
-    const sorted = [...players].sort((a, b) => b.balance - a.balance);
-    leaderboardList.innerHTML = sorted
-      .map(p => `<li><strong>${p.name}</strong>: £${Number(p.balance).toFixed(2)}</li>`)
-      .join("");
-  }
+  if (!leaderboardList) return;
+
+  // 1. Sort players by balance descending
+  const sorted = [...players].sort((a, b) => b.balance - a.balance);
+
+  // 2. Build new ranks and HTML string
+  const currentRanks = {};
+  const html = sorted.map((p, index) => {
+    const currentRank = index + 1; // 1-based rank (#1, #2, etc.)
+    currentRanks[p.name] = currentRank;
+
+    const prevRank = window.previousRanks[p.name];
+    let arrow = `<span style="color: gray; margin-left: 6px;">➖</span>`; // Default: no change
+
+    if (prevRank !== undefined) {
+      if (currentRank < prevRank) {
+        // Rank improved (e.g., moved from #2 to #1)
+        arrow = `<span style="color: #28a745; margin-left: 6px; font-weight: bold;">▲</span>`;
+      } else if (currentRank > prevRank) {
+        // Rank dropped (e.g., moved from #1 to #2)
+        arrow = `<span style="color: #dc3545; margin-left: 6px; font-weight: bold;">▼</span>`;
+      }
+    }
+
+    return `<li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid #eee;">
+      <span><strong>#${currentRank}</strong> ${p.name} ${arrow}</span>
+      <span><strong>£${Number(p.balance).toFixed(2)}</strong></span>
+    </li>`;
+  }).join("");
+
+  // 3. Save current ranks to global state for next update comparison
+  window.previousRanks = currentRanks;
+
+  // 4. Render to DOM
+  leaderboardList.innerHTML = html;
 });
+
 
 // Status dot
 const statusDot = document.createElement("div");
