@@ -1,14 +1,14 @@
 import { RugbyQuestions } from "./questions.js";
 import Pot from "./pot.js";
 
-// ✅ Safe dynamic Pot initializer
-window.initGame = function (players) {
-  window.pot = new Pot(players);
+// ✅ Dynamic Pot initializer supporting host buy-in amount
+window.initGame = function (players, buyInAmount = 100) {
+  window.pot = new Pot(players, buyInAmount);
   players.forEach(p => {
     const balance = window.pot.balances[p];
     const el = document.getElementById(`${p}-balance`);
     if (el) {
-      el.innerText = "Balance: £" + balance;
+      el.innerText = "Balance: £" + Number(balance).toFixed(2);
     }
   });
 };
@@ -56,11 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const Utils = {
-    profit(q) {
-      if (q.cashedOut) return q.stake * 0.5;
-      if (q.userChoice === q.outcome) return q.stake * 2;
-      return 0;
-    },
     formatMoney(amount) {
       return Number(amount || 0).toFixed(2);
     }
@@ -146,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (cashoutBtn) cashoutBtn.disabled = true;
     },
 
-    // ✅ FIXED CASHOUT: Calculates refund, deducts pot, and updates screen UI
+    // ✅ CASHOUT: Refund 50%, retains remainder in pot for survivors
     cashout() {
       const q = this.currentQuestion;
       if (!q || q.stake <= 0) return;
@@ -166,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      // Tell socket server
+      // Sync with socket server
       if (window.socket && window.gameId && window.currentPlayerName) {
         window.socket.emit("cashout", {
           gameId: window.gameId,
@@ -206,37 +201,47 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
 
-    handleOutcome(outcome) {
+    // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION
+    handleOutcome(outcome, serverWinners = null) {
       const q = this.currentQuestion;
       if (!q || q.outcome !== null) return;
       q.outcome = outcome;
 
+      const player = window.currentPlayerName;
+
       if (q.cashedOut) {
         if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
       } else {
-        const result = (q.userChoice === outcome)
-          ? this.updateBalance("WIN", q.stake)
-          : this.updateBalance("LOSE", q.stake);
+        // Determine winning players (uses server list if provided, otherwise checks local prediction)
+        let winningPlayers = [];
+        if (Array.isArray(serverWinners)) {
+          winningPlayers = serverWinners;
+        } else if (q.userChoice === outcome && q.stake > 0) {
+          winningPlayers.push(player);
+        }
 
-        q.oldBalance = result.oldBalance;
-        q.newBalance = result.newBalance;
+        // Execute proportional pot distribution via Pot class
+        if (window.pot && typeof window.pot.resolveOutcome === "function") {
+          window.pot.resolveOutcome(winningPlayers);
+        }
 
         const balanceEl = document.getElementById("player-balance");
-        if (balanceEl && window.pot && window.currentPlayerName) {
+        if (balanceEl && window.pot && player) {
           balanceEl.textContent = `Balance: £${Utils.formatMoney(
-            window.pot.balances[window.currentPlayerName]
+            window.pot.balances[player]
           )}`;
         }
 
         if (typeof Leaderboard !== "undefined" && Leaderboard.update) {
           Leaderboard.update(
-            window.currentPlayerName,
-            window.pot ? window.pot.balances[window.currentPlayerName] : 0
+            player,
+            window.pot ? window.pot.balances[player] : 0
           );
           if (Leaderboard.render) Leaderboard.render();
         }
 
-        if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome}</small>`;
+        const didWin = winningPlayers.includes(player);
+        if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (${didWin ? "WIN" : "LOST"})</small>`;
       }
 
       if (typeof History !== "undefined" && History.push) {
@@ -262,7 +267,6 @@ document.addEventListener("DOMContentLoaded", () => {
               if (btnYes) btnYes.disabled = true;
               if (btnNo) btnNo.disabled = true;
 
-              // Start cashout timer unified when stake window finishes (if player staked)
               const activeQ = Engine.currentQuestion;
               if (activeQ && activeQ.stake > 0 && !activeQ.cashedOut) {
                 if (typeof startCashoutTimer === "function") {
@@ -279,27 +283,35 @@ document.addEventListener("DOMContentLoaded", () => {
           console.log("⏳ Player finished countdown, waiting for server...");
         }
       });
-    },
-
-    updateBalance(outcome, stake) {
-      const player = window.currentPlayerName;
-      if (!window.pot || !window.pot.balances || !player) {
-        return { oldBalance: 0, newBalance: 0 };
-      }
-
-      const oldBalance = window.pot.balances[player] || 0;
-      let newBalance = oldBalance;
-
-      if (outcome === "WIN") {
-        newBalance += stake * 2;
-      } else if (outcome === "CASHED OUT") {
-        newBalance += stake * 0.5;
-      }
-
-      window.pot.balances[player] = newBalance;
-      return { oldBalance, newBalance };
     }
   };
+
+  // ============================
+  // MULTIPLAYER SOCKET SYNC
+  // ============================
+  if (window.socket) {
+    // Listen for remote stakes placed by other players
+    window.socket.on("remote_stake_placed", ({ playerName, amount }) => {
+      if (window.pot && playerName !== window.currentPlayerName) {
+        window.pot.stakes[playerName] = (window.pot.stakes[playerName] || 0) + amount;
+        window.pot.potBalance += amount;
+      }
+    });
+
+    // Listen for remote cash-outs from other players
+    window.socket.on("remote_cashout", ({ playerName, amount }) => {
+      if (window.pot && playerName !== window.currentPlayerName) {
+        const refund = amount * 0.5;
+        window.pot.potBalance -= refund;
+        window.pot.stakes[playerName] = 0;
+      }
+    });
+
+    // Listen for round resolution from host/server
+    window.socket.on("round_outcome", ({ outcome, winners }) => {
+      Engine.handleOutcome(outcome, winners);
+    });
+  }
 
   // ============================
   // BUTTON LISTENERS
@@ -329,7 +341,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (stakeInput) stakeInput.value = "";
   };
 
-  // ✅ FIXED STAKE SAVE: Calls window.pot.stake() to register active stakes
   if (stakeSaveBtn) {
     stakeSaveBtn.onclick = () => {
       const amount = Number(stakeInput?.value);
@@ -365,7 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      // Send to socket server
+      // Sync stake with socket server
       if (window.socket) {
         window.socket.emit("stake_placed", {
           gameId: window.gameId,
@@ -392,9 +403,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (stakePopup) stakePopup.style.display = "none";
-
-      // ❌ Removed startCashoutTimer() here so timers don't trigger per-stake!
-
       console.log(`✅ Stake saved & balance deducted: £${amount}`);
     };
   }
@@ -426,7 +434,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ============================
-  // STAKE COUNTDOWN DISPLAY (Fixed to keep pot visible)
+  // STAKE COUNTDOWN DISPLAY
   // ============================
   window.showCountdown = function (timeLeft) {
     const stakeEl = document.getElementById("stakeCountdown");
@@ -435,7 +443,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (postEl) postEl.style.display = "none";
 
-    // Only hide pot if balance is 0
     if (potEl && (!window.pot || window.pot.potBalance === 0)) {
       potEl.style.display = "none";
     }
@@ -518,9 +525,9 @@ document.addEventListener("DOMContentLoaded", () => {
     hostYesBtn.onclick = () => {
       window.closeHostOutcome();
       Engine.handleOutcome("YES");
-      window.startPostQuestionCountdown(() => {
-        if (window.socket) window.socket.emit("next_round", { gameId: window.gameId });
-      });
+      if (window.socket && window.gameId) {
+        window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
+      }
     };
   }
 
@@ -528,9 +535,9 @@ document.addEventListener("DOMContentLoaded", () => {
     hostNoBtn.onclick = () => {
       window.closeHostOutcome();
       Engine.handleOutcome("NO");
-      window.startPostQuestionCountdown(() => {
-        if (window.socket) window.socket.emit("next_round", { gameId: window.gameId });
-      });
+      if (window.socket && window.gameId) {
+        window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
+      }
     };
   }
 
