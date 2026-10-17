@@ -320,12 +320,13 @@ socket.on("balance_update", ({ balance }) => {
   }
 });
 
-// Global memory to track previous rankings across updates
+// Global memory to track previous state across round updates
+window.previousBalances = window.previousBalances || {};
 window.previousRanks = window.previousRanks || {};
 
-// 🔑 Real-time Leaderboard Sync with Ranking Numbers & Movement Arrows
+// 🔑 Leaderboard Sync (Triggers on Round Outcome)
 socket.on("leaderboard_update", (players) => {
-  console.log("📊 Player received leaderboard update from server:", players);
+  console.log("📊 Player received end-of-round leaderboard update:", players);
 
   const leaderboardList = document.getElementById("leaderboard-list");
   if (!leaderboardList) return;
@@ -333,31 +334,43 @@ socket.on("leaderboard_update", (players) => {
   // 1. Sort players by balance descending
   const sorted = [...players].sort((a, b) => b.balance - a.balance);
 
-  // 2. Build new ranks and HTML string
+  // 2. Build current ranks & balances map
   const currentRanks = {};
+  const currentBalances = {};
+
   const html = sorted.map((p, index) => {
-    const currentRank = index + 1; // 1-based rank (#1, #2, etc.)
+    const currentRank = index + 1;
     currentRanks[p.name] = currentRank;
+    currentBalances[p.name] = p.balance;
 
     const prevRank = window.previousRanks[p.name];
-    let arrow = `<span style="color: gray; margin-left: 6px;">➖</span>`; // Default: no change
+    const prevBalance = window.previousBalances[p.name];
 
-    if (prevRank !== undefined) {
-      if (currentRank < prevRank) {
-        arrow = `<span style="color: #28a745; margin-left: 6px; font-weight: bold;">▲</span>`;
-      } else if (currentRank > prevRank) {
-        arrow = `<span style="color: #dc3545; margin-left: 6px; font-weight: bold;">▼</span>`;
+    let arrow = `<span style="color: #888; margin-left: 6px;">➖</span>`; // Neutral
+
+    if (prevRank !== undefined && prevBalance !== undefined) {
+      if (currentRank < prevRank || p.balance > prevBalance) {
+        // Higher rank or higher balance
+        arrow = `<span style="color: #2ecc71; margin-left: 6px; font-weight: bold;">▲</span>`;
+      } else if (currentRank > prevRank || p.balance < prevBalance) {
+        // Lower rank or lower balance
+        arrow = `<span style="color: #e74c3c; margin-left: 6px; font-weight: bold;">▼</span>`;
       }
     }
 
-    return `<li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid #eee;">
-      <span><strong>#${currentRank}</strong> ${p.name} ${arrow}</span>
-      <span><strong>£${Number(p.balance).toFixed(2)}</strong></span>
+    return `<li style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; margin-bottom: 4px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 15px;">
+      <span>
+        <strong style="color: #f1c40f;">#${currentRank}</strong> 
+        <span style="margin-left: 6px;">${p.name}</span> 
+        ${arrow}
+      </span>
+      <strong>£${Number(p.balance).toFixed(2)}</strong>
     </li>`;
   }).join("");
 
-  // 3. Save current ranks to global state for next update comparison
+  // 3. Save state for next round comparison
   window.previousRanks = currentRanks;
+  window.previousBalances = currentBalances;
 
   // 4. Render to DOM
   leaderboardList.innerHTML = html;
