@@ -51,7 +51,7 @@ function getGamePot(gameId) {
   return games[gameId].potBalance || 0;
 }
 
-// ✅ Broadcast leaderboard (Called ONLY at round resolution)
+// ✅ Broadcast leaderboard (Called on join and round resolution)
 function broadcastLeaderboard(gameId) {
   const game = games[gameId];
   if (!game) return;
@@ -100,7 +100,9 @@ io.on("connection", (socket) => {
       games[gameId].hostId = socket.id;
       io.to(gameId).emit("host_joined", { playerName });
     } else {
-      io.to(gameId).emit("player_joined", { playerName });
+      // ✅ Broadcast player join event with their starting balance
+      io.to(gameId).emit("player_joined", { playerName, balance: 100 });
+      broadcastLeaderboard(gameId);
     }
   });
 
@@ -151,6 +153,7 @@ io.on("connection", (socket) => {
       io.to(gameId).emit("pot_update", { amount: newPot });
       io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
 
+      broadcastLeaderboard(gameId);
       console.log(`💸 ${playerName} cashed out. Refund: £${refund}. Remaining Pot: £${newPot}`);
     }
   });
@@ -253,6 +256,7 @@ io.on("connection", (socket) => {
         const playerName = game.players[socket.id].name;
         delete game.players[socket.id];
         io.to(gameId).emit("player_left", { playerName });
+        broadcastLeaderboard(gameId);
       }
     }
   });
