@@ -269,7 +269,13 @@ document.addEventListener("DOMContentLoaded", () => {
           if (Leaderboard.render) Leaderboard.render();
         }
 
-        const didWin = winningPlayers.includes(player);
+        const didWin = winningPlayers.map(w => w.trim().toLowerCase()).includes(player.trim().toLowerCase());
+        if (didWin) {
+          window.totalWins = (window.totalWins || 0) + 1;
+          const winsEl = document.getElementById("player-wins");
+          if (winsEl) winsEl.textContent = `Wins: ${window.totalWins}`;
+        }
+
         if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (${didWin ? "WIN" : "LOST"})</small>`;
       }
 
