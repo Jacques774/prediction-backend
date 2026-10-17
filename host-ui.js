@@ -76,6 +76,12 @@ if (!gameId) {
 window.gameId = gameId;
 
 document.addEventListener("DOMContentLoaded", () => {
+  // ============================
+  // STAT TRACKING GLOBALS
+  // ============================
+  window.totalWins = 0;
+  window.totalCashouts = 0;
+
   const startBtn = document.getElementById("host-start-btn");
   if (!startBtn) {
     console.error("Start button not found — check ID or script placement.");
@@ -122,15 +128,22 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePot(amount);
   });
 
-  // ✅ Round Outcome socket handler
+  // ✅ Round Outcome socket handler (Includes Win counter increment)
   socket.on("round_outcome", ({ outcome, winners }) => {
     if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
       Engine.handleOutcome(outcome, winners);
     }
 
+    const player = window.currentPlayerName;
+    if (winners && player && winners.map(w => w.trim().toLowerCase()).includes(player.trim().toLowerCase())) {
+      window.totalWins++;
+      const winsEl = document.getElementById("player-wins");
+      if (winsEl) winsEl.textContent = `Wins: ${window.totalWins}`;
+    }
+
     const balanceEl = document.getElementById("player-balance");
-    if (balanceEl && window.pot && window.pot.balances[window.currentPlayerName] !== undefined) {
-      const bal = window.pot.balances[window.currentPlayerName];
+    if (balanceEl && window.pot && window.pot.balances[player] !== undefined) {
+      const bal = window.pot.balances[player];
       balanceEl.textContent = `Balance: £${Number(bal).toFixed(2)}`;
     }
 
