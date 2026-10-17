@@ -1,7 +1,3 @@
-// ============================
-// player-ui.js
-// ============================
-
 import { RugbyQuestions } from "./questions.js";
 import Pot from "./pot.js";
 
@@ -70,6 +66,12 @@ const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
 document.addEventListener("DOMContentLoaded", () => {
+  // ============================
+  // STAT TRACKING GLOBALS
+  // ============================
+  window.totalWins = 0;
+  window.totalCashouts = 0;
+
   const joinBtn = document.getElementById("player-join-btn");
   if (!joinBtn) {
     console.error("Join button not found — check ID or script placement.");
@@ -203,15 +205,22 @@ socket.on("game_starting", ({ host }) => {
   });
 });
 
-// 🔑 Round outcome broadcast (Accepts server winners list)
+// 🔑 Round outcome broadcast (Includes Win counter increment)
 socket.on("round_outcome", ({ outcome, winners }) => {
   if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
     Engine.handleOutcome(outcome, winners);
   }
 
+  const player = window.currentPlayerName;
+  if (winners && player && winners.map(w => w.trim().toLowerCase()).includes(player.trim().toLowerCase())) {
+    window.totalWins++;
+    const winsEl = document.getElementById("player-wins");
+    if (winsEl) winsEl.textContent = `Wins: ${window.totalWins}`;
+  }
+
   const balanceEl = document.getElementById("player-balance");
-  if (balanceEl && window.pot && window.currentPlayerName) {
-    const currentBal = window.pot.balances[window.currentPlayerName] || 0;
+  if (balanceEl && window.pot && player) {
+    const currentBal = window.pot.balances[player] || 0;
     balanceEl.textContent = `Balance: £${Number(currentBal).toFixed(2)}`;
   }
 
