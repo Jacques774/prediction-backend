@@ -2,51 +2,73 @@
 const leaderboardList = document.getElementById("leaderboard-list");
 
 window.Leaderboard = {
-  scores: {},        // { name: balance }
-  lastScores: {},    // track previous values for arrows
+  scores: {},        // { name: currentBalance }
+  lastScores: {},    // { name: previousRoundBalance }
+  lastRanks: {},     // { name: previousRoundRank }
 
   update(name, newBalance) {
-    // store previous balance correctly
-    if (this.scores[name] !== undefined) {
-      this.lastScores[name] = this.scores[name];
+    // If we don't have a record yet, set starting baseline to £100
+    if (this.lastScores[name] === undefined) {
+      this.lastScores[name] = 100;
     } else {
-      this.lastScores[name] = newBalance;
+      // Store current balance as last balance before updating
+      this.lastScores[name] = this.scores[name] !== undefined ? this.scores[name] : newBalance;
     }
 
-    // update to current balance
+    // Update to current balance
     this.scores[name] = newBalance;
   },
 
-  movement(name) {
-    const oldVal = this.lastScores[name];
-    const newVal = this.scores[name];
+  movement(name, currentRank) {
+    const oldVal = this.lastScores[name] !== undefined ? this.lastScores[name] : 100;
+    const newVal = this.scores[name] !== undefined ? this.scores[name] : 100;
+    const oldRank = this.lastRanks[name];
 
+    // Priority 1: Balance change
     if (newVal > oldVal) return "up";
     if (newVal < oldVal) return "down";
+
+    // Priority 2: Rank position shift (if balances are tied)
+    if (oldRank !== undefined) {
+      if (currentRank < oldRank) return "up";
+      if (currentRank > oldRank) return "down";
+    }
+
     return "same";
   },
 
   render() {
+    if (!leaderboardList) return;
+
+    // Sort highest balance first
     const entries = Object.entries(this.scores)
-      .sort((a, b) => b[1] - a[1]); // highest balance first
+      .sort((a, b) => b[1] - a[1]);
+
+    const newRanks = {};
 
     leaderboardList.innerHTML = entries.map(([name, balance], index) => {
-      const movement = this.movement(name);
+      const currentRank = index + 1;
+      newRanks[name] = currentRank;
+
+      const movement = this.movement(name, currentRank);
       const arrow =
         movement === "up" ? "↑" :
         movement === "down" ? "↓" : "→";
 
       return `
-        <div class="leaderboard-item">
-          <div class="left">
-            <div class="rank">${index + 1}</div>
+        <div class="leaderboard-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; margin-bottom: 4px; background: rgba(255,255,255,0.05); border-radius: 6px;">
+          <div class="left" style="display: flex; align-items: center; gap: 8px;">
+            <div class="rank" style="font-weight: bold; color: #f1c40f;">#${currentRank}</div>
             <div class="name">${name}</div>
-            <div class="arrow ${movement}">${arrow}</div>
+            <div class="arrow ${movement}" style="font-weight: bold; color: ${movement === 'up' ? '#2ecc71' : movement === 'down' ? '#e74c3c' : '#888'};">${arrow}</div>
           </div>
-          <div class="balance">${balance.toFixed(2)}</div>
+          <div class="balance" style="font-weight: bold;">£${Number(balance).toFixed(2)}</div>
         </div>
       `;
     }).join("");
+
+    // Save current ranks for next round comparison
+    this.lastRanks = newRanks;
   }
 };
 
