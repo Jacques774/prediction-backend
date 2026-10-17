@@ -12,13 +12,13 @@ window.isStakeWindowActive = false;
 
 function showCountdown(timeLeft) {
   window.isStakeWindowActive = true;
+  document.body.classList.add("stake-active"); // Locks pot hidden via CSS
 
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
 
-  // STRICT: Keep pot hidden while countdown is running
   if (potEl) {
-    potEl.style.display = "none";
+    potEl.style.setProperty("display", "none", "important");
   }
 
   if (countdownEl) {
@@ -29,6 +29,7 @@ function showCountdown(timeLeft) {
 
 function revealPot(amount) {
   window.isStakeWindowActive = false;
+  document.body.classList.remove("stake-active"); // Unlocks pot display
 
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
@@ -38,18 +39,22 @@ function revealPot(amount) {
   }
 
   if (potEl) {
+    potEl.style.removeProperty("display");
     potEl.style.display = "inline";
     potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
 }
 
 function updatePot(amount) {
-  // Never expose or unhide pot if stake window is active
-  if (window.isStakeWindowActive) return;
-
   const potEl = document.getElementById("potAmount");
-  if (potEl && potEl.style.display !== "none") {
-    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
+  if (!potEl) return;
+
+  // Update text silently
+  potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
+
+  // If stake window is running, force element hidden
+  if (window.isStakeWindowActive) {
+    potEl.style.setProperty("display", "none", "important");
   }
 }
 
