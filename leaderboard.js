@@ -1,5 +1,6 @@
-// leaderboard.js
-const leaderboardList = document.getElementById("leaderboard-list");
+// ============================
+// leaderboard.js (Your Working Version + Safe DOM Lookup)
+// ============================
 
 window.Leaderboard = {
   scores: {},        // { name: currentBalance }
@@ -38,6 +39,8 @@ window.Leaderboard = {
   },
 
   render() {
+    // 🔑 Safe lookup inside render so it never returns null if called early
+    const leaderboardList = document.getElementById("leaderboard-list");
     if (!leaderboardList) return;
 
     // Sort highest balance first
