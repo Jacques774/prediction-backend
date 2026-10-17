@@ -1,9 +1,19 @@
 import { RugbyQuestions } from "./questions.js";
 import Pot from "./pot.js";
 
-// DOM helpers for stake timer + pot reveal
+// ============================
+// DOM Helpers for Stake Timer & Delayed Pot Reveal
+// ============================
 function showCountdown(timeLeft) {
   const countdownEl = document.getElementById("stakeCountdown");
+  const potEl = document.getElementById("potAmount");
+
+  // Keep pot hidden while stake countdown is running
+  if (potEl) {
+    potEl.style.display = "none";
+  }
+
+  // Display active stake window countdown
   if (countdownEl) {
     countdownEl.style.display = "inline";
     countdownEl.textContent = "Stake window: " + timeLeft + "s";
@@ -13,16 +23,23 @@ function showCountdown(timeLeft) {
 function revealPot(amount) {
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
-  if (countdownEl && potEl) {
+
+  // Hide the countdown element
+  if (countdownEl) {
     countdownEl.style.display = "none";
+  }
+
+  // Reveal pot element only after timer reaches zero
+  if (potEl) {
     potEl.style.display = "inline";
     potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
 }
 
 function updatePot(amount) {
+  // Only update text content silently if pot is already visible
   const potEl = document.getElementById("potAmount");
-  if (potEl) {
+  if (potEl && potEl.style.display !== "none") {
     potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
 }
@@ -86,17 +103,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Real-time Pot Update Listener for Host Screen
+  // Real-time Pot Update Listener for Host Screen (Updates quietly if revealed)
   socket.on("pot_update", ({ amount }) => {
     console.log("💰 Pot updated on Host screen:", amount);
     if (window.pot) {
       window.pot.potBalance = amount;
     }
-    const potEl = document.getElementById("potAmount");
-    if (potEl) {
-      potEl.style.display = "inline";
-      potEl.textContent = `Pot: £${Number(amount || 0).toFixed(2)}`;
-    }
+    updatePot(amount);
   });
 
   // ✅ Round Outcome socket handler
