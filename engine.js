@@ -416,21 +416,26 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ============================
-  // STAKE COUNTDOWN DISPLAY
+  // STAKE COUNTDOWN DISPLAY (GUARDS POT DISPLAY)
   // ============================
   window.showCountdown = function (timeLeft) {
-    if (typeof window.updateStakeWindowCountdown === "function") {
-      window.updateStakeWindowCountdown(timeLeft);
-    } else {
-      const stakeEl = document.getElementById("stakeCountdown");
-      const postEl = document.getElementById("postQuestionCountdown");
+    window.isStakeWindowActive = true;
+    document.body.classList.add("stake-active");
 
-      if (postEl) postEl.style.display = "none";
+    const stakeEl = document.getElementById("stakeCountdown");
+    const postEl = document.getElementById("postQuestionCountdown");
+    const potEl = document.getElementById("potAmount");
 
-      if (stakeEl) {
-        stakeEl.style.display = "inline";
-        stakeEl.textContent = `Stake window: ${timeLeft}s`;
-      }
+    if (postEl) postEl.style.display = "none";
+
+    // STRICT: Force pot hidden while countdown is active
+    if (potEl) {
+      potEl.style.setProperty("display", "none", "important");
+    }
+
+    if (stakeEl) {
+      stakeEl.style.display = "inline";
+      stakeEl.textContent = `Stake window: ${timeLeft}s`;
     }
   };
 
