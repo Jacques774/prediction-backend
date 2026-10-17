@@ -205,19 +205,13 @@ socket.on("game_starting", ({ host }) => {
   });
 });
 
-// 🔑 Round outcome broadcast (Includes Win counter increment)
+// 🔑 Round outcome broadcast
 socket.on("round_outcome", ({ outcome, winners }) => {
   if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
     Engine.handleOutcome(outcome, winners);
   }
 
   const player = window.currentPlayerName;
-  if (winners && player && winners.map(w => w.trim().toLowerCase()).includes(player.trim().toLowerCase())) {
-    window.totalWins++;
-    const winsEl = document.getElementById("player-wins");
-    if (winsEl) winsEl.textContent = `Wins: ${window.totalWins}`;
-  }
-
   const balanceEl = document.getElementById("player-balance");
   if (balanceEl && window.pot && player) {
     const currentBal = window.pot.balances[player] || 0;
