@@ -51,7 +51,7 @@ function getGamePot(gameId) {
   return games[gameId].potBalance || 0;
 }
 
-// ✅ Broadcast leaderboard
+// ✅ Broadcast leaderboard (Called ONLY at round resolution)
 function broadcastLeaderboard(gameId) {
   const game = games[gameId];
   if (!game) return;
@@ -102,8 +102,6 @@ io.on("connection", (socket) => {
     } else {
       io.to(gameId).emit("player_joined", { playerName });
     }
-
-    broadcastLeaderboard(gameId);
   });
 
   // Handle prediction (save choice on server state)
@@ -130,8 +128,6 @@ io.on("connection", (socket) => {
 
       io.to(gameId).emit("remote_stake_placed", { playerName, amount });
       io.to(gameId).emit("pot_update", { amount: newPot });
-
-      broadcastLeaderboard(gameId);
     }
   });
 
@@ -155,7 +151,6 @@ io.on("connection", (socket) => {
       io.to(gameId).emit("pot_update", { amount: newPot });
       io.to(gameId).emit("cashout_update", { playerName, balance: player.balance });
 
-      broadcastLeaderboard(gameId);
       console.log(`💸 ${playerName} cashed out. Refund: £${refund}. Remaining Pot: £${newPot}`);
     }
   });
@@ -229,7 +224,7 @@ io.on("connection", (socket) => {
       console.log("❌ No winners or 0 winning stakes, pot rolls over.");
     }
 
-    // Broadcast outcome and winners list to all clients
+    // Broadcast outcome, winners list, and updated leaderboard at end of round
     io.to(gameId).emit("round_outcome", { outcome, winners });
     broadcastLeaderboard(gameId);
   });
@@ -258,7 +253,6 @@ io.on("connection", (socket) => {
         const playerName = game.players[socket.id].name;
         delete game.players[socket.id];
         io.to(gameId).emit("player_left", { playerName });
-        broadcastLeaderboard(gameId);
       }
     }
   });
