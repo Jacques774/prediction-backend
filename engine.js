@@ -151,10 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (window.pot) {
         window.pot.cashout(window.currentPlayerName, 0.5, (newPotBalance) => {
-          const potEl = document.getElementById("potAmount");
-          if (potEl) {
-            potEl.style.display = "inline";
-            potEl.textContent = `Pot: £${Number(newPotBalance).toFixed(2)}`;
+          if (typeof window.updatePot === "function") {
+            window.updatePot(newPotBalance);
           }
         });
       }
@@ -355,12 +353,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       q.stake = amount;
 
+      // 🔑 DELEGATED TO UI HELPERS (No direct DOM manipulation here)
       if (window.pot) {
         window.pot.stake(player, amount, (newPotBalance) => {
-          const potEl = document.getElementById("potAmount");
-          if (potEl) {
-            potEl.style.display = "inline";
-            potEl.textContent = `Pot: £${Number(newPotBalance).toFixed(2)}`;
+          if (typeof window.updatePot === "function") {
+            window.updatePot(newPotBalance);
           }
         });
       }
@@ -422,19 +419,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // STAKE COUNTDOWN DISPLAY
   // ============================
   window.showCountdown = function (timeLeft) {
-    const stakeEl = document.getElementById("stakeCountdown");
-    const postEl = document.getElementById("postQuestionCountdown");
-    const potEl = document.getElementById("potAmount");
+    if (typeof window.updateStakeWindowCountdown === "function") {
+      window.updateStakeWindowCountdown(timeLeft);
+    } else {
+      const stakeEl = document.getElementById("stakeCountdown");
+      const postEl = document.getElementById("postQuestionCountdown");
 
-    if (postEl) postEl.style.display = "none";
+      if (postEl) postEl.style.display = "none";
 
-    if (potEl && (!window.pot || window.pot.potBalance === 0)) {
-      potEl.style.display = "none";
-    }
-
-    if (stakeEl) {
-      stakeEl.style.display = "inline";
-      stakeEl.textContent = `Stake window: ${timeLeft}s`;
+      if (stakeEl) {
+        stakeEl.style.display = "inline";
+        stakeEl.textContent = `Stake window: ${timeLeft}s`;
+      }
     }
   };
 
@@ -509,7 +505,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (hostYesBtn) {
     hostYesBtn.onclick = () => {
       window.closeHostOutcome();
-      // ✅ DO NOT call Engine.handleOutcome locally! Let the socket broadcast trigger it once for everyone.
       if (window.socket && window.gameId) {
         window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
       }
@@ -519,7 +514,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (hostNoBtn) {
     hostNoBtn.onclick = () => {
       window.closeHostOutcome();
-      // ✅ DO NOT call Engine.handleOutcome locally! Let the socket broadcast trigger it once for everyone.
       if (window.socket && window.gameId) {
         window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
       }
