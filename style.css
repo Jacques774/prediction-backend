@@ -611,3 +611,9 @@ body {
 .host-outcome-panel.active .host-outcome-content {
   transform: translateY(0);         /* slide up into view */
 }
+
+/* Force pot hidden whenever the stake window is active */
+body.stake-active #potAmount {
+  display: none !important;
+}
+
