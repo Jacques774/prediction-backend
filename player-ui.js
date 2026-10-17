@@ -5,9 +5,18 @@
 import { RugbyQuestions } from "./questions.js";
 import Pot from "./pot.js";
 
-// DOM helpers for stake timer + pot reveal
+// ============================
+// DOM Helpers for Stake Timer & Delayed Pot Reveal
+// ============================
 function showCountdown(timeLeft) {
   const countdownEl = document.getElementById("stakeCountdown");
+  const potEl = document.getElementById("potAmount");
+
+  // Keep pot hidden while countdown is running
+  if (potEl) {
+    potEl.style.display = "none";
+  }
+
   if (countdownEl) {
     countdownEl.style.display = "inline";
     countdownEl.textContent = "Stake window: " + timeLeft + "s";
@@ -17,8 +26,12 @@ function showCountdown(timeLeft) {
 function revealPot(amount) {
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
-  if (countdownEl && potEl) {
+
+  if (countdownEl) {
     countdownEl.style.display = "none";
+  }
+
+  if (potEl) {
     potEl.style.display = "inline";
     potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
@@ -26,7 +39,7 @@ function revealPot(amount) {
 
 function updatePot(amount) {
   const potEl = document.getElementById("potAmount");
-  if (potEl) {
+  if (potEl && potEl.style.display !== "none") {
     potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
   }
 }
@@ -239,14 +252,7 @@ socket.on("pot_update", ({ amount }) => {
   if (window.pot) {
     window.pot.potBalance = amount;
   }
-
-  const potEl = document.getElementById("potAmount");
-  if (potEl) {
-    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
-    if (amount > 0) {
-      potEl.style.display = "inline";
-    }
-  }
+  updatePot(amount);
 });
 
 // Countdown helper for next question
@@ -268,37 +274,6 @@ window.startPostQuestionCountdown = function (onDone, duration = 5) {
       if (typeof onDone === "function") onDone();
     }
   }, 1000);
-};
-
-// ============================
-// STAKE COUNTDOWN DISPLAY
-// ============================
-window.showCountdown = function (timeLeft) {
-  const stakeEl = document.getElementById("stakeCountdown");
-  const potEl = document.getElementById("potAmount");
-
-  if (potEl && (!window.pot || window.pot.potBalance === 0)) {
-    potEl.style.display = "none";
-  }
-
-  if (stakeEl) {
-    stakeEl.style.display = "inline";
-    stakeEl.textContent = `Stake window: ${timeLeft}s`;
-  }
-};
-
-// ============================
-// POT REVEAL
-// ============================
-window.revealPot = function (amount) {
-  const stakeEl = document.getElementById("stakeCountdown");
-  if (stakeEl) stakeEl.style.display = "none";
-
-  const potEl = document.getElementById("potAmount");
-  if (potEl) {
-    potEl.style.display = "inline";
-    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
-  }
 };
 
 socket.on("pot_reveal", ({ amount }) => {
