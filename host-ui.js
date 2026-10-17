@@ -4,11 +4,15 @@ import Pot from "./pot.js";
 // ============================
 // DOM Helpers for Stake Timer & Delayed Pot Reveal
 // ============================
+window.isStakeWindowActive = false;
+
 function showCountdown(timeLeft) {
+  window.isStakeWindowActive = true;
+
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
 
-  // Keep pot hidden while stake countdown is running
+  // STRICT: Keep pot hidden while stake countdown is running
   if (potEl) {
     potEl.style.display = "none";
   }
@@ -21,15 +25,15 @@ function showCountdown(timeLeft) {
 }
 
 function revealPot(amount) {
+  window.isStakeWindowActive = false;
+
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
 
-  // Hide the countdown element
   if (countdownEl) {
     countdownEl.style.display = "none";
   }
 
-  // Reveal pot element only after timer reaches zero
   if (potEl) {
     potEl.style.display = "inline";
     potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
@@ -37,7 +41,9 @@ function revealPot(amount) {
 }
 
 function updatePot(amount) {
-  // Only update text content silently if pot is already visible
+  // Never expose or unhide pot if stake window is active
+  if (window.isStakeWindowActive) return;
+
   const potEl = document.getElementById("potAmount");
   if (potEl && potEl.style.display !== "none") {
     potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
@@ -103,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Real-time Pot Update Listener for Host Screen (Updates quietly if revealed)
+  // Real-time Pot Update Listener for Host Screen (Guarded by active countdown flag)
   socket.on("pot_update", ({ amount }) => {
     console.log("💰 Pot updated on Host screen:", amount);
     if (window.pot) {
