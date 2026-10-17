@@ -1,7 +1,7 @@
 import { RugbyQuestions } from "./questions.js";
 import Pot from "./pot.js";
 
-// ✅ Dynamic Pot initializer supporting host buy-in amount
+// ✅ Dynamic Pot initializer supporting host buy-in amount & instant leaderboard sync
 window.initGame = function (players, buyInAmount = 100) {
   window.pot = new Pot(players, buyInAmount);
   players.forEach(p => {
@@ -10,7 +10,17 @@ window.initGame = function (players, buyInAmount = 100) {
     if (el) {
       el.innerText = "Balance: £" + Number(balance).toFixed(2);
     }
+
+    // 🔑 Instantly populate player on leaderboard upon joining/init
+    if (typeof Leaderboard !== "undefined" && Leaderboard.update) {
+      Leaderboard.update(p, balance);
+    }
   });
+
+  // 🔑 Render leaderboard immediately so everyone appears right away
+  if (typeof Leaderboard !== "undefined" && Leaderboard.render) {
+    Leaderboard.render();
+  }
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -328,6 +338,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.socket.on("round_outcome", ({ outcome, winners }) => {
       Engine.handleOutcome(outcome, winners);
+    });
+
+    // 🔑 Handle mid-game player joins dynamically
+    window.socket.on("player_joined", ({ playerName, balance }) => {
+      if (window.pot && window.pot.balances) {
+        window.pot.balances[playerName] = balance !== undefined ? balance : 100;
+      }
+      if (typeof Leaderboard !== "undefined" && Leaderboard.update) {
+        Leaderboard.update(playerName, balance !== undefined ? balance : 100);
+        if (Leaderboard.render) Leaderboard.render();
+      }
     });
   }
 
