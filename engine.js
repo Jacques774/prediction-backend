@@ -75,13 +75,20 @@ document.addEventListener("DOMContentLoaded", () => {
       clearInterval(window.questionCountdown);
       clearInterval(window.cashoutCountdown);
 
+      // 🔑 Capture baseline balance at round start for history profit calculation
+      const player = window.currentPlayerName;
+      const startingBalance = (window.pot && window.pot.balances && window.pot.balances[player] !== undefined)
+        ? window.pot.balances[player]
+        : 100;
+
       this.currentQuestion = { 
         ...q, 
         timer: 30, 
         stake: 0, 
         userChoice: null, 
         outcome: null, 
-        cashedOut: false 
+        cashedOut: false,
+        oldBalance: startingBalance
       };
 
       updateActiveCard(this.currentQuestion);
@@ -169,18 +176,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const cashoutEl = document.getElementById("player-cashouts");
       if (cashoutEl) cashoutEl.textContent = `Cash-outs: ${window.totalCashouts}`;
 
+      const player = window.currentPlayerName;
+      const finalBalance = (window.pot && window.pot.balances && window.pot.balances[player] !== undefined)
+        ? window.pot.balances[player]
+        : q.oldBalance;
+
+      // 🔑 Attach final balance to history entry
+      q.newBalance = finalBalance;
+
       const balanceEl = document.getElementById("player-balance");
-      if (balanceEl && window.pot && window.currentPlayerName) {
-        balanceEl.textContent = `Balance: £${Utils.formatMoney(
-          window.pot.balances[window.currentPlayerName]
-        )}`;
+      if (balanceEl && player) {
+        balanceEl.textContent = `Balance: £${Utils.formatMoney(finalBalance)}`;
       }
 
       if (typeof Leaderboard !== "undefined" && Leaderboard.update) {
-        Leaderboard.update(
-          window.currentPlayerName,
-          window.pot ? window.pot.balances[window.currentPlayerName] : 0
-        );
+        Leaderboard.update(player, finalBalance);
         if (Leaderboard.render) Leaderboard.render();
       }
 
@@ -217,18 +227,20 @@ document.addEventListener("DOMContentLoaded", () => {
           window.pot.resolveOutcome(winningPlayers);
         }
 
+        const finalBalance = (window.pot && window.pot.balances && window.pot.balances[player] !== undefined)
+          ? window.pot.balances[player]
+          : q.oldBalance;
+
+        // 🔑 Attach final balance for History profit calculation
+        q.newBalance = finalBalance;
+
         const balanceEl = document.getElementById("player-balance");
-        if (balanceEl && window.pot && player) {
-          balanceEl.textContent = `Balance: £${Utils.formatMoney(
-            window.pot.balances[player]
-          )}`;
+        if (balanceEl && player) {
+          balanceEl.textContent = `Balance: £${Utils.formatMoney(finalBalance)}`;
         }
 
         if (typeof Leaderboard !== "undefined" && Leaderboard.update) {
-          Leaderboard.update(
-            player,
-            window.pot ? window.pot.balances[player] : 0
-          );
+          Leaderboard.update(player, finalBalance);
           if (Leaderboard.render) Leaderboard.render();
         }
 
@@ -236,7 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (${didWin ? "WIN" : "LOST"})</small>`;
       }
 
-      if (typeof History !== "undefined" && History.push) {
+      if (typeof History !== "undefined" && History.push && !q.cashedOut) {
         History.push(q);
         if (History.render) History.render();
       }
