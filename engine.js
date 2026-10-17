@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================
   // SAFE GLOBALS & ELEMENTS
   // ============================
-  window.playerName = "";
+  window.playerName = window.playerName || "";
   let totalCashouts = 0;
 
   let questionCountdown = null;
@@ -35,6 +35,31 @@ document.addEventListener("DOMContentLoaded", () => {
   const stakeInput = document.getElementById("stakeInput");
   const stakeSaveBtn = document.getElementById("stake-save-btn");
   const stakeCancelBtn = document.getElementById("stake-cancel-btn");
+
+  // ============================
+  // PLAYER RESOLUTION HELPERS
+  // ============================
+  function getActivePlayerName() {
+    if (window.currentPlayerName && window.pot && window.pot.balances[window.currentPlayerName] !== undefined) {
+      return window.currentPlayerName;
+    }
+    if (window.playerName && window.pot && window.pot.balances[window.playerName] !== undefined) {
+      return window.playerName;
+    }
+    if (window.pot && window.pot.balances) {
+      const keys = Object.keys(window.pot.balances);
+      if (keys.length > 0) return keys[0];
+    }
+    return window.currentPlayerName || window.playerName || "";
+  }
+
+  function getCurrentPlayerBalance() {
+    const p = getActivePlayerName();
+    if (p && window.pot && window.pot.balances && window.pot.balances[p] !== undefined) {
+      return window.pot.balances[p];
+    }
+    return 100;
+  }
 
   // ============================
   // TIMER & UTILS
@@ -75,11 +100,8 @@ document.addEventListener("DOMContentLoaded", () => {
       clearInterval(window.questionCountdown);
       clearInterval(window.cashoutCountdown);
 
-      // 🔑 Capture baseline balance at round start for history profit calculation
-      const player = window.currentPlayerName;
-      const startingBalance = (window.pot && window.pot.balances && window.pot.balances[player] !== undefined)
-        ? window.pot.balances[player]
-        : 100;
+      // 🔑 Capture starting balance reliably across Player and Host
+      const startingBalance = getCurrentPlayerBalance();
 
       this.currentQuestion = { 
         ...q, 
@@ -156,18 +178,20 @@ document.addEventListener("DOMContentLoaded", () => {
       q.cashedOut = true;
       q.outcome = "CASHED OUT";
 
-      if (window.pot) {
-        window.pot.cashout(window.currentPlayerName, 0.5, (newPotBalance) => {
+      const player = getActivePlayerName();
+
+      if (window.pot && player) {
+        window.pot.cashout(player, 0.5, (newPotBalance) => {
           if (typeof window.updatePot === "function") {
             window.updatePot(newPotBalance);
           }
         });
       }
 
-      if (window.socket && window.gameId && window.currentPlayerName) {
+      if (window.socket && window.gameId && player) {
         window.socket.emit("cashout", {
           gameId: window.gameId,
-          playerName: window.currentPlayerName,
+          playerName: player,
           amount: q.stake
         });
       }
@@ -176,20 +200,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const cashoutEl = document.getElementById("player-cashouts");
       if (cashoutEl) cashoutEl.textContent = `Cash-outs: ${window.totalCashouts}`;
 
-      const player = window.currentPlayerName;
-      const finalBalance = (window.pot && window.pot.balances && window.pot.balances[player] !== undefined)
-        ? window.pot.balances[player]
-        : q.oldBalance;
-
-      // 🔑 Attach final balance to history entry
+      const finalBalance = getCurrentPlayerBalance();
       q.newBalance = finalBalance;
 
       const balanceEl = document.getElementById("player-balance");
-      if (balanceEl && player) {
+      if (balanceEl) {
         balanceEl.textContent = `Balance: £${Utils.formatMoney(finalBalance)}`;
       }
 
-      if (typeof Leaderboard !== "undefined" && Leaderboard.update) {
+      if (typeof Leaderboard !== "undefined" && Leaderboard.update && player) {
         Leaderboard.update(player, finalBalance);
         if (Leaderboard.render) Leaderboard.render();
       }
@@ -210,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!q || q.outcome !== null) return; // Prevent duplicate resolution!
       q.outcome = outcome;
 
-      const player = window.currentPlayerName;
+      const player = getActivePlayerName();
 
       if (q.cashedOut) {
         if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
@@ -218,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let winningPlayers = [];
         if (Array.isArray(serverWinners)) {
           winningPlayers = serverWinners;
-        } else if (q.userChoice === outcome && q.stake > 0) {
+        } else if (q.userChoice === outcome && q.stake > 0 && player) {
           winningPlayers.push(player);
         }
 
@@ -227,19 +246,15 @@ document.addEventListener("DOMContentLoaded", () => {
           window.pot.resolveOutcome(winningPlayers);
         }
 
-        const finalBalance = (window.pot && window.pot.balances && window.pot.balances[player] !== undefined)
-          ? window.pot.balances[player]
-          : q.oldBalance;
-
-        // 🔑 Attach final balance for History profit calculation
+        const finalBalance = getCurrentPlayerBalance();
         q.newBalance = finalBalance;
 
         const balanceEl = document.getElementById("player-balance");
-        if (balanceEl && player) {
+        if (balanceEl) {
           balanceEl.textContent = `Balance: £${Utils.formatMoney(finalBalance)}`;
         }
 
-        if (typeof Leaderboard !== "undefined" && Leaderboard.update) {
+        if (typeof Leaderboard !== "undefined" && Leaderboard.update && player) {
           Leaderboard.update(player, finalBalance);
           if (Leaderboard.render) Leaderboard.render();
         }
@@ -295,14 +310,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================
   if (window.socket) {
     window.socket.on("remote_stake_placed", ({ playerName, amount }) => {
-      if (window.pot && playerName !== window.currentPlayerName) {
+      const activePlayer = getActivePlayerName();
+      if (window.pot && playerName !== activePlayer) {
         window.pot.stakes[playerName] = (window.pot.stakes[playerName] || 0) + amount;
         window.pot.potBalance += amount;
       }
     });
 
     window.socket.on("remote_cashout", ({ playerName, amount }) => {
-      if (window.pot && playerName !== window.currentPlayerName) {
+      const activePlayer = getActivePlayerName();
+      if (window.pot && playerName !== activePlayer) {
         const refund = amount * 0.5;
         window.pot.potBalance -= refund;
         window.pot.stakes[playerName] = 0;
@@ -350,7 +367,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const player = window.currentPlayerName;
+      const player = getActivePlayerName();
 
       if (window.pot && window.pot.balances[player] !== undefined && amount > window.pot.balances[player]) {
         alert("Not enough balance for this stake.");
@@ -365,8 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       q.stake = amount;
 
-      // 🔑 DELEGATED TO UI HELPERS (No direct DOM manipulation here)
-      if (window.pot) {
+      if (window.pot && player) {
         window.pot.stake(player, amount, (newPotBalance) => {
           if (typeof window.updatePot === "function") {
             window.updatePot(newPotBalance);
@@ -374,7 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      if (window.socket) {
+      if (window.socket && player) {
         window.socket.emit("stake_placed", {
           gameId: window.gameId,
           playerName: player,
@@ -383,8 +399,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const balanceEl = document.getElementById("player-balance");
-      if (balanceEl && window.pot) {
-        balanceEl.textContent = `Balance: £${Utils.formatMoney(window.pot.balances[player])}`;
+      if (balanceEl) {
+        balanceEl.textContent = `Balance: £${Utils.formatMoney(getCurrentPlayerBalance())}`;
       }
 
       if (qInfo) {
@@ -440,7 +456,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (postEl) postEl.style.display = "none";
 
-    // STRICT: Force pot hidden while countdown is active
     if (potEl) {
       potEl.style.setProperty("display", "none", "important");
     }
