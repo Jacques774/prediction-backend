@@ -8,11 +8,15 @@ import Pot from "./pot.js";
 // ============================
 // DOM Helpers for Stake Timer & Delayed Pot Reveal
 // ============================
+window.isStakeWindowActive = false;
+
 function showCountdown(timeLeft) {
+  window.isStakeWindowActive = true;
+
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
 
-  // Keep pot hidden while countdown is running
+  // STRICT: Keep pot hidden while countdown is running
   if (potEl) {
     potEl.style.display = "none";
   }
@@ -24,6 +28,8 @@ function showCountdown(timeLeft) {
 }
 
 function revealPot(amount) {
+  window.isStakeWindowActive = false;
+
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
 
@@ -38,6 +44,9 @@ function revealPot(amount) {
 }
 
 function updatePot(amount) {
+  // Never expose or unhide pot if stake window is active
+  if (window.isStakeWindowActive) return;
+
   const potEl = document.getElementById("potAmount");
   if (potEl && potEl.style.display !== "none") {
     potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
@@ -246,7 +255,7 @@ socket.on("next_round", ({ gameId }) => {
   });
 });
 
-// 🔑 Real-time Pot Update Listener
+// 🔑 Real-time Pot Update Listener (Guarded by active countdown flag)
 socket.on("pot_update", ({ amount }) => {
   console.log("💰 Player received pot update from server:", amount);
   if (window.pot) {
