@@ -31,17 +31,43 @@ app.get("/player", (req, res) => res.sendFile(path.join(__dirname, "player.html"
 // --- Game state ---
 const games = {};
 
+// ✅ Updated to receive and store host game settings
 app.post("/api/create-game", (req, res) => {
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const { startingBalance, questionCount, qtime } = req.body;
+
   games[code] = {
     players: {},
     hostId: null,
     potBalance: 0, 
     started: false,
     currentQuestionId: null,
-    lastOutcome: null
+    lastOutcome: null,
+    startingBalance: Number(startingBalance) >= 20 ? Number(startingBalance) : 100,
+    questionCount: Number(questionCount) || 40,
+    qtime: Number(qtime) >= 60 ? Number(qtime) : 120 // Default to 2 mins (120s) or custom time
   };
-  res.json({ code });
+
+  res.json({ 
+    code, 
+    startingBalance: games[code].startingBalance,
+    questionCount: games[code].questionCount,
+    qtime: games[code].qtime
+  });
+});
+
+// ✅ New endpoint for clients to fetch configuration by room code
+app.get("/api/game/:code", (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const game = games[code];
+  if (!game) {
+    return res.status(404).json({ error: "Game not found" });
+  }
+  res.json({
+    startingBalance: game.startingBalance,
+    questionCount: game.questionCount,
+    qtime: game.qtime
+  });
 });
 
 app.get("/api/healthz", (req, res) => res.json({ status: "ok" }));
@@ -87,9 +113,12 @@ io.on("connection", (socket) => {
 
     socket.join(gameId);
 
-    games[gameId].players[socket.id] = {
+    const game = games[gameId];
+    const initialBalance = game.startingBalance || 100;
+
+    game.players[socket.id] = {
       name: playerName,
-      balance: 100,
+      balance: initialBalance,
       wins: 0,
       cashouts: 0,
       stake: 0,
@@ -97,11 +126,11 @@ io.on("connection", (socket) => {
     };
 
     if (isHost) {
-      games[gameId].hostId = socket.id;
+      game.hostId = socket.id;
       io.to(gameId).emit("host_joined", { playerName });
     } else {
-      // ✅ Broadcast player join event with their starting balance
-      io.to(gameId).emit("player_joined", { playerName, balance: 100 });
+      // ✅ Broadcast player join event with the correct host-configured starting balance
+      io.to(gameId).emit("player_joined", { playerName, balance: initialBalance });
       broadcastLeaderboard(gameId);
     }
   });
@@ -164,14 +193,17 @@ io.on("connection", (socket) => {
     io.to(gameId).emit("game_starting", { host });
 
     setTimeout(() => {
-      games[gameId].started = true;
+      const game = games[gameId];
+      if (!game) return;
+      game.started = true;
       io.to(gameId).emit("game_started", { host });
 
       const ids = Object.keys(RugbyQuestions);
       const randomId = ids[Math.floor(Math.random() * ids.length)];
-      games[gameId].currentQuestionId = randomId;
+      game.currentQuestionId = randomId;
 
-      io.to(gameId).emit("new_question", { id: randomId });
+      // ✅ Pass server-stored qtime as timer in the new_question payload
+      io.to(gameId).emit("new_question", { id: randomId, timer: game.qtime });
     }, 4000);
   });
 
@@ -234,18 +266,21 @@ io.on("connection", (socket) => {
 
   // ✅ Handle next round (Preserves rollover pot if no winners, clears round stakes)
   socket.on("next_round", ({ gameId }) => {
-    if (!games[gameId]) return;
+    const game = games[gameId];
+    if (!game) return;
 
     // Reset individual stakes and choices, but KEEP potBalance intact for rollovers!
-    Object.values(games[gameId].players).forEach(p => {
+    Object.values(game.players).forEach(p => {
       p.stake = 0;
       p.choice = null;
     });
 
     const ids = Object.keys(RugbyQuestions);
     const randomId = ids[Math.floor(Math.random() * ids.length)];
-    games[gameId].currentQuestionId = randomId;
-    io.to(gameId).emit("new_question", { id: randomId });
+    game.currentQuestionId = randomId;
+    
+    // ✅ Pass server-stored qtime for subsequent rounds
+    io.to(gameId).emit("new_question", { id: randomId, timer: game.qtime });
   });
 
   // Handle disconnect
