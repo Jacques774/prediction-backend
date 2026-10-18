@@ -74,15 +74,23 @@
   </div>
 
   <h1>Main Menu</h1>
-  <a href="/gamesetup.html" class="menu-btn">Host Player</a>
+  <a href="/gamesetup.html" id="host-btn" class="menu-btn">Host Player</a>
   <a href="/player" class="menu-btn">Player</a>
 
   <script>
-    // Temp fixed £50 credit
+    // Temp fixed credit value
     const tempCredit = 30;
+    
+    // Update credit display
     const creditEl = document.getElementById("user-credit");
     if (creditEl) {
       creditEl.textContent = "£" + tempCredit.toFixed(2);
+    }
+
+    // 🔑 Dynamically update Host link to pass credit parameter to gamesetup.html
+    const hostBtn = document.getElementById("host-btn");
+    if (hostBtn) {
+      hostBtn.href = `/gamesetup.html?credit=${tempCredit}`;
     }
   </script>
 </body>
