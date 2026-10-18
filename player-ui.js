@@ -100,9 +100,9 @@ function initPlayerUI() {
     window.currentPlayerName = playerName;
     window.gameId = gameId;
 
-    // Read custom settings passed via invite URL or fallback defaults
-    const urlBuyin = Number(urlParams.get("buyin")) || 50;
-    const urlQtime = Number(urlParams.get("qtime")) || 120; // seconds
+    // 🔑 Read exact buy-in and qtime from URL parameters, falling back to 20 if absent
+    const urlBuyin = urlParams.get("buyin") !== null ? Number(urlParams.get("buyin")) : 20;
+    const urlQtime = urlParams.get("qtime") !== null ? Number(urlParams.get("qtime")) : 120; // seconds
 
     pendingGameData = {
       sport: "Rugby",
