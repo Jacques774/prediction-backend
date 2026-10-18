@@ -52,6 +52,7 @@ app.post("/api/create-game", (req, res) => {
     potBalance: 0, 
     started: false,
     currentQuestionId: null,
+    currentQuestionIndex: 0, // 🔑 Track current question index
     lastOutcome: null,
     startingBalance: Number(startingBalance) >= 20 ? Number(startingBalance) : 100,
     questionCount: Number(questionCount) || 40,
@@ -213,9 +214,15 @@ io.on("connection", (socket) => {
       const ids = Object.keys(RugbyQuestions);
       const randomId = ids[Math.floor(Math.random() * ids.length)];
       game.currentQuestionId = randomId;
+      game.currentQuestionIndex = 1; // 🔑 Initialize to question 1
 
-      // ✅ Pass server-stored qtime as timer in the new_question payload
-      io.to(gameId).emit("new_question", { id: randomId, timer: game.qtime });
+      // ✅ Pass server-stored qtime and question tally payload
+      io.to(gameId).emit("new_question", { 
+        id: randomId, 
+        timer: game.qtime,
+        current: game.currentQuestionIndex,
+        total: game.questionCount
+      });
     }, 4000);
   });
 
@@ -290,9 +297,15 @@ io.on("connection", (socket) => {
     const ids = Object.keys(RugbyQuestions);
     const randomId = ids[Math.floor(Math.random() * ids.length)];
     game.currentQuestionId = randomId;
+    game.currentQuestionIndex = (game.currentQuestionIndex || 1) + 1; // 🔑 Increment question index
     
-    // ✅ Pass server-stored qtime for subsequent rounds
-    io.to(gameId).emit("new_question", { id: randomId, timer: game.qtime });
+    // ✅ Pass server-stored qtime and updated question tally payload
+    io.to(gameId).emit("new_question", { 
+      id: randomId, 
+      timer: game.qtime,
+      current: game.currentQuestionIndex,
+      total: game.questionCount
+    });
   });
 
   // Handle disconnect
