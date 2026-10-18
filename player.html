@@ -27,6 +27,29 @@
   </div>
 </div>
 
+<!-- GAME PREVIEW POPUP MODAL -->
+<div id="gamePreviewModal" class="stake-popup" style="display: none;">
+  <div class="stake-popup-content" style="max-width: 380px; text-align: left;">
+    <h3 style="text-align: center; margin-top: 0;">Game Summary</h3>
+    
+    <div style="display: flex; flex-direction: column; gap: 10px; margin: 16px 0; font-size: 0.95rem;">
+      <div><strong>Sport:</strong> <span id="preview-sport">--</span></div>
+      <div><strong>Questions:</strong> <span id="preview-questions">--</span></div>
+      <div><strong>Card Timer:</strong> <span id="preview-timer">--</span></div>
+      <div><strong>Starting Balance:</strong> <span id="preview-balance" style="color: #22c55e; font-weight: 700;">--</span></div>
+    </div>
+
+    <div id="previewCreditError" class="error-text" style="display: none; color: #ef4444; font-size: 0.85rem; margin-bottom: 12px; font-weight: 600;">
+      Insufficient credit to join this game.
+    </div>
+
+    <div class="stake-popup-actions" style="display: flex; gap: 10px;">
+      <button id="confirm-join-btn" style="flex: 1; background: #22c55e; color: #052e16; font-weight: 700; padding: 10px; border-radius: 8px; border: none; cursor: pointer;">Join Game</button>
+      <button id="cancel-preview-btn" style="flex: 1; background: #374151; color: #e5e7eb; font-weight: 600; padding: 10px; border-radius: 8px; border: none; cursor: pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- GAME DASHBOARD -->
 <div class="dashboard hidden" id="dashboard">
   <div class="top-header">
@@ -34,12 +57,9 @@
       <div class="header-line" id="player-name">Player: --</div>
       <div class="header-line" id="player-balance">Balance: 120</div>
 
-<!-- Add this inside the player active card or header area -->
-<div id="player-question-tally" style="font-size: 0.95rem; font-weight: 600; color: #38bdf8; margin-bottom: 8px;">
-  Question -- of --
-</div>
-
-      
+      <div id="player-question-tally" style="font-size: 0.95rem; font-weight: 600; color: #38bdf8; margin-bottom: 8px;">
+        Question -- of --
+      </div>
     </div>
     <div class="header-right">
       <div class="header-line" id="player-wins">Wins: 0</div>
@@ -47,45 +67,41 @@
     </div>
   </div>
 
-<!-- Countdown -->
+  <!-- Countdown -->
   <div id="preCountdown" style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">3</div>
 
-<!-- Post-Question Countdown -->
-<div id="postQuestionCountdown"
-     style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">
-  3</div>
+  <!-- Post-Question Countdown -->
+  <div id="postQuestionCountdown" style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">3</div>
 
-    <!-- Cards -->
-<div class="cards">
-  <div class="card" id="active-card">
-    <div class="card-header">
-      <div class="question-text" id="q-text">Loading question...</div>
-    </div>
-    <div class="choices">
-      <button class="btn btn-yes" id="btn-yes">YES</button>
-      <button class="btn btn-no" id="btn-no">NO</button>
-    </div>
-    <!-- 🚫 Removed popularity labels and bar -->
+  <!-- Cards -->
+  <div class="cards">
+    <div class="card" id="active-card">
+      <div class="card-header">
+        <div class="question-text" id="q-text">Loading question...</div>
+      </div>
+      <div class="choices">
+        <button class="btn btn-yes" id="btn-yes">YES</button>
+        <button class="btn btn-no" id="btn-no">NO</button>
+      </div>
 
-    <div class="cashout-row">
-      <span class="position" id="q-info">
-        You chose: --<br>
-        Stake: --<br>
-        Timer: --
-      </span>
-      <div class="cashout-action">
-        <button class="cashout-btn" id="cashout-btn">Cash Out: --</button>
-        <div class="cashout-timer" id="timer">Cash out: --s</div>
+      <div class="cashout-row">
+        <span class="position" id="q-info">
+          You chose: --<br>
+          Stake: --<br>
+          Timer: --
+        </span>
+        <div class="cashout-action">
+          <button class="cashout-btn" id="cashout-btn">Cash Out: --</button>
+          <div class="cashout-timer" id="timer">Cash out: --s</div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
   <div id="stakePotDisplay" style="font-size:1.5rem; margin-top:20px;">
-  <span id="stakeCountdown" style="display:none;">Stake window: 10s</span>
-  <span id="potAmount" style="display:none;">Pot: £0</span>
-</div>
-
+    <span id="stakeCountdown" style="display:none;">Stake window: 10s</span>
+    <span id="potAmount" style="display:none;">Pot: £0</span>
+  </div>
 
   <!-- Footer Buttons -->
   <div class="bottom-buttons">
@@ -110,21 +126,18 @@
     </div>
   </div>
 
-  <!-- ============================
-     STAKE POPUP
-     ============================ -->
-<div id="stakePopup" class="stake-popup">
-  <div class="stake-popup-content">
-    <h3>Edit Stake</h3>
-    <input type="number" id="stakeInput" min="1" placeholder="Enter stake" />
-
-    <div class="stake-popup-actions">
-      <button id="stake-save-btn">Save</button>
-<button id="stake-cancel-btn">Cancel</button>
+  <!-- STAKE POPUP -->
+  <div id="stakePopup" class="stake-popup">
+    <div class="stake-popup-content">
+      <h3>Edit Stake</h3>
+      <input type="number" id="stakeInput" min="1" placeholder="Enter stake" />
+      <div class="stake-popup-actions">
+        <button id="stake-save-btn">Save</button>
+        <button id="stake-cancel-btn">Cancel</button>
+      </div>
     </div>
   </div>
 </div>
-
 
 <!-- Load Socket.IO client first -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -137,7 +150,6 @@
 <!-- Then load your ES modules (Engine and Player UI) -->
 <script type="module" src="engine.js"></script>
 <script type="module" src="player-ui.js"></script>
-
 
 </body>
 </html>
