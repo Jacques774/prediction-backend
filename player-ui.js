@@ -234,8 +234,8 @@ socket.on("round_outcome", ({ outcome, winners }) => {
   });
 });
 
-// 🔑 New question broadcast (UPDATED TO RECEIVE SERVER TIMER)
-socket.on("new_question", ({ id, timer }) => {
+// 🔑 New question broadcast (UPDATED TO RECEIVE SERVER TIMER & TALLY)
+socket.on("new_question", ({ id, timer, current, total }) => {
   if (typeof RugbyQuestions === "undefined") {
     console.error("❌ RugbyQuestions is not loaded.");
     return;
@@ -257,6 +257,12 @@ socket.on("new_question", ({ id, timer }) => {
 
   if (typeof Engine !== "undefined" && typeof Engine.nextQuestion === "function") {
     Engine.nextQuestion(questionWithTimer);
+  }
+
+  // ✅ Update player question tally display
+  const tallyEl = document.getElementById("player-question-tally");
+  if (tallyEl && current !== undefined && total !== undefined) {
+    tallyEl.textContent = `Question ${current} of ${total}`;
   }
 
   const activeCard = document.getElementById("active-card");
