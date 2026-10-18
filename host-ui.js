@@ -110,12 +110,18 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Listen for server broadcast of new question
-  socket.on("new_question", ({ id }) => {
+  socket.on("new_question", ({ id, current, total }) => {
     const question = RugbyQuestions[id];
     if (!question) return;
     console.log(`📡 Host received new question: ${question.text}`);
     if (typeof Engine !== "undefined" && typeof Engine.nextQuestion === "function") {
       Engine.nextQuestion(question);
+    }
+
+    // ✅ Update host question tally display
+    const tallyEl = document.getElementById("host-question-tally");
+    if (tallyEl && current !== undefined && total !== undefined) {
+      tallyEl.textContent = `Question ${current} of ${total}`;
     }
   });
 
