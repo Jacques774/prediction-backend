@@ -65,9 +65,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getCurrentPlayerBalance() {
     const p = getActivePlayerName();
+    
+    // 1️⃣ Check local pot balances first
     if (p && window.pot && window.pot.balances && window.pot.balances[p] !== undefined) {
       return window.pot.balances[p];
     }
+    
+    // 2️⃣ Fallback to Leaderboard scores if pot lookup misses
+    if (p && window.Leaderboard && window.Leaderboard.scores && window.Leaderboard.scores[p] !== undefined) {
+      return window.Leaderboard.scores[p];
+    }
+
+    // 3️⃣ Fallback to DOM element text if present
+    const balanceEl = document.getElementById("player-balance");
+    if (balanceEl) {
+      const match = balanceEl.textContent.match(/£([\d.]+)/);
+      if (match && match[1]) {
+        return Number(match[1]);
+      }
+    }
+
     return 100;
   }
 
