@@ -1,4 +1,4 @@
-import { RugbyQuestions } from "./questions.js";
+Import { RugbyQuestions } from "./questions.js";
 import Pot from "./pot.js";
 
 // ============================
@@ -63,16 +63,14 @@ console.log("✅ player-ui.js loaded");
 
 // ✅ Connect to Render backend
 const socket = io("https://prediction-backend-2e20.onrender.com");
-const API_BASE = "https://prediction-backend-2e20.onrender.com/api";
 window.socket = socket;
 
 document.addEventListener("DOMContentLoaded", () => {
   // ============================
-  // STAT TRACKING & CREDIT GLOBALS
+  // STAT TRACKING GLOBALS
   // ============================
   window.totalWins = 0;
   window.totalCashouts = 0;
-  const playerCredit = 30; // Simulated user credit balance
 
   // 🔑 Auto-fill game code from URL query parameter if present
   const urlParams = new URLSearchParams(window.location.search);
@@ -83,23 +81,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const joinBtn = document.getElementById("player-join-btn");
-  const modal = document.getElementById("gamePreviewModal");
-  const confirmJoinBtn = document.getElementById("confirm-join-btn");
-  const cancelPreviewBtn = document.getElementById("cancel-preview-btn");
-
   if (!joinBtn) {
     console.error("Join button not found — check ID or script placement.");
     return;
   }
 
-  // Temporary storage for pending game session info
-  let pendingGameData = null;
-
-  // 1️⃣ Initial Join Click -> Opens Preview Modal instead of joining directly
-  joinBtn.addEventListener("click", async () => {
+  joinBtn.addEventListener("click", () => {
     console.log("🎯 Player Join button clicked!");
 
     const nameInput = document.getElementById("player-name-input");
+    const codeInput = document.getElementById("game-code-input");
     const nameError = document.getElementById("playerNameError");
 
     const playerName = nameInput ? nameInput.value.trim() : "";
@@ -109,116 +100,43 @@ document.addEventListener("DOMContentLoaded", () => {
       if (nameError) nameError.style.display = "block";
       return;
     }
-    if (nameError) nameError.style.display = "none";
 
-    // Save player name & gameId globally for later
+    // Save globally
     window.currentPlayerName = playerName;
     window.gameId = gameId;
+    window.isHost = false;
 
-    // Fallback to URL params if passed directly via share link, or fetch from API
-    const urlBuyin = Number(urlParams.get("buyin"));
-    const urlQtime = Number(urlParams.get("qtime"));
+    // Check for custom buy-in in URL if passed
+    const currentUrlParams = new URLSearchParams(window.location.search);
+    const buyInAmount = Number(currentUrlParams.get("buyin")) || 100;
 
-    // Default preview values
-    pendingGameData = {
-      sport: "Rugby",
-      questionCount: 40,
-      cardTimer: urlQtime ? `${urlQtime / 60} min(s)` : "2 mins",
-      startingBalance: urlBuyin || 50
-    };
+    // ✅ Initialize pot with player name & buy-in amount
+    window.pot = new Pot([window.currentPlayerName], buyInAmount);
 
-    // Try fetching game details from backend API if available
-    try {
-      const res = await fetch(`${API_BASE}/game/${gameId}`);
-      if (res.ok) {
-        const serverGame = await res.json();
-        if (serverGame) {
-          pendingGameData = {
-            sport: serverGame.sport || "Rugby",
-            questionCount: serverGame.questionCount || 40,
-            cardTimer: serverGame.qtime ? `${serverGame.qtime / 60} min(s)` : "2 mins",
-            startingBalance: serverGame.startingBalance || serverGame.buyin || 50
-          };
-        }
-      }
-    } catch (e) {
-      console.log("Using URL/fallback game details for preview.");
+    // Emit join event
+    socket.emit("join_game", { gameId, playerName, isHost: false });
+
+    // Hide setup, show dashboard
+    const setupSlide = document.getElementById("playerSetupSlide");
+    if (setupSlide) setupSlide.style.display = "none";
+
+    const dashboard = document.getElementById("dashboard");
+    if (dashboard) {
+      dashboard.classList.remove("hidden");
+      dashboard.style.opacity = "1";
     }
 
-    // Populate Modal Elements
-    document.getElementById("preview-sport").textContent = pendingGameData.sport;
-    document.getElementById("preview-questions").textContent = pendingGameData.questionCount;
-    document.getElementById("preview-timer").textContent = pendingGameData.cardTimer;
-    document.getElementById("preview-balance").textContent = `£${pendingGameData.startingBalance.toFixed(2)}`;
+    // Get DOM elements
+    const nameEl = document.getElementById("player-name");
+    const balanceEl = document.getElementById("player-balance");
 
-    // Validate Player Credit vs Starting Balance
-    const creditErrorEl = document.getElementById("previewCreditError");
-    if (playerCredit < pendingGameData.startingBalance) {
-      if (creditErrorEl) {
-        creditErrorEl.textContent = `Insufficient credit! Required: £${pendingGameData.startingBalance}, Available: £${playerCredit}`;
-        creditErrorEl.style.display = "block";
-      }
-      if (confirmJoinBtn) {
-        confirmJoinBtn.disabled = true;
-        confirmJoinBtn.style.opacity = "0.5";
-        confirmJoinBtn.style.cursor = "not-allowed";
-      }
-    } else {
-      if (creditErrorEl) creditErrorEl.style.display = "none";
-      if (confirmJoinBtn) {
-        confirmJoinBtn.disabled = false;
-        confirmJoinBtn.style.opacity = "1";
-        confirmJoinBtn.style.cursor = "pointer";
-      }
+    const startingBal = window.pot.balances[window.currentPlayerName] || buyInAmount;
+
+    if (nameEl) nameEl.textContent = `Player: ${playerName}`;
+    if (balanceEl) {
+      balanceEl.textContent = `Balance: £${Number(startingBal).toFixed(2)}`;
     }
-
-    // Show Modal
-    if (modal) modal.style.display = "flex";
   });
-
-  // 2️⃣ Cancel Preview Modal
-  if (cancelPreviewBtn) {
-    cancelPreviewBtn.addEventListener("click", () => {
-      if (modal) modal.style.display = "none";
-    });
-  }
-
-  // 3️⃣ Confirm Join Inside Modal -> Officially Connects to Room
-  if (confirmJoinBtn) {
-    confirmJoinBtn.addEventListener("click", () => {
-      if (!pendingGameData) return;
-
-      window.isHost = false;
-
-      // Initialize pot with player name & confirmed buy-in amount
-      window.pot = new Pot([window.currentPlayerName], pendingGameData.startingBalance);
-
-      // Emit join event to socket
-      socket.emit("join_game", { gameId: window.gameId, playerName: window.currentPlayerName, isHost: false });
-
-      // Hide modal & setup slide, show dashboard
-      if (modal) modal.style.display = "none";
-      const setupSlide = document.getElementById("playerSetupSlide");
-      if (setupSlide) setupSlide.style.display = "none";
-
-      const dashboard = document.getElementById("dashboard");
-      if (dashboard) {
-        dashboard.classList.remove("hidden");
-        dashboard.style.opacity = "1";
-      }
-
-      // Get DOM elements & set initial balance
-      const nameEl = document.getElementById("player-name");
-      const balanceEl = document.getElementById("player-balance");
-
-      const startingBal = window.pot.balances[window.currentPlayerName] || pendingGameData.startingBalance;
-
-      if (nameEl) nameEl.textContent = `Player: ${window.currentPlayerName}`;
-      if (balanceEl) {
-        balanceEl.textContent = `Balance: £${Number(startingBal).toFixed(2)}`;
-      }
-    });
-  }
 });
 
 // ============================
