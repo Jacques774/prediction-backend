@@ -81,18 +81,21 @@ function initPlayerUI() {
 
   let pendingGameData = null;
 
-  // 1️⃣ Initial Join Click -> Hides setup slide and opens Preview Modal cleanly
-  joinBtn.addEventListener("click", () => {
+  // 1️⃣ Initial Join Click -> Fetches live room details from backend & opens Preview Modal
+  joinBtn.addEventListener("click", async () => {
     console.log("🎯 Player Join button clicked (Preview Gatekeeper)");
 
     const nameInput = document.getElementById("player-name-input");
     const nameError = document.getElementById("playerNameError");
 
     const playerName = nameInput ? nameInput.value.trim() : "";
-    const gameId = codeInput ? codeInput.value.trim() : "";
+    const gameId = codeInput ? codeInput.value.trim().toUpperCase() : "";
 
     if (!playerName || !gameId) {
-      if (nameError) nameError.style.display = "block";
+      if (nameError) {
+        nameError.textContent = "Name and code required";
+        nameError.style.display = "block";
+      }
       return;
     }
     if (nameError) nameError.style.display = "none";
@@ -100,13 +103,31 @@ function initPlayerUI() {
     window.currentPlayerName = playerName;
     window.gameId = gameId;
 
-    // 🔑 Read exact buy-in and qtime from URL parameters, falling back to 20 if absent
-    const urlBuyin = urlParams.get("buyin") !== null ? Number(urlParams.get("buyin")) : 20;
-    const urlQtime = urlParams.get("qtime") !== null ? Number(urlParams.get("qtime")) : 120; // seconds
+    // Default fallback values from URL query parameters
+    let urlBuyin = urlParams.get("buyin") !== null ? Number(urlParams.get("buyin")) : 20;
+    let urlQtime = urlParams.get("qtime") !== null ? Number(urlParams.get("qtime")) : 120;
+    let sport = "Rugby";
+    let questionCount = 40;
+
+    // 🔑 FETCH LIVE GAME ROOM DETAILS FROM BACKEND API
+    try {
+      const res = await fetch(`https://prediction-backend-2e20.onrender.com/api/game/${gameId}`);
+      if (res.ok) {
+        const gameData = await res.json();
+        if (gameData) {
+          if (gameData.startingBalance !== undefined) urlBuyin = Number(gameData.startingBalance);
+          if (gameData.qtime !== undefined) urlQtime = Number(gameData.qtime);
+          if (gameData.questionCount !== undefined) questionCount = Number(gameData.questionCount);
+          if (gameData.sport) sport = gameData.sport.charAt(0).toUpperCase() + gameData.sport.slice(1);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch live room details, falling back to URL parameters:", err);
+    }
 
     pendingGameData = {
-      sport: "Rugby",
-      questionCount: 40,
+      sport: sport,
+      questionCount: questionCount,
       cardTimer: `${Math.round(urlQtime / 60)} min(s)`,
       startingBalance: urlBuyin
     };
@@ -142,7 +163,7 @@ function initPlayerUI() {
     if (setupSlide) setupSlide.style.display = "none";
     if (modal) {
       modal.style.display = "flex";
-      modal.style.zIndex = "1100"; // Position above all backdrop overlays
+      modal.style.zIndex = "1100";
     }
   });
 
