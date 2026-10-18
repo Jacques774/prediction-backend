@@ -128,13 +128,16 @@ document.addEventListener("DOMContentLoaded", () => {
       window.closeHostOutcome();
     }
 
-    const playerName = getActivePlayerName() || "Player";
+    const playerName = (getActivePlayerName() || window.currentPlayerName || window.playerName || "Player").trim();
     let positionText = "Well done for finishing!";
     let finalBalance = getCurrentPlayerBalance();
 
     if (leaderboard && Array.isArray(leaderboard)) {
+      // Sort leaderboard descending by balance to ensure correct ranking
       const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
-      const index = sorted.findIndex(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
+      
+      // Find index using strict case-insensitive matching
+      const index = sorted.findIndex(p => p.name && p.name.trim().toLowerCase() === playerName.toLowerCase());
       
       if (index !== -1) {
         const pos = index + 1;
