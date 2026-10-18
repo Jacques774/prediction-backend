@@ -72,6 +72,14 @@ document.addEventListener("DOMContentLoaded", () => {
   window.totalWins = 0;
   window.totalCashouts = 0;
 
+  // 🔑 Auto-fill game code from URL query parameter if present
+  const urlParams = new URLSearchParams(window.location.search);
+  const codeParam = urlParams.get("code");
+  const codeInput = document.getElementById("game-code-input");
+  if (codeParam && codeInput) {
+    codeInput.value = codeParam.toUpperCase();
+  }
+
   const joinBtn = document.getElementById("player-join-btn");
   if (!joinBtn) {
     console.error("Join button not found — check ID or script placement.");
@@ -99,8 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.isHost = false;
 
     // Check for custom buy-in in URL if passed
-    const urlParams = new URLSearchParams(window.location.search);
-    const buyInAmount = Number(urlParams.get("buyin")) || 100;
+    const currentUrlParams = new URLSearchParams(window.location.search);
+    const buyInAmount = Number(currentUrlParams.get("buyin")) || 100;
 
     // ✅ Initialize pot with player name & buy-in amount
     window.pot = new Pot([window.currentPlayerName], buyInAmount);
