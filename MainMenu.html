@@ -70,7 +70,7 @@
   <!-- Temporary Credit Display -->
   <div class="credit-box">
     <div class="credit-label">Available Credit</div>
-    <div class="credit-amount" id="user-credit">£100.00</div>
+    <div class="credit-amount" id="user-credit">£30.00</div>
   </div>
 
   <h1>Main Menu</h1>
@@ -78,19 +78,19 @@
   <a href="/player" class="menu-btn">Player</a>
 
   <script>
-    // Temp fixed credit value
-    const tempCredit = 30;
+    // 🔑 Retrieve credit from localStorage, defaulting to 30.00 if it's the first time
+    let userCredit = Number(localStorage.getItem("user_credit") || 30.00);
     
     // Update credit display
     const creditEl = document.getElementById("user-credit");
     if (creditEl) {
-      creditEl.textContent = "£" + tempCredit.toFixed(2);
+      creditEl.textContent = "£" + userCredit.toFixed(2);
     }
 
     // 🔑 Dynamically update Host link to pass credit parameter to gamesetup.html
     const hostBtn = document.getElementById("host-btn");
     if (hostBtn) {
-      hostBtn.href = `/gamesetup.html?credit=${tempCredit}`;
+      hostBtn.href = `/gamesetup.html?credit=${userCredit}`;
     }
   </script>
 </body>
