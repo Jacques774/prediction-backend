@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 🔑 GAME OVER LISTENER
+  // 🔑 GAME OVER LISTENER (NO POSITION TEXT)
   socket.on("game_over", ({ leaderboard }) => {
     window.isGameOver = true;
 
@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (outcomePanel) outcomePanel.classList.remove("active");
 
     const playerName = window.currentPlayerName || "Host";
-    let positionText = "Well done for finishing!";
+    let positionText = "Well done for finishing the game! 🎉";
     let finalBalance = window.pot ? window.pot.balances[playerName] || buyInAmount : buyInAmount;
 
     if (leaderboard && Array.isArray(leaderboard)) {
@@ -171,12 +171,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       const index = sorted.findIndex(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
       
       if (index !== -1) {
-        const pos = index + 1;
-        finalBalance = sorted[index].balance;
-
-        const suffixes = ["st", "nd", "rd"];
-        const suffix = (pos <= 3) ? suffixes[pos - 1] : "th";
-        positionText = `Well done, you came ${pos}${suffix}! 🎉`;
+        const boardBal = Number(sorted[index].balance);
+        if (!isNaN(boardBal) && boardBal > 0) {
+          finalBalance = boardBal;
+        }
       }
     }
 
