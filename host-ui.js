@@ -195,12 +195,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Logout Button Listener
+  // Logout Button Listener -> Redirects to Main Menu
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       if (socket) socket.disconnect();
-      window.location.href = "gamesetup.html";
+      window.location.href = "MainMenu.html";
     });
   }
 
