@@ -110,22 +110,25 @@ document.addEventListener("DOMContentLoaded", () => {
       clearInterval(window.questionCountdown);
       clearInterval(window.cashoutCountdown);
 
-      // 🔑 Robustly grab custom time from URL parameter, falling back to localStorage, with a minimum of 60s
-      const urlParams = new URLSearchParams(window.location.search);
-      let parsedTime = Number(urlParams.get("qtime"));
-      
-      if (isNaN(parsedTime) || parsedTime < 60) {
-        parsedTime = Number(localStorage.getItem("game_qtime"));
-      }
+      // 🔑 PRIORITY 1: Respect server-provided q.timer sent via socket payload
+      let finalTimer = q && Number(q.timer) >= 60 ? Number(q.timer) : NaN;
 
-      const customQTime = (!isNaN(parsedTime) && parsedTime >= 60) ? parsedTime : 60;
+      // PRIORITY 2: Fall back to URL parameter or localStorage if server timer is missing
+      if (isNaN(finalTimer)) {
+        const urlParams = new URLSearchParams(window.location.search);
+        let parsedTime = Number(urlParams.get("qtime"));
+        if (isNaN(parsedTime) || parsedTime < 60) {
+          parsedTime = Number(localStorage.getItem("game_qtime"));
+        }
+        finalTimer = (!isNaN(parsedTime) && parsedTime >= 60) ? parsedTime : 60;
+      }
 
       // Capture starting balance reliably across Player and Host
       const startingBalance = getCurrentPlayerBalance();
 
       this.currentQuestion = { 
         ...q, 
-        timer: customQTime, // Always at least 60s (1 minute)
+        timer: finalTimer, // Uses server's custom timer correctly!
         stake: 0, 
         userChoice: null, 
         outcome: null, 
