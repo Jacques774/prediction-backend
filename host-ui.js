@@ -109,8 +109,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // 🔑 Deduplication guard to prevent double-firing
+  let lastSeenHostIndex = 0;
+
   // Listen for server broadcast of new question
   socket.on("new_question", ({ id, current, total }) => {
+    if (current !== undefined && current === lastSeenHostIndex) return;
+    if (current !== undefined) lastSeenHostIndex = current;
+
     const question = RugbyQuestions[id];
     if (!question) return;
     console.log(`📡 Host received new question: ${question.text}`);
