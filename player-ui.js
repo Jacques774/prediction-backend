@@ -330,47 +330,6 @@ socket.on("new_question", ({ id, timer, current, total }) => {
   if (activeCard && !window.isGameOver) activeCard.style.display = "block";
 });
 
-// 🔑 GAME OVER LISTENER FOR PLAYERS
-socket.on("game_over", ({ leaderboard }) => {
-  window.isGameOver = true;
-
-  // Hide active question card immediately
-  const activeCard = document.getElementById("active-card");
-  if (activeCard) activeCard.style.display = "none";
-
-  const playerName = window.currentPlayerName || "Player";
-  let positionText = "Well done for finishing!";
-  let finalBalance = window.pot && window.pot.balances ? window.pot.balances[playerName] || 0 : 0;
-
-  if (leaderboard && Array.isArray(leaderboard)) {
-    const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
-    const index = sorted.findIndex(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
-    
-    if (index !== -1) {
-      const pos = index + 1;
-      finalBalance = sorted[index].balance;
-
-      const suffixes = ["st", "nd", "rd"];
-      const suffix = (pos <= 3) ? suffixes[pos - 1] : "th";
-      positionText = `Well done, you came ${pos}${suffix}! 🎉`;
-    }
-  }
-
-  // Populate Modal Elements
-  const messageEl = document.getElementById("gameOverMessage");
-  const balanceEl = document.getElementById("gameOverFinalBalance");
-
-  if (messageEl) messageEl.textContent = positionText;
-  if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance).toFixed(2)}`;
-
-  // Show Modal via class toggle and inline fallback
-  const gameOverModal = document.getElementById("gameOverModal");
-  if (gameOverModal) {
-    gameOverModal.classList.add("show");
-    gameOverModal.style.display = "flex";
-  }
-});
-
 socket.on("pot_update", ({ amount }) => {
   if (window.pot) window.pot.potBalance = amount;
   updatePot(amount);
