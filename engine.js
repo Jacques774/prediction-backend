@@ -404,6 +404,46 @@ document.addEventListener("DOMContentLoaded", () => {
         if (Leaderboard.render) Leaderboard.render();
       }
     });
+
+    // 🔑 Handle Game Over event & trigger popup modal across all clients
+    window.socket.on("game_over", ({ leaderboard }) => {
+      window.isGameOver = true;
+
+      // Hide active question card immediately
+      const activeCard = document.getElementById("active-card");
+      if (activeCard) activeCard.style.display = "none";
+
+      const playerName = getActivePlayerName() || "Player";
+      let positionText = "Well done for finishing!";
+      let finalBalance = getCurrentPlayerBalance();
+
+      if (leaderboard && Array.isArray(leaderboard)) {
+        const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
+        const index = sorted.findIndex(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
+        
+        if (index !== -1) {
+          const pos = index + 1;
+          finalBalance = sorted[index].balance;
+
+          const suffixes = ["st", "nd", "rd"];
+          const suffix = (pos <= 3) ? suffixes[pos - 1] : "th";
+          positionText = `Well done, you came ${pos}${suffix}! 🎉`;
+        }
+      }
+
+      // Populate Modal Elements
+      const messageEl = document.getElementById("gameOverMessage");
+      const balanceEl = document.getElementById("gameOverFinalBalance");
+
+      if (messageEl) messageEl.textContent = positionText;
+      if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance).toFixed(2)}`;
+
+      // Show Modal
+      const gameOverModal = document.getElementById("gameOverModal");
+      if (gameOverModal) {
+        gameOverModal.style.display = "flex";
+      }
+    });
   }
 
   // ============================
