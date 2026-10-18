@@ -97,6 +97,54 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ============================
+  // GAME OVER MODAL HELPER
+  // ============================
+  function triggerGameOverModal(leaderboard) {
+    window.isGameOver = true;
+
+    // Hide active question card immediately
+    const activeCard = document.getElementById("active-card");
+    if (activeCard) activeCard.style.display = "none";
+
+    // Close host outcome panel if open
+    const outcomePanel = document.querySelector(".host-outcome-panel");
+    if (outcomePanel) outcomePanel.classList.remove("active");
+
+    const playerName = getActivePlayerName() || "Player";
+    let positionText = "Well done for finishing!";
+    let finalBalance = getCurrentPlayerBalance();
+
+    if (leaderboard && Array.isArray(leaderboard)) {
+      const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
+      const index = sorted.findIndex(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
+      
+      if (index !== -1) {
+        const pos = index + 1;
+        finalBalance = sorted[index].balance;
+
+        const suffixes = ["st", "nd", "rd"];
+        const suffix = (pos <= 3) ? suffixes[pos - 1] : "th";
+        positionText = `Well done, you came ${pos}${suffix}! 🎉`;
+      }
+    }
+
+    // Populate Modal Elements
+    const messageEl = document.getElementById("gameOverMessage");
+    const balanceEl = document.getElementById("gameOverFinalBalance");
+
+    if (messageEl) messageEl.textContent = positionText;
+    if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance).toFixed(2)}`;
+
+    // Show Modal via class toggle and fallback inline flex
+    const gameOverModal = document.getElementById("gameOverModal");
+    if (gameOverModal) {
+      gameOverModal.classList.add("show");
+      gameOverModal.style.display = "flex";
+    }
+  }
+  window.triggerGameOverModal = triggerGameOverModal;
+
+  // ============================
   // ENGINE OBJECT
   // ============================
   window.Engine = {
@@ -110,6 +158,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (activeCard) activeCard.style.display = "none";
         return;
       }
+
+      // 🔑 Capture question tally tracking for final round detection
+      if (q && q.current !== undefined) window.currentQuestionNum = q.current;
+      if (q && q.total !== undefined) window.totalQuestionsCount = q.total;
 
       if (cashoutBtn) cashoutBtn.disabled = true;
       if (btnYes) btnYes.disabled = false;
@@ -136,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       this.currentQuestion = { 
         ...q, 
-        timer: finalTimer, // Uses server's custom timer correctly!
+        timer: finalTimer, 
         stake: 0, 
         userChoice: null, 
         outcome: null, 
@@ -310,16 +362,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // 🔑 CHECK IF THIS WAS THE FINAL QUESTION
-      const currentQNum = window.currentQuestionNum || 0;
-      const totalQCount = window.totalQuestionsCount || 0;
+      const currentQNum = window.currentQuestionNum || (q.current || 0);
+      const totalQCount = window.totalQuestionsCount || (q.total || 0);
 
-      if (currentQNum > 0 && totalQCount > 0 && currentQNum >= totalQCount) {
+      if ((currentQNum > 0 && totalQCount > 0 && currentQNum >= totalQCount) || q.isFinalQuestion) {
         console.log("🏁 Final question outcome processed. Triggering Game Over...");
         window.isGameOver = true;
-
-        // Hide active card immediately
-        const activeCard = document.getElementById("active-card");
-        if (activeCard) activeCard.style.display = "none";
 
         // Build final leaderboard snapshot
         const finalLeaderboard = window.pot ? Object.keys(window.pot.balances).map(name => ({
@@ -331,6 +379,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (window.socket && window.gameId) {
           window.socket.emit("game_over", { gameId: window.gameId, leaderboard: finalLeaderboard });
         }
+
+        // Trigger modal locally right away
+        triggerGameOverModal(finalLeaderboard);
         return; // Halt execution and skip countdown
       }
 
@@ -407,42 +458,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 🔑 Handle Game Over event & trigger popup modal across all clients
     window.socket.on("game_over", ({ leaderboard }) => {
-      window.isGameOver = true;
-
-      // Hide active question card immediately
-      const activeCard = document.getElementById("active-card");
-      if (activeCard) activeCard.style.display = "none";
-
-      const playerName = getActivePlayerName() || "Player";
-      let positionText = "Well done for finishing!";
-      let finalBalance = getCurrentPlayerBalance();
-
-      if (leaderboard && Array.isArray(leaderboard)) {
-        const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
-        const index = sorted.findIndex(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
-        
-        if (index !== -1) {
-          const pos = index + 1;
-          finalBalance = sorted[index].balance;
-
-          const suffixes = ["st", "nd", "rd"];
-          const suffix = (pos <= 3) ? suffixes[pos - 1] : "th";
-          positionText = `Well done, you came ${pos}${suffix}! 🎉`;
-        }
-      }
-
-      // Populate Modal Elements
-      const messageEl = document.getElementById("gameOverMessage");
-      const balanceEl = document.getElementById("gameOverFinalBalance");
-
-      if (messageEl) messageEl.textContent = positionText;
-      if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance).toFixed(2)}`;
-
-      // Show Modal
-      const gameOverModal = document.getElementById("gameOverModal");
-      if (gameOverModal) {
-        gameOverModal.style.display = "flex";
-      }
+      triggerGameOverModal(leaderboard);
     });
   }
 
@@ -645,27 +661,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const panel = document.querySelector(".host-outcome-panel");
     if (panel) panel.classList.remove("active");
   };
-
-  const hostYesBtn = document.getElementById("host-yes-btn");
-  const hostNoBtn = document.getElementById("host-no-btn");
-
-  if (hostYesBtn) {
-    hostYesBtn.onclick = () => {
-      window.closeHostOutcome();
-      if (window.socket && window.gameId) {
-        window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
-      }
-    };
-  }
-
-  if (hostNoBtn) {
-    hostNoBtn.onclick = () => {
-      window.closeHostOutcome();
-      if (window.socket && window.gameId) {
-        window.socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
-      }
-    };
-  }
 
   // Cashout timer
   window.startCashoutTimer = function () {
