@@ -90,31 +90,36 @@
       }
       err.style.display = "none";
 
+      // Convert minutes to seconds
+      const questionTimeSeconds = questionTimeMins * 60;
+
+      // ✅ FIXED: Explicitly send startingBalance, questionCount, and qtime to server
       fetch(`${API_BASE}/create-game`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId: "temp-host" })
+        body: JSON.stringify({
+          hostId: "temp-host",
+          startingBalance: startingBalance,
+          questionCount: questionCount,
+          qtime: questionTimeSeconds
+        })
       })
       .then(res => res.json())
       .then(data => {
         const gameCode = data.code;
+        const serverTimer = data.qtime; // Server-confirmed timer in seconds
 
-        // Convert minutes to seconds for internal countdown processing
-        const questionTimeSeconds = questionTimeMins * 60;
+        window.GameSession = { gameCode, sport, startingBalance, questionCount, questionTimeSeconds: serverTimer };
 
-        window.GameSession = { gameCode, sport, startingBalance, questionCount, questionTimeSeconds };
-
-        // 🔑 FIXED: Included &qtime parameter in player link so player dashboards receive the custom card timer
-        const joinLink = `${BASE_URL}/player.html?code=${gameCode}&buyin=${startingBalance}&qtime=${questionTimeSeconds}`;
+        const joinLink = `${BASE_URL}/player.html?code=${gameCode}&buyin=${startingBalance}&qtime=${serverTimer}`;
         linkField.textContent = joinLink;
         
-        // Display raw game code in the dedicated box
         codeDisplay.textContent = gameCode;
 
         linkBox.style.display = "flex";
         startBtn.style.display = "block";
 
-        console.log("Game created:", window.GameSession);
+        console.log("Game created on server:", window.GameSession);
       })
       .catch(err => {
         console.error("Error creating game:", err);
@@ -136,7 +141,7 @@
       }
     });
 
-    // Host redirect with code, starting balance, and question duration parameters
+    // Host redirect
     startBtn.addEventListener("click", () => {
       const { gameCode, startingBalance, questionTimeSeconds } = window.GameSession;
       window.location.href = `${BASE_URL}/host?code=${gameCode}&buyin=${startingBalance}&qtime=${questionTimeSeconds}`;
