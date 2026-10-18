@@ -107,8 +107,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (activeCard) activeCard.style.display = "none";
 
     // Close host outcome panel if open
-    const outcomePanel = document.querySelector(".host-outcome-panel");
-    if (outcomePanel) outcomePanel.classList.remove("active");
+    if (typeof window.closeHostOutcome === "function") {
+      window.closeHostOutcome();
+    }
 
     const playerName = getActivePlayerName() || "Player";
     let positionText = "Well done for finishing!";
@@ -151,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
     currentQuestion: null,
 
     nextQuestion(q) {
-      // 🔑 Stop question processing if game is complete
+      // 🛑 Stop question processing if game is complete
       if (window.isGameOver) {
         console.log("🛑 Engine: Game is over. Blocking question initialization.");
         const activeCard = document.getElementById("active-card");
@@ -308,6 +309,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION & GAME OVER CHECK
     handleOutcome(outcome, serverWinners = null) {
+      // 🔑 Immediately close the host outcome panel when outcome is handled
+      if (typeof window.closeHostOutcome === "function") {
+        window.closeHostOutcome();
+      }
+
       const q = this.currentQuestion;
       if (!q || q.outcome !== null) return; // Prevent duplicate resolution!
       q.outcome = outcome;
