@@ -310,6 +310,13 @@ io.on("connection", (socket) => {
     });
   });
 
+  // 🔑 Handle Game Over event & broadcast final leaderboard
+  socket.on("game_over", ({ gameId, leaderboard }) => {
+    if (!games[gameId]) return;
+    console.log(`🏁 Game over triggered for room [${gameId}]`);
+    io.to(gameId).emit("game_over", { leaderboard });
+  });
+
   // Handle disconnect
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
