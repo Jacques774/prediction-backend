@@ -234,8 +234,8 @@ socket.on("round_outcome", ({ outcome, winners }) => {
   });
 });
 
-// 🔑 New question broadcast
-socket.on("new_question", ({ id }) => {
+// 🔑 New question broadcast (UPDATED TO RECEIVE SERVER TIMER)
+socket.on("new_question", ({ id, timer }) => {
   if (typeof RugbyQuestions === "undefined") {
     console.error("❌ RugbyQuestions is not loaded.");
     return;
@@ -246,10 +246,17 @@ socket.on("new_question", ({ id }) => {
     console.error("❌ Question not found for ID:", id);
     return;
   }
-  console.log(`📡 Player received new question: ${question.text}`);
+
+  // ✅ Pass the server's custom timer attached to the question
+  const questionWithTimer = {
+    ...question,
+    timer: timer || 60
+  };
+
+  console.log(`📡 Player received new question: ${question.text} (Timer: ${questionWithTimer.timer}s)`);
 
   if (typeof Engine !== "undefined" && typeof Engine.nextQuestion === "function") {
-    Engine.nextQuestion(question);
+    Engine.nextQuestion(questionWithTimer);
   }
 
   const activeCard = document.getElementById("active-card");
