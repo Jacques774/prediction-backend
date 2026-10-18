@@ -5,6 +5,7 @@ import Pot from "./pot.js";
 // DOM Helpers for Stake Timer & Delayed Pot Reveal
 // ============================
 window.isStakeWindowActive = false;
+window.isGameOver = false; // 🔑 Freeze question flag
 
 function showCountdown(timeLeft) {
   window.isStakeWindowActive = true;
@@ -103,7 +104,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     startPreCountdown(() => {
       const activeCard = document.getElementById("active-card");
-      if (activeCard) activeCard.style.display = "block";
+      if (activeCard && !window.isGameOver) activeCard.style.display = "block";
     });
   });
 
@@ -122,6 +123,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Listen for server broadcast of new question
   socket.on("new_question", ({ id, current, total }) => {
+    // 🔑 Stop loading questions if game is over
+    if (window.isGameOver) {
+      console.log("🛑 Game is complete. Ignoring new question emission.");
+      return;
+    }
+
     if (current !== undefined && current === lastSeenHostIndex) return;
     if (current !== undefined) lastSeenHostIndex = current;
 
@@ -137,6 +144,55 @@ document.addEventListener("DOMContentLoaded", async () => {
       tallyEl.textContent = `Question ${current} of ${total}`;
     }
   });
+
+  // 🔑 GAME OVER LISTENER
+  socket.on("game_over", ({ leaderboard }) => {
+    window.isGameOver = true;
+
+    // Hide active question card immediately
+    const activeCard = document.getElementById("active-card");
+    if (activeCard) activeCard.style.display = "none";
+
+    const playerName = window.currentPlayerName || "Host";
+    let positionText = "Well done for finishing!";
+    let finalBalance = window.pot ? window.pot.balances[playerName] || buyInAmount : buyInAmount;
+
+    if (leaderboard && Array.isArray(leaderboard)) {
+      const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
+      const index = sorted.findIndex(p => p.name === playerName);
+      
+      if (index !== -1) {
+        const pos = index + 1;
+        finalBalance = sorted[index].balance;
+
+        const suffixes = ["st", "nd", "rd"];
+        const suffix = (pos <= 3) ? suffixes[pos - 1] : "th";
+        positionText = `Well done, you came ${pos}${suffix}! 🎉`;
+      }
+    }
+
+    // Populate Modal Elements
+    const messageEl = document.getElementById("gameOverMessage");
+    const balanceEl = document.getElementById("gameOverFinalBalance");
+
+    if (messageEl) messageEl.textContent = positionText;
+    if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance).toFixed(2)}`;
+
+    // Show Modal
+    const gameOverModal = document.getElementById("gameOverModal");
+    if (gameOverModal) {
+      gameOverModal.style.display = "flex";
+    }
+  });
+
+  // Logout Button Listener
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      if (socket) socket.disconnect();
+      window.location.href = "gamesetup.html";
+    });
+  }
 
   // Real-time Pot Update Listener for Host Screen
   socket.on("pot_update", ({ amount }) => {
