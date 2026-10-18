@@ -110,9 +110,14 @@ document.addEventListener("DOMContentLoaded", () => {
       clearInterval(window.questionCountdown);
       clearInterval(window.cashoutCountdown);
 
-      // 🔑 Read custom question time from URL parameter, defaulting to 60s (1 min) and enforcing a minimum of 60s
+      // 🔑 Robustly grab custom time from URL parameter, falling back to localStorage, with a minimum of 60s
       const urlParams = new URLSearchParams(window.location.search);
-      const parsedTime = Number(urlParams.get("qtime"));
+      let parsedTime = Number(urlParams.get("qtime"));
+      
+      if (isNaN(parsedTime) || parsedTime < 60) {
+        parsedTime = Number(localStorage.getItem("game_qtime"));
+      }
+
       const customQTime = (!isNaN(parsedTime) && parsedTime >= 60) ? parsedTime : 60;
 
       // Capture starting balance reliably across Player and Host
