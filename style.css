@@ -617,3 +617,8 @@ body.stake-active #potAmount {
   display: none !important;
 }
 
+.stake-popup.show {
+  display: flex !important;
+}
+
+
