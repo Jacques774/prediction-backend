@@ -213,31 +213,10 @@ socket.on("game_starting", ({ host }) => {
   });
 });
 
-// 🔑 Round outcome broadcast
-socket.on("round_outcome", ({ outcome, winners }) => {
-  if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
-    Engine.handleOutcome(outcome, winners);
-  }
-
-  const player = window.currentPlayerName;
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl && window.pot && player) {
-    const currentBal = window.pot.balances[player] || 0;
-    balanceEl.textContent = `Balance: £${Number(currentBal).toFixed(2)}`;
-  }
-
-  const outcomeEl = document.getElementById("player-outcome");
-  if (outcomeEl) outcomeEl.textContent = `Outcome: ${outcome}`;
-
-  window.startPostQuestionCountdown(() => {
-    console.log("⏳ Player finished post-question countdown, waiting for server...");
-  });
-});
-
 // 🔑 Deduplication guard to prevent double-firing
 let lastSeenPlayerIndex = 0;
 
-// 🔑 New question broadcast (UPDATED WITH GUARD)
+// 🔑 New question broadcast
 socket.on("new_question", ({ id, timer, current, total }) => {
   if (current !== undefined && current === lastSeenPlayerIndex) return;
   if (current !== undefined) lastSeenPlayerIndex = current;
@@ -273,21 +252,6 @@ socket.on("new_question", ({ id, timer, current, total }) => {
 
   const activeCard = document.getElementById("active-card");
   if (activeCard) activeCard.style.display = "block";
-});
-
-// 🔑 Next round broadcast from host
-socket.on("next_round", ({ gameId }) => {
-  console.log("📡 Player received next_round for game:", gameId);
-
-  window.startPostQuestionCountdown(() => {
-    if (window.pot) {
-      window.pot.startStakeTimer(
-        10000,
-        (timeLeft) => window.showCountdown(timeLeft),
-        (amount) => window.revealPot(amount)
-      );
-    }
-  });
 });
 
 // 🔑 Real-time Pot Update Listener (Guarded by active countdown flag)
