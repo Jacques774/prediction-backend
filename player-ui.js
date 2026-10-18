@@ -212,6 +212,15 @@ function initPlayerUI() {
       }
     });
   }
+
+  // 4️⃣ Logout Button Listener -> Redirects to Main Menu
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      if (socket) socket.disconnect();
+      window.location.href = "MainMenu.html";
+    });
+  }
 }
 
 // Safely initialize whether DOM is loading or already parsed
@@ -277,15 +286,21 @@ socket.on("game_starting", ({ host }) => {
   console.log(`Game starting by host: ${host}`);
   window.startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
-    if (activeCard) activeCard.style.display = "block";
+    if (activeCard && !window.isGameOver) activeCard.style.display = "block";
   });
 });
 
 let lastSeenPlayerIndex = 0;
 
 socket.on("new_question", ({ id, timer, current, total }) => {
-  if (current !== undefined && current === lastSeenPlayerIndex) return;
-  if (current !== undefined) lastSeenPlayerIndex = current;
+  if (window.isGameOver) return;
+
+  if (current !== undefined) {
+    window.currentQuestionNum = current;
+    if (current === lastSeenPlayerIndex) return;
+    lastSeenPlayerIndex = current;
+  }
+  if (total !== undefined) window.totalQuestionsCount = total;
 
   if (typeof RugbyQuestions === "undefined") {
     console.error("❌ RugbyQuestions is not loaded.");
@@ -295,13 +310,15 @@ socket.on("new_question", ({ id, timer, current, total }) => {
   const question = RugbyQuestions[id];
   if (!question) return;
 
-  const questionWithTimer = {
+  const questionData = {
     ...question,
-    timer: timer || 60
+    timer: timer || 60,
+    current,
+    total
   };
 
   if (typeof Engine !== "undefined" && typeof Engine.nextQuestion === "function") {
-    Engine.nextQuestion(questionWithTimer);
+    Engine.nextQuestion(questionData);
   }
 
   const tallyEl = document.getElementById("player-question-tally");
@@ -310,7 +327,48 @@ socket.on("new_question", ({ id, timer, current, total }) => {
   }
 
   const activeCard = document.getElementById("active-card");
-  if (activeCard) activeCard.style.display = "block";
+  if (activeCard && !window.isGameOver) activeCard.style.display = "block";
+});
+
+// 🔑 GAME OVER LISTENER FOR PLAYERS
+socket.on("game_over", ({ leaderboard }) => {
+  window.isGameOver = true;
+
+  // Hide active question card immediately
+  const activeCard = document.getElementById("active-card");
+  if (activeCard) activeCard.style.display = "none";
+
+  const playerName = window.currentPlayerName || "Player";
+  let positionText = "Well done for finishing!";
+  let finalBalance = window.pot && window.pot.balances ? window.pot.balances[playerName] || 0 : 0;
+
+  if (leaderboard && Array.isArray(leaderboard)) {
+    const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
+    const index = sorted.findIndex(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
+    
+    if (index !== -1) {
+      const pos = index + 1;
+      finalBalance = sorted[index].balance;
+
+      const suffixes = ["st", "nd", "rd"];
+      const suffix = (pos <= 3) ? suffixes[pos - 1] : "th";
+      positionText = `Well done, you came ${pos}${suffix}! 🎉`;
+    }
+  }
+
+  // Populate Modal Elements
+  const messageEl = document.getElementById("gameOverMessage");
+  const balanceEl = document.getElementById("gameOverFinalBalance");
+
+  if (messageEl) messageEl.textContent = positionText;
+  if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance).toFixed(2)}`;
+
+  // Show Modal via class toggle and inline fallback
+  const gameOverModal = document.getElementById("gameOverModal");
+  if (gameOverModal) {
+    gameOverModal.classList.add("show");
+    gameOverModal.style.display = "flex";
+  }
 });
 
 socket.on("pot_update", ({ amount }) => {
