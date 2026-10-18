@@ -17,12 +17,36 @@
       height: 100vh;
       margin: 0;
     }
+
+    /* Temp Credit Box */
+    .credit-box {
+      background: #2a2a2a;
+      border: 2px solid #28a745;
+      border-radius: 12px;
+      padding: 12px 24px;
+      margin-bottom: 30px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    .credit-label {
+      font-size: 0.85rem;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .credit-amount {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #28a745;
+    }
+
     h1 {
-      margin-bottom: 40px;
+      margin-bottom: 30px;
       font-size: 2rem;
     }
     .menu-btn {
-      margin: 15px;
+      margin: 10px;
       padding: 15px 40px;
       font-size: 1.2rem;
       font-weight: bold;
@@ -33,6 +57,8 @@
       cursor: pointer;
       text-decoration: none;
       transition: background 0.3s;
+      width: 180px;
+      text-align: center;
     }
     .menu-btn:hover {
       background: #1e7e34;
@@ -40,8 +66,24 @@
   </style>
 </head>
 <body>
+
+  <!-- Temporary Credit Display -->
+  <div class="credit-box">
+    <div class="credit-label">Available Credit</div>
+    <div class="credit-amount" id="user-credit">£100.00</div>
+  </div>
+
   <h1>Main Menu</h1>
   <a href="/gamesetup.html" class="menu-btn">Host Player</a>
-<a href="/player" class="menu-btn">Player</a>
+  <a href="/player" class="menu-btn">Player</a>
+
+  <script>
+    // Temp fixed £50 credit
+    const tempCredit = 50;
+    const creditEl = document.getElementById("user-credit");
+    if (creditEl) {
+      creditEl.textContent = "£" + tempCredit.toFixed(2);
+    }
+  </script>
 </body>
 </html>
