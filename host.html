@@ -127,6 +127,28 @@
       </div>
     </div>
   </div>
+
+  <!-- ============================
+       GAME OVER POPUP MODAL
+       ============================ -->
+  <div id="gameOverModal" class="stake-popup" style="display: none; z-index: 2000;">
+    <div class="stake-popup-content" style="text-align: center; padding: 25px;">
+      <h2 id="gameOverTitle" style="color: #38bdf8; margin-bottom: 10px;">Game Complete!</h2>
+      <p id="gameOverMessage" style="font-size: 1.2rem; margin: 15px 0; font-weight: 600;">
+        Well done! You came 1st! 🎉
+      </p>
+      <p id="gameOverFinalBalance" style="font-size: 1.1rem; color: #4ade80; margin-bottom: 20px;">
+        Final Balance: £0.00
+      </p>
+
+      <div class="stake-popup-actions" style="justify-content: center;">
+        <button id="logout-btn" style="background-color: #ef4444; color: white; padding: 10px 24px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer;">
+          Logout / Exit
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Load Socket.IO client first -->
