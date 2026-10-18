@@ -31,10 +31,20 @@ app.get("/player", (req, res) => res.sendFile(path.join(__dirname, "player.html"
 // --- Game state ---
 const games = {};
 
-// ✅ Updated to receive and store host game settings
+// ✅ Updated: Defaults to 60s minimum and handles minute-to-second conversion automatically
 app.post("/api/create-game", (req, res) => {
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
   const { startingBalance, questionCount, qtime } = req.body;
+
+  let parsedQTime = Number(qtime);
+
+  // If missing or invalid, default to 60s
+  if (isNaN(parsedQTime) || parsedQTime <= 0) {
+    parsedQTime = 60;
+  } else if (parsedQTime < 60) {
+    // If passed in minutes (e.g., 4), convert to seconds (4 * 60 = 240s)
+    parsedQTime = parsedQTime * 60;
+  }
 
   games[code] = {
     players: {},
@@ -45,7 +55,7 @@ app.post("/api/create-game", (req, res) => {
     lastOutcome: null,
     startingBalance: Number(startingBalance) >= 20 ? Number(startingBalance) : 100,
     questionCount: Number(questionCount) || 40,
-    qtime: Number(qtime) >= 60 ? Number(qtime) : 120 // Default to 2 mins (120s) or custom time
+    qtime: parsedQTime // Guaranteed to be in seconds (defaults to 60s)
   };
 
   res.json({ 
