@@ -104,8 +104,8 @@
 
         window.GameSession = { gameCode, sport, startingBalance, questionCount, questionTimeSeconds };
 
-        // Full player join link
-        const joinLink = `${BASE_URL}/player.html?code=${gameCode}&buyin=${startingBalance}`;
+        // 🔑 FIXED: Included &qtime parameter in player link so player dashboards receive the custom card timer
+        const joinLink = `${BASE_URL}/player.html?code=${gameCode}&buyin=${startingBalance}&qtime=${questionTimeSeconds}`;
         linkField.textContent = joinLink;
         
         // Display raw game code in the dedicated box
