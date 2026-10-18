@@ -66,7 +66,7 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // 🔑 Read available credit passed from main menu (defaults to 50)
+    // Read available credit passed from main menu (defaults to 50)
     const urlParams = new URLSearchParams(window.location.search);
     const maxCredit = Number(urlParams.get("credit")) || 50;
 
@@ -96,7 +96,7 @@
       const questionCount = Number(document.getElementById("question-count").value);
       const questionTimeMins = Number(document.getElementById("question-time").value);
 
-      // 🔑 Enforce maximum limit check against main menu credit
+      // Enforce maximum limit check against main menu credit
       if (startingBalance > maxCredit) {
         err.textContent = `Starting balance (£${startingBalance}) cannot exceed your main menu credit (£${maxCredit}).`;
         err.style.display = "block";
