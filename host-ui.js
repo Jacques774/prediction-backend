@@ -158,13 +158,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const activeCard = document.getElementById("active-card");
     if (activeCard) activeCard.style.display = "none";
 
+    // Close host outcome panel if open
+    const outcomePanel = document.querySelector(".host-outcome-panel");
+    if (outcomePanel) outcomePanel.classList.remove("active");
+
     const playerName = window.currentPlayerName || "Host";
     let positionText = "Well done for finishing!";
     let finalBalance = window.pot ? window.pot.balances[playerName] || buyInAmount : buyInAmount;
 
     if (leaderboard && Array.isArray(leaderboard)) {
       const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
-      const index = sorted.findIndex(p => p.name === playerName);
+      const index = sorted.findIndex(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
       
       if (index !== -1) {
         const pos = index + 1;
@@ -183,9 +187,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (messageEl) messageEl.textContent = positionText;
     if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance).toFixed(2)}`;
 
-    // Show Modal
+    // Show Modal via class toggle and inline fallback
     const gameOverModal = document.getElementById("gameOverModal");
     if (gameOverModal) {
+      gameOverModal.classList.add("show");
       gameOverModal.style.display = "flex";
     }
   });
