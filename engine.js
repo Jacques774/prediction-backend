@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================
   const Timer = {
     start(question, onTick, onEnd) {
-      let timeLeft = question.timer || 30;
+      let timeLeft = question.timer || 60;
       onTick(timeLeft);
       const interval = setInterval(() => {
         timeLeft--;
@@ -110,12 +110,17 @@ document.addEventListener("DOMContentLoaded", () => {
       clearInterval(window.questionCountdown);
       clearInterval(window.cashoutCountdown);
 
-      // 🔑 Capture starting balance reliably across Player and Host
+      // 🔑 Read custom question time from URL parameter, defaulting to 60s (1 min) and enforcing a minimum of 60s
+      const urlParams = new URLSearchParams(window.location.search);
+      const parsedTime = Number(urlParams.get("qtime"));
+      const customQTime = (!isNaN(parsedTime) && parsedTime >= 60) ? parsedTime : 60;
+
+      // Capture starting balance reliably across Player and Host
       const startingBalance = getCurrentPlayerBalance();
 
       this.currentQuestion = { 
         ...q, 
-        timer: 30, 
+        timer: customQTime, // Always at least 60s (1 minute)
         stake: 0, 
         userChoice: null, 
         outcome: null, 
