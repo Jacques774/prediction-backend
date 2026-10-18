@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ============================
-  // GAME OVER MODAL HELPER
+  // GAME OVER MODAL HELPER (NO POSITION)
   // ============================
   function triggerGameOverModal(leaderboard) {
     window.isGameOver = true;
@@ -129,43 +129,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const rawName = getActivePlayerName() || window.currentPlayerName || window.playerName || "Player";
     const playerName = rawName.trim().toLowerCase();
     
-    let positionText = "Well done for finishing!";
-    // 🔑 Start with our reliable local balance calculation first
+    // 🔑 Clean congratulatory message without positions
+    let positionText = "Well done for finishing the game! 🎉";
     let finalBalance = getCurrentPlayerBalance();
 
     if (leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0) {
-      // Sort leaderboard descending by balance to ensure correct ranking
       const sorted = [...leaderboard].sort((a, b) => Number(b.balance || 0) - Number(a.balance || 0));
-      
-      // Find index using strict case-insensitive matching
       const index = sorted.findIndex(p => p.name && p.name.trim().toLowerCase() === playerName);
       
       if (index !== -1) {
-        const pos = index + 1;
-        const suffixes = ["st", "nd", "rd"];
-        const suffix = (pos <= 3 && pos > 0) ? suffixes[pos - 1] : "th";
-        positionText = `Well done, you came ${pos}${suffix}! 🎉`;
-
-        // 🔑 Only override finalBalance if the leaderboard balance is valid AND greater than 0
         const boardBal = Number(sorted[index].balance);
         if (!isNaN(boardBal) && boardBal > 0) {
           finalBalance = boardBal;
         }
-      } else {
-        // Fallback rank lookup by closest balance
-        const balanceIndex = sorted.findIndex(p => Math.abs(Number(p.balance || 0) - finalBalance) < 0.01);
-        if (balanceIndex !== -1) {
-          const pos = balanceIndex + 1;
-          const suffixes = ["st", "nd", "rd"];
-          const suffix = (pos <= 3 && pos > 0) ? suffixes[pos - 1] : "th";
-          positionText = `Well done, you came ${pos}${suffix}! 🎉`;
-        } else if (sorted.length === 1) {
-          positionText = `Well done, you came 1st! 🎉`;
-        }
       }
     }
 
-    // 🔑 Ultimate safety check: double-check the DOM header if finalBalance is still 0 or missing
+    // Ultimate safety check: double-check the DOM header if finalBalance is still 0 or missing
     if (!finalBalance || isNaN(finalBalance) || finalBalance === 0) {
       const balanceEl = document.getElementById("player-balance");
       if (balanceEl) {
