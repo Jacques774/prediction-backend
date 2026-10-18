@@ -68,19 +68,41 @@ window.socket = socket;
 // Read ?code= and optional ?buyin= from URL
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("code");
-const buyInAmount = Number(urlParams.get("buyin")) || 100;
+let buyInAmount = urlParams.get("buyin") !== null ? Number(urlParams.get("buyin")) : 20;
 
 if (!gameId) {
   console.error("❌ No game code found in URL. Did you come from setup.html?");
 }
 window.gameId = gameId;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   // ============================
   // STAT TRACKING GLOBALS
   // ============================
   window.totalWins = 0;
   window.totalCashouts = 0;
+
+  // 🔑 FETCH LIVE GAME ROOM DETAILS FROM BACKEND API TO ENSURE ACCURATE BUY-IN
+  if (gameId) {
+    try {
+      const res = await fetch(`https://prediction-backend-2e20.onrender.com/api/game/${gameId}`);
+      if (res.ok) {
+        const gameData = await res.json();
+        if (gameData && gameData.startingBalance !== undefined) {
+          buyInAmount = Number(gameData.startingBalance);
+          console.log(`✅ Host fetched live buy-in from server: £${buyInAmount}`);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch live room details, falling back to URL parameter:", err);
+    }
+  }
+
+  // Pre-populate initial balance display on setup slide if needed
+  const balanceEl = document.getElementById("player-balance");
+  if (balanceEl) {
+    balanceEl.textContent = `Balance: £${Number(buyInAmount).toFixed(2)}`;
+  }
 
   const startBtn = document.getElementById("host-start-btn");
   if (!startBtn) {
