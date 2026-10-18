@@ -167,10 +167,6 @@ document.addEventListener("DOMContentLoaded", () => {
     yesBtn.addEventListener("click", () => {
       console.log("✅ Host chose outcome YES");
       socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
-
-      window.startPostQuestionCountdown(() => {
-        socket.emit("next_round", { gameId: window.gameId });
-      });
     });
   }
 
@@ -178,10 +174,6 @@ document.addEventListener("DOMContentLoaded", () => {
     noBtn.addEventListener("click", () => {
       console.log("✅ Host chose outcome NO");
       socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
-
-      window.startPostQuestionCountdown(() => {
-        socket.emit("next_round", { gameId: window.gameId });
-      });
     });
   }
 
