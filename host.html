@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prediction Game - Host Setup</title>
   <link rel="stylesheet" href="style.css">
-  
 </head>
 <body>
 
@@ -33,14 +32,12 @@
   <div class="top-header">
     <div class="header-left">
       <div class="header-line" id="player-name">Host: --</div>
-      <div class="header-line" id="player-balance">Balance: 120</div>
+      <div class="header-line" id="player-balance">Balance: £--</div>
 
-<!-- Add this where you want the question count to appear on the host screen -->
-<div id="host-question-tally" style="font-size: 1.1rem; font-weight: 600; color: #38bdf8; margin-bottom: 10px;">
-  Question -- of --
-</div>
-
-      
+      <!-- Question Tally -->
+      <div id="host-question-tally" style="font-size: 1.1rem; font-weight: 600; color: #38bdf8; margin-bottom: 10px;">
+        Question -- of --
+      </div>
     </div>
     <div class="header-right">
       <div class="header-line" id="player-wins">Wins: 0</div>
@@ -48,46 +45,41 @@
     </div>
   </div>
 
-  
-
   <!-- Countdown -->
   <div id="preCountdown" style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">3</div>
 
-<!-- Post-Question Countdown -->
-<div id="postQuestionCountdown"
-     style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">
-  3</div>
+  <!-- Post-Question Countdown -->
+  <div id="postQuestionCountdown" style="display:none; font-size:4rem; font-weight:700; text-align:center; margin-top:40px;">3</div>
 
   <!-- Cards -->
-<div class="cards">
-  <div class="card" id="active-card">
-    <div class="card-header">
-      <div class="question-text" id="q-text">Loading question...</div>
-    </div>
-    <div class="choices">
-      <button class="btn btn-yes" id="btn-yes">YES</button>
-      <button class="btn btn-no" id="btn-no">NO</button>
-    </div>
-    <!-- 🚫 Removed popularity labels and bar -->
+  <div class="cards">
+    <div class="card" id="active-card">
+      <div class="card-header">
+        <div class="question-text" id="q-text">Loading question...</div>
+      </div>
+      <div class="choices">
+        <button class="btn btn-yes" id="btn-yes">YES</button>
+        <button class="btn btn-no" id="btn-no">NO</button>
+      </div>
 
-    <div class="cashout-row">
-      <span class="position" id="q-info">
-        You chose: --<br>
-        Stake: --<br>
-        Timer: --
-      </span>
-      <div class="cashout-action">
-        <button class="cashout-btn" id="cashout-btn">Cash Out: --</button>
-        <div class="cashout-timer" id="timer">Cash out: --s</div>
+      <div class="cashout-row">
+        <span class="position" id="q-info">
+          You chose: --<br>
+          Stake: --<br>
+          Timer: --
+        </span>
+        <div class="cashout-action">
+          <button class="cashout-btn" id="cashout-btn">Cash Out: --</button>
+          <div class="cashout-timer" id="timer">Cash out: --s</div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
   <div id="stakePotDisplay" style="font-size:1.5rem; margin-top:20px;">
-  <span id="stakeCountdown" style="display:none;">Stake window: 10s</span>
-  <span id="potAmount" style="display:none;">Pot: £0</span>
-</div>
+    <span id="stakeCountdown" style="display:none;">Stake window: 10s</span>
+    <span id="potAmount" style="display:none;">Pot: £0</span>
+  </div>
 
   <!-- Footer Buttons -->
   <div class="bottom-buttons">
@@ -112,28 +104,27 @@
     </div>
   </div>
 
-  <!-- ============================
-     STAKE POPUP
-     ============================ -->
-<div id="stakePopup" class="stake-popup">
-  <div class="stake-popup-content">
-    <h3>Edit Stake</h3>
-    <input type="number" id="stakeInput" min="1" placeholder="Enter stake" />
+  <!-- STAKE POPUP -->
+  <div id="stakePopup" class="stake-popup">
+    <div class="stake-popup-content">
+      <h3>Edit Stake</h3>
+      <input type="number" id="stakeInput" min="1" placeholder="Enter stake" />
 
-    <div class="stake-popup-actions">
-      <button id="stake-save-btn">Save</button>
-<button id="stake-cancel-btn">Cancel</button>
+      <div class="stake-popup-actions">
+        <button id="stake-save-btn">Save</button>
+        <button id="stake-cancel-btn">Cancel</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="host-outcome-panel">
-  <div class="host-outcome-content">
-    <div class="history-header">Confirm Outcome</div>
-    <div class="question-text" id="host-outcome-question">Loading question...</div>
-    <div class="choices">
-      <button class="btn btn-yes" id="host-yes-btn">YES — It Happened</button>
-      <button class="btn btn-no" id="host-no-btn">NO — It Didn’t</button>
+  <div class="host-outcome-panel">
+    <div class="host-outcome-content">
+      <div class="history-header">Confirm Outcome</div>
+      <div class="question-text" id="host-outcome-question">Loading question...</div>
+      <div class="choices">
+        <button class="btn btn-yes" id="host-yes-btn">YES — It Happened</button>
+        <button class="btn btn-no" id="host-no-btn">NO — It Didn’t</button>
+      </div>
     </div>
   </div>
 </div>
@@ -146,11 +137,9 @@
 <script src="leaderboard.js"></script>
 <script src="history.js"></script>
 
-<!-- Then load your ES modules (Engine and Host UI) -->
+<!-- Then load ES modules (Engine and Host UI) -->
 <script type="module" src="engine.js"></script>
 <script type="module" src="host-ui.js"></script>
-
-
 
 </body>
 </html>
