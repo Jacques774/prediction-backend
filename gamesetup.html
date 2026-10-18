@@ -20,7 +20,8 @@
     #create-game-btn { padding: 14px; border-radius: 12px; border: none; background: #22c55e; color: #052e16; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
     #create-game-btn:hover { background: #16a34a; }
     .readonly-field { padding: 12px; border-radius: 10px; background: #1f2937; color: #e5e7eb; font-size: 1rem; border: 1px solid #374151; word-break: break-all; }
-    .share-btn { padding: 12px; border-radius: 10px; border: none; background: #38bdf8; color: #0f172a; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    .code-box { font-size: 1.5rem; font-weight: 800; letter-spacing: 3px; text-align: center; color: #38bdf8; background: #0f172a; border: 2px dashed #38bdf8; padding: 14px; border-radius: 12px; }
+    .share-btn { padding: 12px; border-radius: 10px; border: none; background: #38bdf8; color: #0f172a; font-weight: 700; cursor: pointer; margin-top: 10px; width: 100%; }
     #start-game-btn { padding: 14px; border-radius: 12px; border: none; background: #3b82f6; color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 10px; display: none; }
   </style>
 </head>
@@ -32,22 +33,34 @@
       <select id="sport-type">
         <option value="">Select sport</option>
         <option value="football">Football</option>
-        <option value="rugby">Rugby</option>
+        <option value="rugby" selected>Rugby</option>
         <option value="basketball">Basketball</option>
         <option value="tennis">Tennis</option>
       </select>
+
+      <label>Starting Balance (£)</label>
+      <input type="number" id="starting-balance" min="20" value="100" placeholder="100">
+
       <label>How Many Questions</label>
-      <input type="number" id="question-count" placeholder="40">
-      <label>Game Time (minutes)</label>
-      <input type="number" id="game-time" placeholder="20">
+      <input type="number" id="question-count" min="1" value="40" placeholder="40">
+
+      <label>Question Time (minutes)</label>
+      <input type="number" id="question-time" min="1" value="2" placeholder="2">
+
       <div id="setupError" style="color:#ef4444; font-weight:600; display:none; font-size:0.9rem;"></div>
+      
       <button id="create-game-btn">Create Game</button>
-      <div id="generatedLinkBox" style="display:none; margin-top:20px;">
+      
+      <div id="generatedLinkBox" style="display:none; margin-top:20px; display:flex; flex-direction:column; gap:12px;">
         <label>Players Join Link</label>
         <div class="readonly-field" id="generated-link"></div>
         <button id="share-btn" class="share-btn">Share Link</button>
+
+        <label style="margin-top: 8px;">Game Room Code</label>
+        <div class="code-box" id="game-code-display"></div>
       </div>
-      <button id="start-game-btn">Start Game</button>
+
+      <button id="start-game-btn">Start Game as Host</button>
     </div>
   </div>
 
@@ -57,25 +70,26 @@
     const err = document.getElementById("setupError");
     const linkBox = document.getElementById("generatedLinkBox");
     const linkField = document.getElementById("generated-link");
+    const codeDisplay = document.getElementById("game-code-display");
     const shareBtn = document.getElementById("share-btn");
     const startBtn = document.getElementById("start-game-btn");
 
-    // ✅ Use /api prefix for backend
     const API_BASE = "https://prediction-backend-2e20.onrender.com/api";
+    const BASE_URL = "https://prediction-backend-2e20.onrender.com";
 
     createBtn.addEventListener("click", () => {
       const sport = document.getElementById("sport-type").value;
-      const questions = Number(document.getElementById("question-count").value);
-      const gameTime = Number(document.getElementById("game-time").value);
+      const startingBalance = Number(document.getElementById("starting-balance").value);
+      const questionCount = Number(document.getElementById("question-count").value);
+      const questionTimeMins = Number(document.getElementById("question-time").value);
 
-      if (!sport || questions <= 0 || gameTime <= 0) {
-        err.textContent = "Please fill in all fields correctly.";
+      if (!sport || startingBalance < 20 || questionCount <= 0 || questionTimeMins < 1) {
+        err.textContent = "Please fill in all fields correctly (Min balance: £20, Min card timer: 1 min).";
         err.style.display = "block";
         return;
       }
       err.style.display = "none";
 
-      // ✅ Call backend with hostId
       fetch(`${API_BASE}/create-game`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,15 +97,21 @@
       })
       .then(res => res.json())
       .then(data => {
-        console.log("Backend response:", data); // 👀 should show { code: "N2X9FM" }
         const gameCode = data.code;
 
-        window.GameSession = { gameCode, sport, questions, gameTime };
+        // Convert minutes to seconds for internal countdown processing
+        const questionTimeSeconds = questionTimeMins * 60;
 
-        const BASE_URL = "https://prediction-backend-2e20.onrender.com";
-const joinLink = `${BASE_URL}/player.html?code=${gameCode}`;
+        window.GameSession = { gameCode, sport, startingBalance, questionCount, questionTimeSeconds };
+
+        // Full player join link
+        const joinLink = `${BASE_URL}/player.html?code=${gameCode}&buyin=${startingBalance}`;
         linkField.textContent = joinLink;
-        linkBox.style.display = "block";
+        
+        // Display raw game code in the dedicated box
+        codeDisplay.textContent = gameCode;
+
+        linkBox.style.display = "flex";
         startBtn.style.display = "block";
 
         console.log("Game created:", window.GameSession);
@@ -116,12 +136,11 @@ const joinLink = `${BASE_URL}/player.html?code=${gameCode}`;
       }
     });
 
-// ✅ Host redirect
-startBtn.addEventListener("click", () => {
-  const code = window.GameSession.gameCode;
-  const BASE_URL = "https://prediction-backend-2e20.onrender.com";
-  window.location.href = `${BASE_URL}/host?code=${code}`;
-});
+    // Host redirect with code, starting balance, and question duration parameters
+    startBtn.addEventListener("click", () => {
+      const { gameCode, startingBalance, questionTimeSeconds } = window.GameSession;
+      window.location.href = `${BASE_URL}/host?code=${gameCode}&buyin=${startingBalance}&qtime=${questionTimeSeconds}`;
+    });
   });
 </script>
 </body>
