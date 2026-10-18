@@ -1,14 +1,15 @@
 class Pot {
-  constructor(players = []) {
+  constructor(players = [], startingBalance = 20) {
     this.balances = {};
     this.stakes = {};
     this.potBalance = 0;
     this.stakeOpen = false;
     this.interval = null;
+    this.defaultStartingBalance = Number(startingBalance) || 20;
 
-    // Default player initializations fixed at £100
+    // Initialize player balances using startingBalance setting
     players.forEach(p => {
-      this.balances[p] = 100;
+      this.balances[p] = this.defaultStartingBalance;
       this.stakes[p] = 0;
     });
   }
@@ -74,7 +75,7 @@ class Pot {
   // Log active stake
   stake(player, amount, onUpdate) {
     if (this.balances[player] === undefined) {
-      this.balances[player] = 100;
+      this.balances[player] = this.defaultStartingBalance;
     }
     if (this.stakes[player] === undefined) {
       this.stakes[player] = 0;
@@ -132,7 +133,7 @@ class Pot {
     this.potBalance = 0;
     this.stakes = {};
 
-    // ✅ Explicitly clear and hide the pot display on screen
+    // Explicitly clear and hide the pot display on screen
     const potEl = document.getElementById("potAmount");
     if (potEl) {
       potEl.textContent = "Pot: £0.00";
