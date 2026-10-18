@@ -6,6 +6,8 @@ import Pot from "./pot.js";
 // ============================
 window.isStakeWindowActive = false;
 window.isGameOver = false; // 🔑 Freeze question flag
+window.currentQuestionNum = 0;
+window.totalQuestionsCount = 0;
 
 function showCountdown(timeLeft) {
   window.isStakeWindowActive = true;
@@ -129,6 +131,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    if (current !== undefined) window.currentQuestionNum = current;
+    if (total !== undefined) window.totalQuestionsCount = total;
+
     if (current !== undefined && current === lastSeenHostIndex) return;
     if (current !== undefined) lastSeenHostIndex = current;
 
@@ -220,22 +225,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (outcomePanel) outcomePanel.textContent = `Outcome: ${outcome}`;
   });
 
-  // Outcome buttons
+  // 🔑 Outcome buttons with End-of-Game Trigger
+  function handleOutcomeClick(outcome) {
+    console.log(`✅ Host chose outcome ${outcome}`);
+    socket.emit("round_outcome", { gameId: window.gameId, outcome });
+
+    // Check if current question reaches or exceeds the total question count
+    if (window.currentQuestionNum > 0 && window.totalQuestionsCount > 0 && window.currentQuestionNum >= window.totalQuestionsCount) {
+      console.log("🏁 Final question outcome confirmed. Emitting game_over...");
+      
+      const finalLeaderboard = window.pot ? Object.keys(window.pot.balances).map(name => ({
+        name,
+        balance: window.pot.balances[name]
+      })) : [];
+
+      socket.emit("game_over", { gameId: window.gameId, leaderboard: finalLeaderboard });
+    }
+  }
+
   const yesBtn = document.getElementById("host-yes-btn");
   const noBtn = document.getElementById("host-no-btn");
 
   if (yesBtn) {
-    yesBtn.addEventListener("click", () => {
-      console.log("✅ Host chose outcome YES");
-      socket.emit("round_outcome", { gameId: window.gameId, outcome: "YES" });
-    });
+    yesBtn.addEventListener("click", () => handleOutcomeClick("YES"));
   }
 
   if (noBtn) {
-    noBtn.addEventListener("click", () => {
-      console.log("✅ Host chose outcome NO");
-      socket.emit("round_outcome", { gameId: window.gameId, outcome: "NO" });
-    });
+    noBtn.addEventListener("click", () => handleOutcomeClick("NO"));
   }
 
   // START BUTTON CLICK
@@ -260,7 +276,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.currentPlayerName = hostName;
     window.isHost = true;
 
-    // 🔑 Initialize pot with host name & fetched buy-in amount
+    // Initialize pot with host name & fetched buy-in amount
     window.pot = new Pot([window.currentPlayerName], buyInAmount);
 
     socket.emit("join_game", { gameId, playerName: hostName, isHost: true });
