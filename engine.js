@@ -50,30 +50,28 @@ document.addEventListener("DOMContentLoaded", () => {
   // PLAYER RESOLUTION HELPERS
   // ============================
   function getActivePlayerName() {
-    if (window.currentPlayerName && window.pot && window.pot.balances[window.currentPlayerName] !== undefined) {
-      return window.currentPlayerName;
-    }
-    if (window.playerName && window.pot && window.pot.balances[window.playerName] !== undefined) {
-      return window.playerName;
-    }
-    if (window.pot && window.pot.balances) {
-      const keys = Object.keys(window.pot.balances);
-      if (keys.length > 0) return keys[0];
-    }
-    return window.currentPlayerName || window.playerName || "";
+    return (window.currentPlayerName || window.playerName || "").trim();
   }
 
   function getCurrentPlayerBalance() {
-    const p = getActivePlayerName();
+    const p = getActivePlayerName().toLowerCase();
     
-    // 1️⃣ Check local pot balances first
-    if (p && window.pot && window.pot.balances && window.pot.balances[p] !== undefined) {
-      return window.pot.balances[p];
+    // 1️⃣ Check local pot balances with case-insensitive key search
+    if (window.pot && window.pot.balances) {
+      for (const [key, val] of Object.entries(window.pot.balances)) {
+        if (key.trim().toLowerCase() === p && val !== undefined && !isNaN(val)) {
+          return Number(val);
+        }
+      }
     }
     
-    // 2️⃣ Fallback to Leaderboard scores if pot lookup misses
-    if (p && window.Leaderboard && window.Leaderboard.scores && window.Leaderboard.scores[p] !== undefined) {
-      return window.Leaderboard.scores[p];
+    // 2️⃣ Check Leaderboard scores with case-insensitive key search
+    if (window.Leaderboard && window.Leaderboard.scores) {
+      for (const [key, val] of Object.entries(window.Leaderboard.scores)) {
+        if (key.trim().toLowerCase() === p && val !== undefined && !isNaN(val)) {
+          return Number(val);
+        }
+      }
     }
 
     // 3️⃣ Fallback to DOM element text if present
@@ -128,24 +126,53 @@ document.addEventListener("DOMContentLoaded", () => {
       window.closeHostOutcome();
     }
 
-    const playerName = (getActivePlayerName() || window.currentPlayerName || window.playerName || "Player").trim();
+    const rawName = getActivePlayerName() || window.currentPlayerName || window.playerName || "Player";
+    const playerName = rawName.trim().toLowerCase();
+    
     let positionText = "Well done for finishing!";
+    // 🔑 Start with our reliable local balance calculation first
     let finalBalance = getCurrentPlayerBalance();
 
-    if (leaderboard && Array.isArray(leaderboard)) {
+    if (leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0) {
       // Sort leaderboard descending by balance to ensure correct ranking
-      const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
+      const sorted = [...leaderboard].sort((a, b) => Number(b.balance || 0) - Number(a.balance || 0));
       
       // Find index using strict case-insensitive matching
-      const index = sorted.findIndex(p => p.name && p.name.trim().toLowerCase() === playerName.toLowerCase());
+      const index = sorted.findIndex(p => p.name && p.name.trim().toLowerCase() === playerName);
       
       if (index !== -1) {
         const pos = index + 1;
-        finalBalance = sorted[index].balance;
-
         const suffixes = ["st", "nd", "rd"];
-        const suffix = (pos <= 3) ? suffixes[pos - 1] : "th";
+        const suffix = (pos <= 3 && pos > 0) ? suffixes[pos - 1] : "th";
         positionText = `Well done, you came ${pos}${suffix}! 🎉`;
+
+        // 🔑 Only override finalBalance if the leaderboard balance is valid AND greater than 0
+        const boardBal = Number(sorted[index].balance);
+        if (!isNaN(boardBal) && boardBal > 0) {
+          finalBalance = boardBal;
+        }
+      } else {
+        // Fallback rank lookup by closest balance
+        const balanceIndex = sorted.findIndex(p => Math.abs(Number(p.balance || 0) - finalBalance) < 0.01);
+        if (balanceIndex !== -1) {
+          const pos = balanceIndex + 1;
+          const suffixes = ["st", "nd", "rd"];
+          const suffix = (pos <= 3 && pos > 0) ? suffixes[pos - 1] : "th";
+          positionText = `Well done, you came ${pos}${suffix}! 🎉`;
+        } else if (sorted.length === 1) {
+          positionText = `Well done, you came 1st! 🎉`;
+        }
+      }
+    }
+
+    // 🔑 Ultimate safety check: double-check the DOM header if finalBalance is still 0 or missing
+    if (!finalBalance || isNaN(finalBalance) || finalBalance === 0) {
+      const balanceEl = document.getElementById("player-balance");
+      if (balanceEl) {
+        const match = balanceEl.textContent.match(/£([\d.]+)/);
+        if (match && match[1] && Number(match[1]) > 0) {
+          finalBalance = Number(match[1]);
+        }
       }
     }
 
@@ -154,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const balanceEl = document.getElementById("gameOverFinalBalance");
 
     if (messageEl) messageEl.textContent = positionText;
-    if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance).toFixed(2)}`;
+    if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance || 0).toFixed(2)}`;
 
     // Show Modal via class toggle and fallback inline flex
     const gameOverModal = document.getElementById("gameOverModal");
