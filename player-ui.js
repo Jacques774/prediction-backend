@@ -72,6 +72,7 @@ function initPlayerUI() {
   const modal = document.getElementById("gamePreviewModal");
   const confirmJoinBtn = document.getElementById("confirm-join-btn");
   const cancelPreviewBtn = document.getElementById("cancel-preview-btn");
+  const setupSlide = document.getElementById("playerSetupSlide");
 
   if (!joinBtn) {
     console.error("Join button not found.");
@@ -80,7 +81,7 @@ function initPlayerUI() {
 
   let pendingGameData = null;
 
-  // 1️⃣ Initial Join Click -> Opens Preview Modal
+  // 1️⃣ Initial Join Click -> Hides setup slide and opens Preview Modal cleanly
   joinBtn.addEventListener("click", () => {
     console.log("🎯 Player Join button clicked (Preview Gatekeeper)");
 
@@ -137,14 +138,19 @@ function initPlayerUI() {
       }
     }
 
-    // Show Preview Modal
-    if (modal) modal.style.display = "flex";
+    // Hide setup slide and display Preview Modal cleanly on top
+    if (setupSlide) setupSlide.style.display = "none";
+    if (modal) {
+      modal.style.display = "flex";
+      modal.style.zIndex = "1100"; // Position above all backdrop overlays
+    }
   });
 
-  // 2️⃣ Cancel Modal
+  // 2️⃣ Cancel Modal -> Restores the setup slide
   if (cancelPreviewBtn) {
     cancelPreviewBtn.addEventListener("click", () => {
       if (modal) modal.style.display = "none";
+      if (setupSlide) setupSlide.style.display = "flex";
     });
   }
 
@@ -165,10 +171,8 @@ function initPlayerUI() {
         isHost: false 
       });
 
-      // Hide modal & setup slide, show dashboard
+      // Hide modal completely, show dashboard
       if (modal) modal.style.display = "none";
-      const setupSlide = document.getElementById("playerSetupSlide");
-      if (setupSlide) setupSlide.style.display = "none";
 
       const dashboard = document.getElementById("dashboard");
       if (dashboard) {
