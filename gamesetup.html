@@ -39,7 +39,7 @@
       </select>
 
       <label>Starting Balance (£)</label>
-      <input type="number" id="starting-balance" min="20" value="100" placeholder="100">
+      <input type="number" id="starting-balance" min="20" value="50" placeholder="50">
 
       <label>How Many Questions</label>
       <input type="number" id="question-count" min="1" value="40" placeholder="40">
@@ -66,6 +66,19 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
+    // 🔑 Read available credit passed from main menu (defaults to 50)
+    const urlParams = new URLSearchParams(window.location.search);
+    const maxCredit = Number(urlParams.get("credit")) || 50;
+
+    const balanceInput = document.getElementById("starting-balance");
+    if (balanceInput) {
+      balanceInput.max = maxCredit;
+      balanceInput.value = maxCredit;
+      if (Number(balanceInput.value) > maxCredit) {
+        balanceInput.value = maxCredit;
+      }
+    }
+
     const createBtn = document.getElementById("create-game-btn");
     const err = document.getElementById("setupError");
     const linkBox = document.getElementById("generatedLinkBox");
@@ -79,9 +92,16 @@
 
     createBtn.addEventListener("click", () => {
       const sport = document.getElementById("sport-type").value;
-      const startingBalance = Number(document.getElementById("starting-balance").value);
+      const startingBalance = Number(balanceInput.value);
       const questionCount = Number(document.getElementById("question-count").value);
       const questionTimeMins = Number(document.getElementById("question-time").value);
+
+      // 🔑 Enforce maximum limit check against main menu credit
+      if (startingBalance > maxCredit) {
+        err.textContent = `Starting balance (£${startingBalance}) cannot exceed your main menu credit (£${maxCredit}).`;
+        err.style.display = "block";
+        return;
+      }
 
       if (!sport || startingBalance < 20 || questionCount <= 0 || questionTimeMins < 1) {
         err.textContent = "Please fill in all fields correctly (Min balance: £20, Min card timer: 1 min).";
@@ -93,7 +113,6 @@
       // Convert minutes to seconds
       const questionTimeSeconds = questionTimeMins * 60;
 
-      // ✅ FIXED: Explicitly send startingBalance, questionCount, and qtime to server
       fetch(`${API_BASE}/create-game`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
