@@ -234,8 +234,14 @@ socket.on("round_outcome", ({ outcome, winners }) => {
   });
 });
 
-// 🔑 New question broadcast (UPDATED TO RECEIVE SERVER TIMER & TALLY)
+// 🔑 Deduplication guard to prevent double-firing
+let lastSeenPlayerIndex = 0;
+
+// 🔑 New question broadcast (UPDATED WITH GUARD)
 socket.on("new_question", ({ id, timer, current, total }) => {
+  if (current !== undefined && current === lastSeenPlayerIndex) return;
+  if (current !== undefined) lastSeenPlayerIndex = current;
+
   if (typeof RugbyQuestions === "undefined") {
     console.error("❌ RugbyQuestions is not loaded.");
     return;
