@@ -41,7 +41,7 @@ function sendPrediction(choice) {
 }
 window.sendPrediction = sendPrediction;
 
-// ✅ NEW: Listen for other players placing stakes in real time
+// ✅ Listen for other players placing stakes in real time
 socket.on("remote_stake_placed", ({ playerName, amount }) => {
   if (window.pot && playerName !== window.currentPlayerName) {
     window.pot.stakes[playerName] = (window.pot.stakes[playerName] || 0) + amount;
@@ -49,7 +49,7 @@ socket.on("remote_stake_placed", ({ playerName, amount }) => {
   }
 });
 
-// ✅ NEW: Listen for other players cashing out in real time
+// ✅ Listen for other players cashing out in real time
 socket.on("remote_cashout", ({ playerName, amount }) => {
   if (window.pot && playerName !== window.currentPlayerName) {
     const refund = amount * 0.5;
@@ -82,7 +82,6 @@ socket.on("pot_update", ({ amount }) => {
   }
 });
 
-// ✅ Clean pot_reveal response handling
 socket.on("pot_reveal", ({ amount }) => {
   console.log("🔓 Pot revealed:", amount);
   if (window.pot) {
@@ -93,14 +92,12 @@ socket.on("pot_reveal", ({ amount }) => {
 // ============================
 // HOST RESOLUTION & ROUND END
 // ============================
-// Handles simple outcome push
 socket.on("host_resolve", ({ outcome }) => {
   if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
     Engine.handleOutcome(outcome);
   }
 });
 
-// ✅ NEW: Handles full round resolution with server winner list
 socket.on("round_outcome", ({ outcome, winners }) => {
   console.log(`🏁 Round outcome resolved: ${outcome}`, winners);
   if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
@@ -181,10 +178,12 @@ socket.on("cashout_update", ({ playerName, balance }) => {
 });
 
 // ============================
-// QUESTION FLOW
+// QUESTION FLOW & GAME OVER
 // ============================
-socket.on("new_question", ({ id }) => {
-  console.log("📡 New question ID received:", id);
+socket.on("new_question", ({ id, current, total, timer }) => {
+  console.log("📡 New question received:", id, current, total);
+
+  if (window.isGameOver) return;
 
   if (typeof RugbyQuestions === "undefined") {
     console.error("❌ RugbyQuestions is not loaded.");
@@ -197,7 +196,33 @@ socket.on("new_question", ({ id }) => {
     return;
   }
 
+  // 🔑 Combine metadata and pass to engine
+  const questionData = {
+    ...q,
+    id,
+    current,
+    total,
+    timer
+  };
+
   if (typeof Engine !== "undefined" && typeof Engine.nextQuestion === "function") {
-    Engine.nextQuestion(q);
+    Engine.nextQuestion(questionData);
+  }
+});
+
+// 🔑 Handle Game Over event globally across all connected clients
+socket.on("game_over", ({ leaderboard }) => {
+  if (typeof window.triggerGameOverModal === "function") {
+    window.triggerGameOverModal(leaderboard);
+  } else {
+    window.isGameOver = true;
+    const activeCard = document.getElementById("active-card");
+    if (activeCard) activeCard.style.display = "none";
+
+    const gameOverModal = document.getElementById("gameOverModal");
+    if (gameOverModal) {
+      gameOverModal.classList.add("show");
+      gameOverModal.style.display = "flex";
+    }
   }
 });
