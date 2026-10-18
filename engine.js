@@ -103,6 +103,14 @@ document.addEventListener("DOMContentLoaded", () => {
     currentQuestion: null,
 
     nextQuestion(q) {
+      // 🔑 Stop question processing if game is complete
+      if (window.isGameOver) {
+        console.log("🛑 Engine: Game is over. Blocking question initialization.");
+        const activeCard = document.getElementById("active-card");
+        if (activeCard) activeCard.style.display = "none";
+        return;
+      }
+
       if (cashoutBtn) cashoutBtn.disabled = true;
       if (btnYes) btnYes.disabled = false;
       if (btnNo) btnNo.disabled = false;
@@ -246,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
 
-    // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION
+    // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION & GAME OVER CHECK
     handleOutcome(outcome, serverWinners = null) {
       const q = this.currentQuestion;
       if (!q || q.outcome !== null) return; // Prevent duplicate resolution!
@@ -301,10 +309,37 @@ document.addEventListener("DOMContentLoaded", () => {
         window.pot.resetRound();
       }
 
+      // 🔑 CHECK IF THIS WAS THE FINAL QUESTION
+      const currentQNum = window.currentQuestionNum || 0;
+      const totalQCount = window.totalQuestionsCount || 0;
+
+      if (currentQNum > 0 && totalQCount > 0 && currentQNum >= totalQCount) {
+        console.log("🏁 Final question outcome processed. Triggering Game Over...");
+        window.isGameOver = true;
+
+        // Hide active card immediately
+        const activeCard = document.getElementById("active-card");
+        if (activeCard) activeCard.style.display = "none";
+
+        // Build final leaderboard snapshot
+        const finalLeaderboard = window.pot ? Object.keys(window.pot.balances).map(name => ({
+          name,
+          balance: window.pot.balances[name]
+        })) : [];
+
+        // Emit game_over to all participants
+        if (window.socket && window.gameId) {
+          window.socket.emit("game_over", { gameId: window.gameId, leaderboard: finalLeaderboard });
+        }
+        return; // Halt execution and skip countdown
+      }
+
       this.startNextCountdown();
     },
 
     startNextCountdown() {
+      if (window.isGameOver) return;
+
       window.startPostQuestionCountdown(() => {
         if (window.pot) {
           window.pot.startStakeTimer(
