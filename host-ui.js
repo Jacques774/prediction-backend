@@ -8,15 +8,12 @@ window.isStakeWindowActive = false;
 
 function showCountdown(timeLeft) {
   window.isStakeWindowActive = true;
-  document.body.classList.add("stake-active"); // Locks pot hidden via CSS
+  document.body.classList.add("stake-active");
 
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
 
-  if (potEl) {
-    potEl.style.setProperty("display", "none", "important");
-  }
-
+  if (potEl) potEl.style.setProperty("display", "none", "important");
   if (countdownEl) {
     countdownEl.style.display = "inline";
     countdownEl.textContent = "Stake window: " + timeLeft + "s";
@@ -25,15 +22,12 @@ function showCountdown(timeLeft) {
 
 function revealPot(amount) {
   window.isStakeWindowActive = false;
-  document.body.classList.remove("stake-active"); // Unlocks pot display
+  document.body.classList.remove("stake-active");
 
   const countdownEl = document.getElementById("stakeCountdown");
   const potEl = document.getElementById("potAmount");
 
-  if (countdownEl) {
-    countdownEl.style.display = "none";
-  }
-
+  if (countdownEl) countdownEl.style.display = "none";
   if (potEl) {
     potEl.style.removeProperty("display");
     potEl.style.display = "inline";
@@ -45,27 +39,23 @@ function updatePot(amount) {
   const potEl = document.getElementById("potAmount");
   if (!potEl) return;
 
-  // Update text silently
   potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
-
-  // If stake window is running, force element hidden
   if (window.isStakeWindowActive) {
     potEl.style.setProperty("display", "none", "important");
   }
 }
 
-// Expose helpers globally so Engine can access them
 window.showCountdown = showCountdown;
 window.revealPot = revealPot;
 window.updatePot = updatePot;
 
 console.log("✅ host-ui.js loaded");
 
-// ✅ Create socket connection to Render backend
+// Connect to Render backend
 const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
-// Read ?code= and optional ?buyin= from URL
+// Read ?code= and ?buyin= from URL
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("code");
 let buyInAmount = urlParams.get("buyin") !== null ? Number(urlParams.get("buyin")) : 20;
@@ -76,13 +66,10 @@ if (!gameId) {
 window.gameId = gameId;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // ============================
-  // STAT TRACKING GLOBALS
-  // ============================
   window.totalWins = 0;
   window.totalCashouts = 0;
 
-  // 🔑 FETCH LIVE GAME ROOM DETAILS FROM BACKEND API TO ENSURE ACCURATE BUY-IN
+  // 🔑 FETCH LIVE GAME ROOM DETAILS FROM BACKEND API
   if (gameId) {
     try {
       const res = await fetch(`https://prediction-backend-2e20.onrender.com/api/game/${gameId}`);
@@ -98,10 +85,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // Pre-populate initial balance display on setup slide if needed
-  const balanceEl = document.getElementById("player-balance");
-  if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Number(buyInAmount).toFixed(2)}`;
+  // Pre-update balance DOM if present
+  const initialBalanceEl = document.getElementById("player-balance");
+  if (initialBalanceEl) {
+    initialBalanceEl.textContent = `Balance: £${Number(buyInAmount).toFixed(2)}`;
   }
 
   const startBtn = document.getElementById("host-start-btn");
@@ -131,7 +118,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 🔑 Deduplication guard to prevent double-firing
   let lastSeenHostIndex = 0;
 
   // Listen for server broadcast of new question
@@ -146,14 +132,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       Engine.nextQuestion(question);
     }
 
-    // ✅ Update host question tally display
     const tallyEl = document.getElementById("host-question-tally");
     if (tallyEl && current !== undefined && total !== undefined) {
       tallyEl.textContent = `Question ${current} of ${total}`;
     }
   });
 
-  // Real-time Pot Update Listener for Host Screen (Guarded by active countdown flag)
+  // Real-time Pot Update Listener for Host Screen
   socket.on("pot_update", ({ amount }) => {
     console.log("💰 Pot updated on Host screen:", amount);
     if (window.pot) {
@@ -162,7 +147,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updatePot(amount);
   });
 
-  // ✅ Round Outcome socket handler
+  // Round Outcome socket handler
   socket.on("round_outcome", ({ outcome, winners }) => {
     if (typeof Engine !== "undefined" && typeof Engine.handleOutcome === "function") {
       Engine.handleOutcome(outcome, winners);
@@ -179,9 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (outcomePanel) outcomePanel.textContent = `Outcome: ${outcome}`;
   });
 
-  // ============================
-  // OUTCOME BUTTONS
-  // ============================
+  // Outcome buttons
   const yesBtn = document.getElementById("host-yes-btn");
   const noBtn = document.getElementById("host-no-btn");
 
@@ -199,9 +182,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // ============================
   // START BUTTON CLICK
-  // ============================
   startBtn.addEventListener("click", () => {
     console.log("🎯 Host Start button clicked!");
 
@@ -220,18 +201,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // Save globally so Engine/Pot can use it
     window.currentPlayerName = hostName;
     window.isHost = true;
 
-    // ✅ Initialize pot with host name & configured buy-in amount
+    // 🔑 Initialize pot with host name & fetched buy-in amount
     window.pot = new Pot([window.currentPlayerName], buyInAmount);
 
-    // Host joins and starts game
     socket.emit("join_game", { gameId, playerName: hostName, isHost: true });
     socket.emit("start_game", { gameId, host: hostName });
 
-    // Animate + hide setup slide
     const hostSlide = document.getElementById("hostSetupSlide");
     if (hostSlide) {
       hostSlide.classList.add("slide-away");
@@ -240,7 +218,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       }, 700);
     }
 
-    // Show dashboard
     const dashboard = document.getElementById("dashboard");
     if (dashboard) {
       dashboard.classList.remove("hidden");
@@ -258,7 +235,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-// Countdown helper
 window.startPreCountdown = function (onDone) {
   const el = document.getElementById("preCountdown");
   if (!el) {
@@ -279,7 +255,6 @@ window.startPreCountdown = function (onDone) {
   }, 1000);
 };
 
-// 🔑 Direct Authoritative Balance Update from Server
 socket.on("balance_update", ({ balance }) => {
   console.log("💰 Host received direct balance update:", balance);
   
@@ -293,7 +268,6 @@ socket.on("balance_update", ({ balance }) => {
   }
 });
 
-// 🔑 Real-time Leaderboard Sync using leaderboard.js
 socket.on("leaderboard_update", (players) => {
   console.log("📊 Leaderboard update received from server:", players);
 
@@ -305,7 +279,6 @@ socket.on("leaderboard_update", (players) => {
   }
 });
 
-// Status dot
 const statusDot = document.createElement("div");
 statusDot.id = "socket-status";
 statusDot.style.width = "10px";
