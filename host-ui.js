@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 🔑 GAME OVER LISTENER (ADDS BALANCE TO WALLET)
+  // 🔑 GAME OVER LISTENER (ACCURATE WALLET SET & WIN/LOSS CHECK FOR HOST)
   socket.on("game_over", ({ leaderboard }) => {
     window.isGameOver = true;
 
@@ -163,7 +163,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (outcomePanel) outcomePanel.classList.remove("active");
 
     const playerName = window.currentPlayerName || "Host";
-    let positionText = "Well done for finishing the game! 🎉";
     let finalBalance = window.pot && window.pot.balances ? window.pot.balances[playerName] || buyInAmount : buyInAmount;
 
     if (leaderboard && Array.isArray(leaderboard)) {
@@ -172,17 +171,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       if (index !== -1) {
         const boardBal = Number(sorted[index].balance);
-        if (!isNaN(boardBal) && boardBal > 0) {
+        if (!isNaN(boardBal) && boardBal >= 0) {
           finalBalance = boardBal;
         }
       }
     }
 
-    // 🔑 Add final balance to existing wallet credit (instead of replacing)
-    let currentWallet = Number(localStorage.getItem("user_credit") || 30.00);
-    currentWallet += Number(finalBalance || 0);
-    localStorage.setItem("user_credit", currentWallet.toFixed(2));
-    console.log(`💰 Added host final balance (£${Number(finalBalance || 0).toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
+    // Evaluate Win / Loss / Break-Even against buyInAmount
+    let positionText = "";
+    if (finalBalance > buyInAmount) {
+      positionText = "Congratulations! You finished in profit! 🏆🎉";
+    } else if (finalBalance === buyInAmount) {
+      positionText = "Game Over! You broke even. ⚖️";
+    } else {
+      positionText = "Game Over. You finished in a loss. 📉";
+    }
+
+    // 🔑 Set wallet credit directly to final game balance (buy-in already deducted at start)
+    const finalWalletBalance = Number(finalBalance || 0);
+    localStorage.setItem("user_credit", finalWalletBalance.toFixed(2));
+    console.log(`💰 Updated host wallet credit to final game balance: £${finalWalletBalance.toFixed(2)}`);
 
     // Populate Modal Elements
     const messageEl = document.getElementById("gameOverMessage");
@@ -199,7 +207,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Logout Button Listener -> Adds balance & Redirects to Main Menu
+  // Logout Button Listener -> Sets balance directly & Redirects to Main Menu
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
@@ -207,10 +215,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? window.pot.balances[window.currentPlayerName]
         : 0;
 
-      let currentWallet = Number(localStorage.getItem("user_credit") || 0);
-      currentWallet += Number(finalBal);
-      localStorage.setItem("user_credit", currentWallet.toFixed(2));
-      console.log(`💰 Saving host wallet credit on exit (Added £${Number(finalBal).toFixed(2)}): New total £${currentWallet.toFixed(2)}`);
+      const finalWalletBalance = Number(finalBal || 0);
+      localStorage.setItem("user_credit", finalWalletBalance.toFixed(2));
+      console.log(`💰 Saving host wallet credit on exit: £${finalWalletBalance.toFixed(2)}`);
 
       if (socket) socket.disconnect();
       window.location.href = "MainMenu.html";
