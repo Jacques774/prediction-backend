@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 🔑 GAME OVER LISTENER (ACCURATE WALLET SET & WIN/LOSS CHECK FOR HOST)
+  // 🔑 GAME OVER LISTENER (ADDITIVE WALLET SET & WIN/LOSS CHECK FOR HOST)
   socket.on("game_over", ({ leaderboard }) => {
     window.isGameOver = true;
 
@@ -187,10 +187,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       positionText = "Game Over. You finished in a loss. 📉";
     }
 
-    // 🔑 Set wallet credit directly to final game balance (buy-in already deducted at start)
-    const finalWalletBalance = Number(finalBalance || 0);
-    localStorage.setItem("user_credit", finalWalletBalance.toFixed(2));
-    console.log(`💰 Updated host wallet credit to final game balance: £${finalWalletBalance.toFixed(2)}`);
+    // 🔑 Add final game balance back to existing wallet credit (Additive)
+    let currentWallet = Number(localStorage.getItem("user_credit") || 30.00);
+    currentWallet += Number(finalBalance || 0);
+    localStorage.setItem("user_credit", currentWallet.toFixed(2));
+    console.log(`💰 Added host final balance (£${Number(finalBalance || 0).toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
 
     // Populate Modal Elements
     const messageEl = document.getElementById("gameOverMessage");
@@ -207,7 +208,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Logout Button Listener -> Sets balance directly & Redirects to Main Menu
+  // Logout Button Listener -> Adds balance back to wallet & Redirects to Main Menu
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
@@ -215,9 +216,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? window.pot.balances[window.currentPlayerName]
         : 0;
 
-      const finalWalletBalance = Number(finalBal || 0);
-      localStorage.setItem("user_credit", finalWalletBalance.toFixed(2));
-      console.log(`💰 Saving host wallet credit on exit: £${finalWalletBalance.toFixed(2)}`);
+      let currentWallet = Number(localStorage.getItem("user_credit") || 0);
+      currentWallet += Number(finalBal || 0);
+      localStorage.setItem("user_credit", currentWallet.toFixed(2));
+      console.log(`💰 Saving host wallet credit on exit (Added £${Number(finalBal || 0).toFixed(2)}): New total £${currentWallet.toFixed(2)}`);
 
       if (socket) socket.disconnect();
       window.location.href = "MainMenu.html";
