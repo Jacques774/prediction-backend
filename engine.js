@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ============================
-  // GAME OVER MODAL HELPER (CORRECTED WALLET & WIN/LOSS MESSAGING)
+  // GAME OVER MODAL HELPER (ADDITIVE WALLET & WIN/LOSS MESSAGING)
   // ============================
   function triggerGameOverModal(leaderboard) {
     window.isGameOver = true;
@@ -164,10 +164,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (messageEl) messageEl.textContent = positionText;
     if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance || 0).toFixed(2)}`;
 
-    // 🔑 Set wallet credit directly to final game balance (buy-in was deducted at start)
-    const finalWalletBalance = Number(finalBalance || 0);
-    localStorage.setItem("user_credit", finalWalletBalance.toFixed(2));
-    console.log(`💰 Updated wallet credit to final game balance: £${finalWalletBalance.toFixed(2)}`);
+    // 🔑 Add final game balance back to existing wallet credit (Additive)
+    let currentWallet = Number(localStorage.getItem("user_credit") || 30.00);
+    currentWallet += Number(finalBalance || 0);
+    localStorage.setItem("user_credit", currentWallet.toFixed(2));
+    console.log(`💰 Added final balance (£${Number(finalBalance || 0).toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
 
     // Show Modal via class toggle and fallback inline flex
     const gameOverModal = document.getElementById("gameOverModal");
