@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ============================
-  // GAME OVER MODAL HELPER (NO POSITION)
+  // GAME OVER MODAL HELPER (ADDS TO WALLET)
   // ============================
   function triggerGameOverModal(leaderboard) {
     window.isGameOver = true;
@@ -129,7 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const rawName = getActivePlayerName() || window.currentPlayerName || window.playerName || "Player";
     const playerName = rawName.trim().toLowerCase();
     
-    // 🔑 Clean congratulatory message without positions
     let positionText = "Well done for finishing the game! 🎉";
     let finalBalance = getCurrentPlayerBalance();
 
@@ -162,6 +161,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (messageEl) messageEl.textContent = positionText;
     if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance || 0).toFixed(2)}`;
+
+    // 🔑 Add final game balance to existing wallet credit (instead of replacing)
+    let currentWallet = Number(localStorage.getItem("user_credit") || 30.00);
+    currentWallet += Number(finalBalance || 0);
+    localStorage.setItem("user_credit", currentWallet.toFixed(2));
+    console.log(`💰 Added final balance (£${Number(finalBalance || 0).toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
 
     // Show Modal via class toggle and fallback inline flex
     const gameOverModal = document.getElementById("gameOverModal");
