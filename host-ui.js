@@ -150,8 +150,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 🔑 GAME OVER LISTENER (ADDITIVE WALLET SET & WIN/LOSS CHECK FOR HOST)
+  // 🔑 GAME OVER LISTENER (SAFE NUMERIC PARSING & DUPLICATE GUARD)
   socket.on("game_over", ({ leaderboard }) => {
+    if (window.hasProcessedGameOver) return;
+    window.hasProcessedGameOver = true;
+
     window.isGameOver = true;
 
     // Hide active question card immediately
@@ -187,18 +190,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       positionText = "Game Over. You finished in a loss. 📉";
     }
 
-    // 🔑 Add final game balance back to existing wallet credit (Additive)
-    let currentWallet = Number(localStorage.getItem("user_credit") || 30.00);
-    currentWallet += Number(finalBalance || 0);
+    // 🔑 Safely parse wallet and earnings as numbers before adding
+    const rawWallet = localStorage.getItem("user_credit");
+    let currentWallet = (rawWallet !== null && !isNaN(parseFloat(rawWallet))) ? parseFloat(rawWallet) : 30.00;
+    
+    const gameEarnings = Number(finalBalance || 0);
+    currentWallet += gameEarnings;
+
     localStorage.setItem("user_credit", currentWallet.toFixed(2));
-    console.log(`💰 Added host final balance (£${Number(finalBalance || 0).toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
+    console.log(`💰 Added host final balance (£${gameEarnings.toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
 
     // Populate Modal Elements
     const messageEl = document.getElementById("gameOverMessage");
     const balanceEl = document.getElementById("gameOverFinalBalance");
 
     if (messageEl) messageEl.textContent = positionText;
-    if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance).toFixed(2)}`;
+    if (balanceEl) balanceEl.textContent = `Final Balance: £${gameEarnings.toFixed(2)}`;
 
     // Show Modal via class toggle and inline fallback
     const gameOverModal = document.getElementById("gameOverModal");
@@ -208,18 +215,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Logout Button Listener -> Adds balance back to wallet & Redirects to Main Menu
+  // Logout Button Listener -> Safely adds balance back to wallet & Redirects to Main Menu
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
-      const finalBal = window.pot && window.currentPlayerName && window.pot.balances[window.currentPlayerName] !== undefined
-        ? window.pot.balances[window.currentPlayerName]
-        : 0;
+      if (!window.hasProcessedGameOver) {
+        window.hasProcessedGameOver = true;
+        const finalBal = window.pot && window.currentPlayerName && window.pot.balances[window.currentPlayerName] !== undefined
+          ? window.pot.balances[window.currentPlayerName]
+          : 0;
 
-      let currentWallet = Number(localStorage.getItem("user_credit") || 0);
-      currentWallet += Number(finalBal || 0);
-      localStorage.setItem("user_credit", currentWallet.toFixed(2));
-      console.log(`💰 Saving host wallet credit on exit (Added £${Number(finalBal || 0).toFixed(2)}): New total £${currentWallet.toFixed(2)}`);
+        const rawWallet = localStorage.getItem("user_credit");
+        let currentWallet = (rawWallet !== null && !isNaN(parseFloat(rawWallet))) ? parseFloat(rawWallet) : 0.00;
+        
+        const gameEarnings = Number(finalBal || 0);
+        currentWallet += gameEarnings;
+
+        localStorage.setItem("user_credit", currentWallet.toFixed(2));
+        console.log(`💰 Saving host wallet credit on exit: New total £${currentWallet.toFixed(2)}`);
+      }
 
       if (socket) socket.disconnect();
       window.location.href = "MainMenu.html";
@@ -300,8 +314,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // 🔑 Deduct buy-in from wallet credit for the host
-    let currentCredit = Number(localStorage.getItem("user_credit") || 30.00);
+    // 🔑 Safely deduct buy-in from wallet credit for the host
+    const rawCredit = localStorage.getItem("user_credit");
+    let currentCredit = (rawCredit !== null && !isNaN(parseFloat(rawCredit))) ? parseFloat(rawCredit) : 30.00;
+
     if (currentCredit < buyInAmount) {
       alert(`Insufficient credit to host! Required: £${buyInAmount.toFixed(2)}, Available: £${currentCredit.toFixed(2)}`);
       return;
