@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ============================
-  // GAME OVER MODAL HELPER (ADDS TO WALLET)
+  // GAME OVER MODAL HELPER (DYNAMIC WIN/LOSS MESSAGE)
   // ============================
   function triggerGameOverModal(leaderboard) {
     window.isGameOver = true;
@@ -129,7 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const rawName = getActivePlayerName() || window.currentPlayerName || window.playerName || "Player";
     const playerName = rawName.trim().toLowerCase();
     
-    let positionText = "Well done for finishing the game! 🎉";
     let finalBalance = getCurrentPlayerBalance();
 
     if (leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0) {
@@ -138,21 +137,35 @@ document.addEventListener("DOMContentLoaded", () => {
       
       if (index !== -1) {
         const boardBal = Number(sorted[index].balance);
-        if (!isNaN(boardBal) && boardBal > 0) {
+        if (!isNaN(boardBal) && boardBal >= 0) {
           finalBalance = boardBal;
         }
       }
     }
 
-    // Ultimate safety check: double-check the DOM header if finalBalance is still 0 or missing
-    if (!finalBalance || isNaN(finalBalance) || finalBalance === 0) {
+    // Ultimate safety check: double-check the DOM header if finalBalance is still missing
+    if (isNaN(finalBalance)) {
       const balanceEl = document.getElementById("player-balance");
       if (balanceEl) {
         const match = balanceEl.textContent.match(/£([\d.]+)/);
-        if (match && match[1] && Number(match[1]) > 0) {
+        if (match && match[1]) {
           finalBalance = Number(match[1]);
         }
       }
+    }
+
+    // 🔑 Determine starting buy-in baseline to check if they won or lost overall
+    const urlParams = new URLSearchParams(window.location.search);
+    const startingBuyin = Number(urlParams.get("buyin") || 20);
+
+    // 🔑 Dynamic Win/Loss text based on whether final balance is above buy-in
+    let positionText = "";
+    const isWinner = finalBalance >= startingBuyin;
+
+    if (isWinner) {
+      positionText = "Congratulations! You finished in profit! 🏆🎉";
+    } else {
+      positionText = "Game Over. Unfortunately, you finished in a loss. 📉";
     }
 
     // Populate Modal Elements
@@ -162,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (messageEl) messageEl.textContent = positionText;
     if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance || 0).toFixed(2)}`;
 
-    // 🔑 Add final game balance to existing wallet credit (instead of replacing)
+    // 🔑 Add final game balance to existing wallet credit
     let currentWallet = Number(localStorage.getItem("user_credit") || 30.00);
     currentWallet += Number(finalBalance || 0);
     localStorage.setItem("user_credit", currentWallet.toFixed(2));
