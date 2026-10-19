@@ -285,7 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (cashoutBtn) cashoutBtn.disabled = true;
     },
 
-    // ✅ CASHOUT
+    // ✅ CASHOUT (FIXED: RESUMES GAME LOOP / ADVANCES TO NEXT ROUND)
     cashout() {
       const q = this.currentQuestion;
       if (!q || q.stake <= 0) return;
@@ -337,6 +337,30 @@ document.addEventListener("DOMContentLoaded", () => {
         History.push(q);
         if (History.render) History.render();
       }
+
+      // 🔑 CHECK IF THIS WAS THE FINAL QUESTION AFTER CASHING OUT
+      const currentQNum = window.currentQuestionNum || (q.current || 0);
+      const totalQCount = window.totalQuestionsCount || (q.total || 0);
+
+      if ((currentQNum > 0 && totalQCount > 0 && currentQNum >= totalQCount) || q.isFinalQuestion) {
+        console.log("🏁 Final question cashed out. Triggering Game Over...");
+        window.isGameOver = true;
+
+        const finalLeaderboard = window.pot ? Object.keys(window.pot.balances).map(name => ({
+          name,
+          balance: window.pot.balances[name]
+        })) : [];
+
+        if (window.socket && window.gameId) {
+          window.socket.emit("game_over", { gameId: window.gameId, leaderboard: finalLeaderboard });
+        }
+
+        triggerGameOverModal(finalLeaderboard);
+        return;
+      }
+
+      // 🔑 RESUME COUNTDOWN TO LOAD NEXT QUESTION
+      this.startNextCountdown();
     },
 
     // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION & GAME OVER CHECK
