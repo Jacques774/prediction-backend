@@ -140,11 +140,14 @@ function initPlayerUI() {
     document.getElementById("preview-timer").textContent = pendingGameData.cardTimer;
     document.getElementById("preview-balance").textContent = `£${pendingGameData.startingBalance.toFixed(2)}`;
 
+    // Re-read latest wallet credit
+    const currentWalletCheck = Number(localStorage.getItem("user_credit") || 30.00);
+
     // Gatekeeper Credit Check against localStorage wallet
     const creditErrorEl = document.getElementById("previewCreditError");
-    if (playerCredit < pendingGameData.startingBalance) {
+    if (currentWalletCheck < pendingGameData.startingBalance) {
       if (creditErrorEl) {
-        creditErrorEl.textContent = `Insufficient credit! Required: £${pendingGameData.startingBalance.toFixed(2)}, Available: £${playerCredit.toFixed(2)}`;
+        creditErrorEl.textContent = `Insufficient credit! Required: £${pendingGameData.startingBalance.toFixed(2)}, Available: £${currentWalletCheck.toFixed(2)}`;
         creditErrorEl.style.display = "block";
       }
       if (confirmJoinBtn) {
@@ -177,15 +180,27 @@ function initPlayerUI() {
     });
   }
 
-  // 3️⃣ Confirm Join Inside Modal -> Connects to Room & Opens Dashboard
+  // 3️⃣ Confirm Join Inside Modal -> Deducts Buy-in, Connects to Room & Opens Dashboard
   if (confirmJoinBtn) {
     confirmJoinBtn.addEventListener("click", () => {
       if (!pendingGameData) return;
 
+      // 🔑 Deduct buy-in from wallet credit
+      let currentCredit = Number(localStorage.getItem("user_credit") || 30.00);
+      const buyin = pendingGameData.startingBalance;
+
+      if (currentCredit < buyin) {
+        alert(`Insufficient credit! Required: £${buyin.toFixed(2)}, Available: £${currentCredit.toFixed(2)}`);
+        return;
+      }
+      currentCredit -= buyin;
+      localStorage.setItem("user_credit", currentCredit.toFixed(2));
+      console.log(`💳 Player buy-in deducted (£${buyin.toFixed(2)}). Remaining wallet: £${currentCredit.toFixed(2)}`);
+
       window.isHost = false;
 
       // Initialize pot with confirmed buy-in amount
-      window.pot = new Pot([window.currentPlayerName], pendingGameData.startingBalance);
+      window.pot = new Pot([window.currentPlayerName], buyin);
 
       // Emit join event to socket
       socket.emit("join_game", { 
@@ -206,7 +221,7 @@ function initPlayerUI() {
       const nameEl = document.getElementById("player-name");
       const balanceEl = document.getElementById("player-balance");
 
-      const startingBal = window.pot.balances[window.currentPlayerName] || pendingGameData.startingBalance;
+      const startingBal = window.pot.balances[window.currentPlayerName] || buyin;
 
       if (nameEl) nameEl.textContent = `Player: ${window.currentPlayerName}`;
       if (balanceEl) {
@@ -215,16 +230,19 @@ function initPlayerUI() {
     });
   }
 
-  // 4️⃣ Logout Button Listener -> Saves current balance to wallet & redirects to Main Menu
+  // 4️⃣ Logout Button Listener -> Adds balance back to wallet & redirects to Main Menu
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       const activeBal = window.pot && window.currentPlayerName && window.pot.balances[window.currentPlayerName] !== undefined
         ? window.pot.balances[window.currentPlayerName]
-        : playerCredit;
+        : 0;
       
-      localStorage.setItem("user_credit", Number(activeBal).toFixed(2));
-      console.log(`💰 Saving wallet credit on exit: £${Number(activeBal).toFixed(2)}`);
+      // 🔑 Add final game balance to existing wallet credit (instead of replacing)
+      let currentWallet = Number(localStorage.getItem("user_credit") || 0);
+      currentWallet += Number(activeBal);
+      localStorage.setItem("user_credit", currentWallet.toFixed(2));
+      console.log(`💰 Added player final balance (£${Number(activeBal).toFixed(2)}) to wallet on exit. New total: £${currentWallet.toFixed(2)}`);
 
       if (socket) socket.disconnect();
       window.location.href = "MainMenu.html";
