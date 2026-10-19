@@ -18,6 +18,23 @@
       margin: 0;
     }
 
+    /* Temp Add Credit Button Style */
+    .temp-add-btn {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: background 0.3s;
+    }
+    .temp-add-btn:hover {
+      background: #0056b3;
+    }
+
     /* Temp Credit Box */
     .credit-box {
       background: #2a2a2a;
@@ -67,6 +84,9 @@
 </head>
 <body>
 
+  <!-- 🔑 Temp Add £5 Credit Button -->
+  <button id="add-credit-btn" class="temp-add-btn">+ Add £5 Credit (Temp)</button>
+
   <!-- Temporary Credit Display -->
   <div class="credit-box">
     <div class="credit-label">Available Credit</div>
@@ -91,6 +111,25 @@
     const hostBtn = document.getElementById("host-btn");
     if (hostBtn) {
       hostBtn.href = `/gamesetup.html?credit=${userCredit}`;
+    }
+
+    // 🔑 Temp Button Event Listener to add £5
+    const addCreditBtn = document.getElementById("add-credit-btn");
+    if (addCreditBtn) {
+      addCreditBtn.addEventListener("click", () => {
+        userCredit += 5.00;
+        localStorage.setItem("user_credit", userCredit.toFixed(2));
+
+        if (creditEl) {
+          creditEl.textContent = "£" + userCredit.toFixed(2);
+        }
+
+        if (hostBtn) {
+          hostBtn.href = `/gamesetup.html?credit=${userCredit}`;
+        }
+
+        console.log(`💰 Temp added £5. New credit: £${userCredit.toFixed(2)}`);
+      });
     }
   </script>
 </body>
