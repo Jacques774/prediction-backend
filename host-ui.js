@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 🔑 GAME OVER LISTENER (NO POSITION TEXT)
+  // 🔑 GAME OVER LISTENER (SAVES WALLET CREDIT)
   socket.on("game_over", ({ leaderboard }) => {
     window.isGameOver = true;
 
@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const playerName = window.currentPlayerName || "Host";
     let positionText = "Well done for finishing the game! 🎉";
-    let finalBalance = window.pot ? window.pot.balances[playerName] || buyInAmount : buyInAmount;
+    let finalBalance = window.pot && window.pot.balances ? window.pot.balances[playerName] || buyInAmount : buyInAmount;
 
     if (leaderboard && Array.isArray(leaderboard)) {
       const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
@@ -177,6 +177,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     }
+
+    // 🔑 Save final balance to user credit wallet in localStorage
+    localStorage.setItem("user_credit", Number(finalBalance).toFixed(2));
+    console.log(`💰 Host wallet credit updated: £${Number(finalBalance).toFixed(2)}`);
 
     // Populate Modal Elements
     const messageEl = document.getElementById("gameOverMessage");
@@ -193,10 +197,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Logout Button Listener -> Redirects to Main Menu
+  // Logout Button Listener -> Saves balance & Redirects to Main Menu
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
+      const finalBal = window.pot && window.currentPlayerName && window.pot.balances[window.currentPlayerName] !== undefined
+        ? window.pot.balances[window.currentPlayerName]
+        : buyInAmount;
+
+      localStorage.setItem("user_credit", Number(finalBal).toFixed(2));
+      console.log(`💰 Saving host wallet credit on exit: £${Number(finalBal).toFixed(2)}`);
+
       if (socket) socket.disconnect();
       window.location.href = "MainMenu.html";
     });
