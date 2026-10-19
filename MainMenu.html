@@ -98,10 +98,16 @@
   <a href="/player" class="menu-btn">Player</a>
 
   <script>
-    // 🔑 Retrieve credit from localStorage, defaulting to 30.00 if it's the first time
-    let userCredit = Number(localStorage.getItem("user_credit") || 30.00);
+    // 🔑 FIX: Explicitly check for null so £0.00 isn't bypassed by short-circuit fallback
+    const storedCredit = localStorage.getItem("user_credit");
+    let userCredit = storedCredit !== null ? Number(storedCredit) : 30.00;
+
+    // Save initial default credit if it's the user's first time visiting
+    if (storedCredit === null) {
+      localStorage.setItem("user_credit", userCredit.toFixed(2));
+    }
     
-    // Update credit display
+    // Update credit display element
     const creditEl = document.getElementById("user-credit");
     if (creditEl) {
       creditEl.textContent = "£" + userCredit.toFixed(2);
@@ -110,7 +116,7 @@
     // 🔑 Dynamically update Host link to pass credit parameter to gamesetup.html
     const hostBtn = document.getElementById("host-btn");
     if (hostBtn) {
-      hostBtn.href = `/gamesetup.html?credit=${userCredit}`;
+      hostBtn.href = `/gamesetup.html?credit=${userCredit.toFixed(2)}`;
     }
 
     // 🔑 Temp Button Event Listener to add £5
@@ -125,7 +131,7 @@
         }
 
         if (hostBtn) {
-          hostBtn.href = `/gamesetup.html?credit=${userCredit}`;
+          hostBtn.href = `/gamesetup.html?credit=${userCredit.toFixed(2)}`;
         }
 
         console.log(`💰 Temp added £5. New credit: £${userCredit.toFixed(2)}`);
