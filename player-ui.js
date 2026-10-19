@@ -59,8 +59,9 @@ function initPlayerUI() {
   window.totalWins = 0;
   window.totalCashouts = 0;
   
-  // 🔑 Read actual wallet credit from localStorage (defaults to 30.00)
-  const playerCredit = Number(localStorage.getItem("user_credit") || 30.00);
+  // 🔑 Safely read actual wallet credit from localStorage
+  const rawInitCredit = localStorage.getItem("user_credit");
+  const playerCredit = (rawInitCredit !== null && !isNaN(parseFloat(rawInitCredit))) ? parseFloat(rawInitCredit) : 30.00;
 
   // Auto-fill game code from URL parameter if present
   const urlParams = new URLSearchParams(window.location.search);
@@ -140,8 +141,9 @@ function initPlayerUI() {
     document.getElementById("preview-timer").textContent = pendingGameData.cardTimer;
     document.getElementById("preview-balance").textContent = `£${pendingGameData.startingBalance.toFixed(2)}`;
 
-    // Re-read latest wallet credit
-    const currentWalletCheck = Number(localStorage.getItem("user_credit") || 30.00);
+    // Re-read latest wallet credit safely
+    const rawWalletCheck = localStorage.getItem("user_credit");
+    const currentWalletCheck = (rawWalletCheck !== null && !isNaN(parseFloat(rawWalletCheck))) ? parseFloat(rawWalletCheck) : 30.00;
 
     // Gatekeeper Credit Check against localStorage wallet
     const creditErrorEl = document.getElementById("previewCreditError");
@@ -180,13 +182,14 @@ function initPlayerUI() {
     });
   }
 
-  // 3️⃣ Confirm Join Inside Modal -> Deducts Buy-in, Connects to Room & Opens Dashboard
+  // 3️⃣ Confirm Join Inside Modal -> Safely Deducts Buy-in, Connects to Room & Opens Dashboard
   if (confirmJoinBtn) {
     confirmJoinBtn.addEventListener("click", () => {
       if (!pendingGameData) return;
 
-      // 🔑 Deduct buy-in from wallet credit
-      let currentCredit = Number(localStorage.getItem("user_credit") || 30.00);
+      // 🔑 Safely parse and deduct buy-in from wallet credit
+      const rawCredit = localStorage.getItem("user_credit");
+      let currentCredit = (rawCredit !== null && !isNaN(parseFloat(rawCredit))) ? parseFloat(rawCredit) : 30.00;
       const buyin = pendingGameData.startingBalance;
 
       if (currentCredit < buyin) {
@@ -230,19 +233,26 @@ function initPlayerUI() {
     });
   }
 
-  // 4️⃣ Logout Button Listener -> Adds balance back to wallet & redirects to Main Menu
+  // 4️⃣ Logout Button Listener -> Safely adds balance back to wallet & redirects to Main Menu
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
-      const activeBal = window.pot && window.currentPlayerName && window.pot.balances[window.currentPlayerName] !== undefined
-        ? window.pot.balances[window.currentPlayerName]
-        : 0;
-      
-      // 🔑 Add final game balance to existing wallet credit (instead of replacing)
-      let currentWallet = Number(localStorage.getItem("user_credit") || 0);
-      currentWallet += Number(activeBal);
-      localStorage.setItem("user_credit", currentWallet.toFixed(2));
-      console.log(`💰 Added player final balance (£${Number(activeBal).toFixed(2)}) to wallet on exit. New total: £${currentWallet.toFixed(2)}`);
+      if (!window.hasProcessedGameOver) {
+        window.hasProcessedGameOver = true;
+        const activeBal = window.pot && window.currentPlayerName && window.pot.balances[window.currentPlayerName] !== undefined
+          ? window.pot.balances[window.currentPlayerName]
+          : 0;
+        
+        // 🔑 Safely add final game balance to existing wallet credit using numeric parsing
+        const rawWallet = localStorage.getItem("user_credit");
+        let currentWallet = (rawWallet !== null && !isNaN(parseFloat(rawWallet))) ? parseFloat(rawWallet) : 0.00;
+        
+        const gameEarnings = Number(activeBal || 0);
+        currentWallet += gameEarnings;
+
+        localStorage.setItem("user_credit", currentWallet.toFixed(2));
+        console.log(`💰 Added player final balance (£${gameEarnings.toFixed(2)}) to wallet on exit. New total: £${currentWallet.toFixed(2)}`);
+      }
 
       if (socket) socket.disconnect();
       window.location.href = "MainMenu.html";
