@@ -58,7 +58,9 @@ window.socket = socket;
 function initPlayerUI() {
   window.totalWins = 0;
   window.totalCashouts = 0;
-  const playerCredit = 30; // Simulated user balance gatekeeper (£30)
+  
+  // 🔑 Read actual wallet credit from localStorage (defaults to 30.00)
+  const playerCredit = Number(localStorage.getItem("user_credit") || 30.00);
 
   // Auto-fill game code from URL parameter if present
   const urlParams = new URLSearchParams(window.location.search);
@@ -138,7 +140,7 @@ function initPlayerUI() {
     document.getElementById("preview-timer").textContent = pendingGameData.cardTimer;
     document.getElementById("preview-balance").textContent = `£${pendingGameData.startingBalance.toFixed(2)}`;
 
-    // Gatekeeper Credit Check
+    // Gatekeeper Credit Check against localStorage wallet
     const creditErrorEl = document.getElementById("previewCreditError");
     if (playerCredit < pendingGameData.startingBalance) {
       if (creditErrorEl) {
@@ -213,10 +215,17 @@ function initPlayerUI() {
     });
   }
 
-  // 4️⃣ Logout Button Listener -> Redirects to Main Menu
+  // 4️⃣ Logout Button Listener -> Saves current balance to wallet & redirects to Main Menu
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
+      const activeBal = window.pot && window.currentPlayerName && window.pot.balances[window.currentPlayerName] !== undefined
+        ? window.pot.balances[window.currentPlayerName]
+        : playerCredit;
+      
+      localStorage.setItem("user_credit", Number(activeBal).toFixed(2));
+      console.log(`💰 Saving wallet credit on exit: £${Number(activeBal).toFixed(2)}`);
+
       if (socket) socket.disconnect();
       window.location.href = "MainMenu.html";
     });
