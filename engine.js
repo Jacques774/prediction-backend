@@ -83,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    return 100;
+    return 0;
   }
 
   // ============================
@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ============================
-  // GAME OVER MODAL HELPER (DYNAMIC WIN/LOSS MESSAGE)
+  // GAME OVER MODAL HELPER (CORRECTED WALLET & WIN/LOSS MESSAGING)
   // ============================
   function triggerGameOverModal(leaderboard) {
     window.isGameOver = true;
@@ -143,29 +143,18 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Ultimate safety check: double-check the DOM header if finalBalance is still missing
-    if (isNaN(finalBalance)) {
-      const balanceEl = document.getElementById("player-balance");
-      if (balanceEl) {
-        const match = balanceEl.textContent.match(/£([\d.]+)/);
-        if (match && match[1]) {
-          finalBalance = Number(match[1]);
-        }
-      }
-    }
-
-    // 🔑 Determine starting buy-in baseline to check if they won or lost overall
+    // Determine starting buy-in baseline
     const urlParams = new URLSearchParams(window.location.search);
-    const startingBuyin = Number(urlParams.get("buyin") || 20);
+    const startingBuyin = urlParams.get("buyin") !== null ? Number(urlParams.get("buyin")) : 20;
 
-    // 🔑 Dynamic Win/Loss text based on whether final balance is above buy-in
+    // Dynamic Win / Loss / Break-Even messaging
     let positionText = "";
-    const isWinner = finalBalance >= startingBuyin;
-
-    if (isWinner) {
+    if (finalBalance > startingBuyin) {
       positionText = "Congratulations! You finished in profit! 🏆🎉";
+    } else if (finalBalance === startingBuyin) {
+      positionText = "Game Over! You broke even. ⚖️";
     } else {
-      positionText = "Game Over. Unfortunately, you finished in a loss. 📉";
+      positionText = "Game Over. You finished in a loss. 📉";
     }
 
     // Populate Modal Elements
@@ -175,11 +164,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (messageEl) messageEl.textContent = positionText;
     if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance || 0).toFixed(2)}`;
 
-    // 🔑 Add final game balance to existing wallet credit
-    let currentWallet = Number(localStorage.getItem("user_credit") || 30.00);
-    currentWallet += Number(finalBalance || 0);
-    localStorage.setItem("user_credit", currentWallet.toFixed(2));
-    console.log(`💰 Added final balance (£${Number(finalBalance || 0).toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
+    // 🔑 Set wallet credit directly to final game balance (buy-in was deducted at start)
+    const finalWalletBalance = Number(finalBalance || 0);
+    localStorage.setItem("user_credit", finalWalletBalance.toFixed(2));
+    console.log(`💰 Updated wallet credit to final game balance: £${finalWalletBalance.toFixed(2)}`);
 
     // Show Modal via class toggle and fallback inline flex
     const gameOverModal = document.getElementById("gameOverModal");
@@ -298,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (cashoutBtn) cashoutBtn.disabled = true;
     },
 
-    // ✅ CASHOUT (FIXED: RESUMES GAME LOOP / ADVANCES TO NEXT ROUND)
+    // ✅ CASHOUT
     cashout() {
       const q = this.currentQuestion;
       if (!q || q.stake <= 0) return;
