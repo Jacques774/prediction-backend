@@ -112,9 +112,13 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ============================
-  // GAME OVER MODAL HELPER (ADDITIVE WALLET & WIN/LOSS MESSAGING)
+  // GAME OVER MODAL HELPER (SAFE NUMERIC PARSING & GUARD)
   // ============================
   function triggerGameOverModal(leaderboard) {
+    // 🔑 Prevent duplicate execution if triggered multiple times
+    if (window.hasProcessedGameOver) return;
+    window.hasProcessedGameOver = true;
+
     window.isGameOver = true;
 
     // Hide active question card immediately
@@ -164,11 +168,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (messageEl) messageEl.textContent = positionText;
     if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance || 0).toFixed(2)}`;
 
-    // 🔑 Add final game balance back to existing wallet credit (Additive)
-    let currentWallet = Number(localStorage.getItem("user_credit") || 30.00);
-    currentWallet += Number(finalBalance || 0);
+    // 🔑 Safely parse current wallet and earnings as numbers before adding (prevents string concatenation)
+    const rawWallet = localStorage.getItem("user_credit");
+    let currentWallet = (rawWallet !== null && !isNaN(parseFloat(rawWallet))) ? parseFloat(rawWallet) : 30.00;
+    
+    const gameEarnings = Number(finalBalance || 0);
+    currentWallet += gameEarnings;
+
     localStorage.setItem("user_credit", currentWallet.toFixed(2));
-    console.log(`💰 Added final balance (£${Number(finalBalance || 0).toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
+    console.log(`💰 Added final balance (£${gameEarnings.toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
 
     // Show Modal via class toggle and fallback inline flex
     const gameOverModal = document.getElementById("gameOverModal");
@@ -512,10 +520,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // 🔑 Handle mid-game player joins dynamically
     window.socket.on("player_joined", ({ playerName, balance }) => {
       if (window.pot && window.pot.balances) {
-        window.pot.balances[playerName] = balance !== undefined ? balance : 100;
+        window.pot.balances[playerName] = balance !== undefined ? balance : 0;
       }
       if (typeof Leaderboard !== "undefined" && Leaderboard.update) {
-        Leaderboard.update(playerName, balance !== undefined ? balance : 100);
+        Leaderboard.update(playerName, balance !== undefined ? balance : 0);
         if (Leaderboard.render) Leaderboard.render();
       }
     });
