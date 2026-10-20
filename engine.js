@@ -276,7 +276,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const activeQ = Engine.currentQuestion;
             if (activeQ && activeQ.stake > 0 && !activeQ.cashedOut) {
               if (typeof startCashoutTimer === "function") {
-                startCashoutTimer();
+                // 🔑 Pass half of the card's timer duration to the cash-out timer
+                const dynamicCashoutTime = Math.floor((activeQ.timer || 60) / 2);
+                startCashoutTimer(dynamicCashoutTime);
               }
             }
           }
@@ -461,7 +463,8 @@ document.addEventListener("DOMContentLoaded", () => {
               const activeQ = Engine.currentQuestion;
               if (activeQ && activeQ.stake > 0 && !activeQ.cashedOut) {
                 if (typeof startCashoutTimer === "function") {
-                  startCashoutTimer();
+                  const dynamicCashoutTime = Math.floor((activeQ.timer || 60) / 2);
+                  startCashoutTimer(dynamicCashoutTime);
                 }
               }
             }
@@ -719,15 +722,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (panel) panel.classList.remove("active");
   };
 
-  // Cashout timer
-  window.startCashoutTimer = function () {
-    let timeLeft = 15;
+  // 🔑 DYNAMIC CASHOUT TIMER HELPER
+  window.startCashoutTimer = function (duration) {
+    let timeLeft = duration || Math.floor((Engine.currentQuestion?.timer || 60) / 2);
+
     if (cashoutTimerEl) cashoutTimerEl.textContent = `${timeLeft}s`;
-    cashoutCountdown = setInterval(() => {
+
+    if (window.cashoutCountdown) {
+      clearInterval(window.cashoutCountdown);
+    }
+
+    window.cashoutCountdown = setInterval(() => {
       timeLeft--;
       if (cashoutTimerEl) cashoutTimerEl.textContent = `${timeLeft}s`;
       if (timeLeft <= 0) {
-        clearInterval(cashoutCountdown);
+        clearInterval(window.cashoutCountdown);
         if (cashoutBtn) cashoutBtn.disabled = true;
       }
     }, 1000);
