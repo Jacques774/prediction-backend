@@ -236,6 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
         userChoice: null, 
         outcome: null, 
         cashedOut: false,
+        hasBeenResolved: false,
         oldBalance: startingBalance
       };
 
@@ -295,14 +296,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (cashoutBtn) cashoutBtn.disabled = true;
     },
 
-    // ✅ CASHOUT (FIXED: Does not trigger early history pushes)
+    // ✅ CASHOUT (FIXED: Cash out locally, update UI/pot, and WAIT for host outcome event)
     cashout() {
       const q = this.currentQuestion;
       if (!q || q.stake <= 0) return;
 
       clearInterval(window.cashoutCountdown);
       q.cashedOut = true;
-      q.outcome = "CASHED OUT";
 
       const player = getActivePlayerName();
 
@@ -343,27 +343,33 @@ document.addEventListener("DOMContentLoaded", () => {
       if (btnNo) btnNo.disabled = true;
       if (cashoutBtn) cashoutBtn.disabled = true;
 
-      console.log("💰 Cashout successful. Waiting for normal round timer / host outcome...");
+      if (qInfo) {
+        qInfo.innerHTML = `You chose: ${q.userChoice || "--"}<br>
+          Stake: £${q.stake.toFixed(2)} (CASHED OUT)<br>
+          <small>Waiting for host outcome...</small>`;
+      }
+
+      console.log("💰 Cashout complete. Waiting for host to select outcome to sync with lobby...");
     },
 
-    // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION & GAME OVER CHECK
+    // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION & GAME OVER CHECK (FIXED: Always syncs lobby)
     handleOutcome(outcome, serverWinners = null) {
       if (typeof window.closeHostOutcome === "function") {
         window.closeHostOutcome();
       }
 
       const q = this.currentQuestion;
-      if (!q || q.outcome !== null) return; 
-      
-      if (!q.cashedOut) {
-        q.outcome = outcome;
-      }
+      if (!q || q.hasBeenResolved) return; // Prevent duplicate resolution!
+      q.hasBeenResolved = true;
+      q.outcome = outcome;
 
       const player = getActivePlayerName();
 
       try {
         if (q.cashedOut) {
-          if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
+          if (qInfo) {
+            qInfo.innerHTML += `<br><small>Round Outcome: ${outcome} (You cashed out)</small>`;
+          }
         } else {
           let winningPlayers = [];
           if (Array.isArray(serverWinners)) {
@@ -372,6 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
             winningPlayers.push(player);
           }
 
+          // Execute proportional pot distribution
           if (window.pot && typeof window.pot.resolveOutcome === "function") {
             window.pot.resolveOutcome(winningPlayers);
           }
@@ -399,6 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (${didWin ? "WIN" : "LOST"})</small>`;
         }
 
+        // Push to History once for all participants
         if (typeof History !== "undefined" && typeof History.push === "function") {
           History.push(q);
           if (typeof History.render === "function") History.render();
@@ -411,7 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Error during round outcome processing:", err);
       }
 
-      // Check for Game Over
+      // Check if final question
       const currentQNum = window.currentQuestionNum || (q.current || 0);
       const totalQCount = window.totalQuestionsCount || (q.total || 0);
 
@@ -432,7 +440,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      console.log("⏳ Triggering post-question countdown for next round...");
+      // 🔑 ALL CLIENTS (INCLUDING CASHED OUT) TRIGGER POST-QUESTION COUNTDOWN TOGETHER
+      console.log("⏳ Syncing lobby: Starting post-question countdown...");
       this.startNextCountdown();
     },
 
