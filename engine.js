@@ -295,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (cashoutBtn) cashoutBtn.disabled = true;
     },
 
-    // ✅ CASHOUT (FIXED: Does not end game prematurely; waits for round outcome)
+    // ✅ CASHOUT
     cashout() {
       const q = this.currentQuestion;
       if (!q || q.stake <= 0) return;
@@ -351,7 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("💰 Cashout successful. Waiting for normal round timer / host outcome...");
     },
 
-    // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION & GAME OVER CHECK
+    // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION & GAME OVER CHECK (FIXED: Always runs countdown/progression)
     handleOutcome(outcome, serverWinners = null) {
       // 🔑 Immediately close the host outcome panel when outcome is handled
       if (typeof window.closeHostOutcome === "function") {
@@ -402,7 +402,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (${didWin ? "WIN" : "LOST"})</small>`;
       }
 
-      if (typeof History !== "undefined" && History.push && !q.cashedOut) {
+      if (typeof History !== "undefined" && History.push) {
         History.push(q);
         if (History.render) History.render();
       }
@@ -435,6 +435,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return; // Halt execution and skip countdown
       }
 
+      // 🔑 ALWAYS START NEXT COUNTDOWN (EVEN IF CASHED OUT!)
       this.startNextCountdown();
     },
 
