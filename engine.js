@@ -295,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (cashoutBtn) cashoutBtn.disabled = true;
     },
 
-    // ✅ CASHOUT
+    // ✅ CASHOUT (FIXED: Does not trigger early history pushes)
     cashout() {
       const q = this.currentQuestion;
       if (!q || q.stake <= 0) return;
@@ -343,75 +343,75 @@ document.addEventListener("DOMContentLoaded", () => {
       if (btnNo) btnNo.disabled = true;
       if (cashoutBtn) cashoutBtn.disabled = true;
 
-      if (typeof History !== "undefined" && History.push) {
-        History.push(q);
-        if (History.render) History.render();
-      }
-
       console.log("💰 Cashout successful. Waiting for normal round timer / host outcome...");
     },
 
-    // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION & GAME OVER CHECK (FIXED: Always runs countdown/progression)
+    // ✅ PROPORTIONAL PARIMUTUEL RESOLUTION & GAME OVER CHECK
     handleOutcome(outcome, serverWinners = null) {
-      // 🔑 Immediately close the host outcome panel when outcome is handled
       if (typeof window.closeHostOutcome === "function") {
         window.closeHostOutcome();
       }
 
       const q = this.currentQuestion;
-      if (!q || q.outcome !== null) return; // Prevent duplicate resolution!
-      q.outcome = outcome;
+      if (!q || q.outcome !== null) return; 
+      
+      if (!q.cashedOut) {
+        q.outcome = outcome;
+      }
 
       const player = getActivePlayerName();
 
-      if (q.cashedOut) {
-        if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
-      } else {
-        let winningPlayers = [];
-        if (Array.isArray(serverWinners)) {
-          winningPlayers = serverWinners;
-        } else if (q.userChoice === outcome && q.stake > 0 && player) {
-          winningPlayers.push(player);
+      try {
+        if (q.cashedOut) {
+          if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (player already cashed out)</small>`;
+        } else {
+          let winningPlayers = [];
+          if (Array.isArray(serverWinners)) {
+            winningPlayers = serverWinners;
+          } else if (q.userChoice === outcome && q.stake > 0 && player) {
+            winningPlayers.push(player);
+          }
+
+          if (window.pot && typeof window.pot.resolveOutcome === "function") {
+            window.pot.resolveOutcome(winningPlayers);
+          }
+
+          const finalBalance = getCurrentPlayerBalance();
+          q.newBalance = finalBalance;
+
+          const balanceEl = document.getElementById("player-balance");
+          if (balanceEl) {
+            balanceEl.textContent = `Balance: £${Utils.formatMoney(finalBalance)}`;
+          }
+
+          if (typeof Leaderboard !== "undefined" && Leaderboard.update && player) {
+            Leaderboard.update(player, finalBalance);
+            if (Leaderboard.render) Leaderboard.render();
+          }
+
+          const didWin = winningPlayers.map(w => w.trim().toLowerCase()).includes(player.trim().toLowerCase());
+          if (didWin) {
+            window.totalWins = (window.totalWins || 0) + 1;
+            const winsEl = document.getElementById("player-wins");
+            if (winsEl) winsEl.textContent = `Wins: ${window.totalWins}`;
+          }
+
+          if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (${didWin ? "WIN" : "LOST"})</small>`;
         }
 
-        // Execute proportional pot distribution
-        if (window.pot && typeof window.pot.resolveOutcome === "function") {
-          window.pot.resolveOutcome(winningPlayers);
+        if (typeof History !== "undefined" && typeof History.push === "function") {
+          History.push(q);
+          if (typeof History.render === "function") History.render();
         }
 
-        const finalBalance = getCurrentPlayerBalance();
-        q.newBalance = finalBalance;
-
-        const balanceEl = document.getElementById("player-balance");
-        if (balanceEl) {
-          balanceEl.textContent = `Balance: £${Utils.formatMoney(finalBalance)}`;
+        if (window.pot && typeof window.pot.resetRound === "function") {
+          window.pot.resetRound();
         }
-
-        if (typeof Leaderboard !== "undefined" && Leaderboard.update && player) {
-          Leaderboard.update(player, finalBalance);
-          if (Leaderboard.render) Leaderboard.render();
-        }
-
-        const didWin = winningPlayers.map(w => w.trim().toLowerCase()).includes(player.trim().toLowerCase());
-        if (didWin) {
-          window.totalWins = (window.totalWins || 0) + 1;
-          const winsEl = document.getElementById("player-wins");
-          if (winsEl) winsEl.textContent = `Wins: ${window.totalWins}`;
-        }
-
-        if (qInfo) qInfo.innerHTML += `<br><small>Outcome: ${outcome} (${didWin ? "WIN" : "LOST"})</small>`;
+      } catch (err) {
+        console.error("Error during round outcome processing:", err);
       }
 
-      if (typeof History !== "undefined" && History.push) {
-        History.push(q);
-        if (History.render) History.render();
-      }
-
-      if (window.pot && typeof window.pot.resetRound === "function") {
-        window.pot.resetRound();
-      }
-
-      // 🔑 CHECK IF THIS WAS THE FINAL QUESTION
+      // Check for Game Over
       const currentQNum = window.currentQuestionNum || (q.current || 0);
       const totalQCount = window.totalQuestionsCount || (q.total || 0);
 
@@ -419,23 +419,20 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("🏁 Final question outcome processed. Triggering Game Over...");
         window.isGameOver = true;
 
-        // Build final leaderboard snapshot
         const finalLeaderboard = window.pot ? Object.keys(window.pot.balances).map(name => ({
           name,
           balance: window.pot.balances[name]
         })) : [];
 
-        // Emit game_over to all participants
         if (window.socket && window.gameId) {
           window.socket.emit("game_over", { gameId: window.gameId, leaderboard: finalLeaderboard });
         }
 
-        // Trigger modal locally right away
         triggerGameOverModal(finalLeaderboard);
-        return; // Halt execution and skip countdown
+        return;
       }
 
-      // 🔑 ALWAYS START NEXT COUNTDOWN (EVEN IF CASHED OUT!)
+      console.log("⏳ Triggering post-question countdown for next round...");
       this.startNextCountdown();
     },
 
