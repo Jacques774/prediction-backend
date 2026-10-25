@@ -54,26 +54,6 @@
   <!-- Cards -->
   <div class="cards">
     <div class="card" id="active-card">
-      
-      <!-- ============================
-           NEW STADIUM HUD CONTAINER
-           ============================ -->
-      <div class="hud-container">
-        <!-- Countdown Timer Pill (Active during betting) -->
-        <div id="timerContainer" class="timer-hud">
-          <span class="timer-label">Stake Window</span>
-          <span id="timerClock" class="timer-clock">--s</span>
-          <!-- Kept hidden link so existing JS targeting stakeCountdown works cleanly -->
-          <span id="stakeCountdown" style="display:none;">Stake window: 10s</span>
-        </div>
-
-        <!-- Pot Display (Hidden during active betting, revealed when timer ends) -->
-        <div id="potContainer" class="pot-hud hidden">
-          <span class="pot-label">Total Pot</span>
-          <span id="potAmount" class="pot-value">£0</span>
-        </div>
-      </div>
-
       <div class="card-header">
         <div class="question-text" id="q-text">Loading question...</div>
       </div>
@@ -94,6 +74,11 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div id="stakePotDisplay" style="font-size:1.5rem; margin-top:20px;">
+    <span id="stakeCountdown" style="display:none;">Stake window: 10s</span>
+    <span id="potAmount" style="display:none;">Pot: £0</span>
   </div>
 
   <!-- Footer Buttons -->
