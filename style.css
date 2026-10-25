@@ -581,7 +581,9 @@ body:not(.stake-active) #potAmount {
   overflow: hidden; /* Locks container to screen bounds */
 }
 
-/* 🔑 Dedicated Host Outcome Panel - Only the Question is Centered */
+/* ============================
+   HOST OUTCOME PANEL (Entire Content Centered)
+   ============================ */
 .host-outcome-content {
   background: var(--bg-card);
   width: 100%;
@@ -597,19 +599,15 @@ body:not(.stake-active) #potAmount {
   box-shadow: none;
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Spreads top elements and bottom elements apart */
-  align-items: center;
-  overflow: hidden;
+  justify-content: center; /* Centers everything vertically in the middle */
+  align-items: center;     /* Centers everything horizontally */
+  text-align: center;
+  overflow-y: auto;        /* Allows scrolling if screen is compact */
 }
 
-/* Targets only the outcome question card/box to sit dead-center in the middle */
-.host-outcome-content .card,
-#host-outcome-question,
-.host-outcome-center {
-  margin: auto;
-  text-align: center;
-  width: 100%;
-  max-width: 500px;
+.host-outcome-content .close-btn {
+  align-self: center;
+  margin-bottom: 20px;
 }
 
 /* ============================
