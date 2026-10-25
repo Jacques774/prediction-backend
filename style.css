@@ -236,7 +236,7 @@ body {
   box-shadow: 0 0 20px rgba(0, 210, 255, 0.6);
 }
 
-/* ⚡ PULSING HIGHLIGHT STATE (Only added dynamically when cash-out window is live) */
+/* ⚡ PULSING HIGHLIGHT STATE (Only active when .cashout-active-window class is applied) */
 .cashout-btn.cashout-active-window {
   background: linear-gradient(135deg, rgba(0, 210, 255, 0.3), rgba(0, 210, 255, 0.5));
   border: 2px solid var(--accent-blue);
