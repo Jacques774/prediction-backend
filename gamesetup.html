@@ -229,9 +229,9 @@
       const questionCount = Number(document.getElementById("question-count").value);
       const questionTimeMins = Number(document.getElementById("question-time").value);
 
-      // Enforce maximum limit check against main menu credit
+      // 🛑 CRITICAL FIX: Enforce credit validation IMMEDIATELY before making backend fetch
       if (startingBalance > maxCredit) {
-        err.textContent = `Starting balance (${startingBalance}⚡) cannot exceed your main menu credit (${maxCredit}⚡).`;
+        err.textContent = `Starting balance (${startingBalance}⚡) cannot exceed your available credit (${maxCredit}⚡).`;
         err.style.display = "block";
         return;
       }
