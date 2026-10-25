@@ -572,7 +572,6 @@ body:not(.stake-active) #potAmount {
   border-radius: 0;
   padding: 24px;
   box-sizing: border-box;
-  overflow-y: auto;
   border: none;
   transform: translateY(0);
   transition: opacity 0.3s ease;
@@ -580,6 +579,7 @@ body:not(.stake-active) #potAmount {
   box-shadow: none;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* 🔑 Locks container to viewport bounds */
 }
 
 /* ============================
@@ -589,12 +589,13 @@ body:not(.stake-active) #potAmount {
 .leaderboard-title {
   font-size: 1.3rem;
   font-weight: 700;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: var(--text-main);
   text-align: center;
   margin-top: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
+  flex-shrink: 0; /* 🔑 Keeps header locked in place at top */
 }
 
 .history-list,
@@ -602,10 +603,11 @@ body:not(.stake-active) #potAmount {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-top: 20px;
+  margin-top: 10px;
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto; /* 🔑 Scrolls internally instead of breaking page bounds */
   padding-bottom: 40px;
+  box-sizing: border-box;
 }
 
 /* ============================
@@ -671,6 +673,7 @@ body:not(.stake-active) #potAmount {
   text-transform: uppercase;
   transition: all 0.3s ease;
   align-self: flex-start;
+  flex-shrink: 0; /* 🔑 Prevents close button distortion */
 }
 
 .close-btn:hover {
