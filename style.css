@@ -22,9 +22,9 @@
    ============================ */
 body {
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  /* Deep midnight navy gradient overlay over a verified floodlit rugby stadium arena image */
+  /* Deep midnight navy gradient overlay over an authentic floodlit rugby stadium pitch */
   background: linear-gradient(rgba(5, 11, 20, 0.82), rgba(3, 7, 13, 0.90)), 
-              url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=1920&auto=format&fit=crop');
+              url('https://static.vecteezy.com/system/resources/previews/076/706/318/large_2x/a-wide-angle-view-of-a-well-maintained-rugby-pitch-illuminated-by-stadium-lights-during-twilight-with-empty-spectator-stands-in-the-background-photo.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
