@@ -34,7 +34,7 @@ function revealPot(amount) {
   if (potEl) {
     potEl.style.removeProperty("display");
     potEl.style.display = "inline";
-    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
+    potEl.textContent = "Pot: " + Number(amount || 0).toFixed(2) + "⚡";
   }
 }
 
@@ -42,7 +42,7 @@ function updatePot(amount) {
   const potEl = document.getElementById("potAmount");
   if (!potEl) return;
 
-  potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
+  potEl.textContent = "Pot: " + Number(amount || 0).toFixed(2) + "⚡";
   if (window.isStakeWindowActive) {
     potEl.style.setProperty("display", "none", "important");
   }
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const gameData = await res.json();
         if (gameData && gameData.startingBalance !== undefined) {
           buyInAmount = Number(gameData.startingBalance);
-          console.log(`✅ Host fetched live buy-in from server: £${buyInAmount}`);
+          console.log(`✅ Host fetched live buy-in from server: ${buyInAmount}⚡`);
         }
       }
     } catch (err) {
@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Pre-update balance DOM if present
   const initialBalanceEl = document.getElementById("player-balance");
   if (initialBalanceEl) {
-    initialBalanceEl.textContent = `Balance: £${Number(buyInAmount).toFixed(2)}`;
+    initialBalanceEl.textContent = `Balance: ${Number(buyInAmount).toFixed(2)}⚡`;
   }
 
   const startBtn = document.getElementById("host-start-btn");
@@ -198,14 +198,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentWallet += gameEarnings;
 
     localStorage.setItem("user_credit", currentWallet.toFixed(2));
-    console.log(`💰 Added host final balance (£${gameEarnings.toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
+    console.log(`⚡ Added host final balance (${gameEarnings.toFixed(2)}⚡) to wallet. New total: ${currentWallet.toFixed(2)}⚡`);
 
     // Populate Modal Elements
     const messageEl = document.getElementById("gameOverMessage");
     const balanceEl = document.getElementById("gameOverFinalBalance");
 
     if (messageEl) messageEl.textContent = positionText;
-    if (balanceEl) balanceEl.textContent = `Final Balance: £${gameEarnings.toFixed(2)}`;
+    if (balanceEl) balanceEl.textContent = `Final Balance: ${gameEarnings.toFixed(2)}⚡`;
 
     // Show Modal via class toggle and inline fallback
     const gameOverModal = document.getElementById("gameOverModal");
@@ -232,7 +232,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         currentWallet += gameEarnings;
 
         localStorage.setItem("user_credit", currentWallet.toFixed(2));
-        console.log(`💰 Saving host wallet credit on exit: New total £${currentWallet.toFixed(2)}`);
+        console.log(`⚡ Saving host wallet credit on exit: New total ${currentWallet.toFixed(2)}⚡`);
       }
 
       if (socket) socket.disconnect();
@@ -259,7 +259,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl && window.pot && window.pot.balances[player] !== undefined) {
       const bal = window.pot.balances[player];
-      balanceEl.textContent = `Balance: £${Number(bal).toFixed(2)}`;
+      balanceEl.textContent = `Balance: ${Number(bal).toFixed(2)}⚡`;
     }
 
     const outcomePanel = document.getElementById("outcome-panel");
@@ -319,12 +319,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     let currentCredit = (rawCredit !== null && !isNaN(parseFloat(rawCredit))) ? parseFloat(rawCredit) : 30.00;
 
     if (currentCredit < buyInAmount) {
-      alert(`Insufficient credit to host! Required: £${buyInAmount.toFixed(2)}, Available: £${currentCredit.toFixed(2)}`);
+      alert(`Insufficient credit to host! Required: ${buyInAmount.toFixed(2)}⚡, Available: ${currentCredit.toFixed(2)}⚡`);
       return;
     }
     currentCredit -= buyInAmount;
     localStorage.setItem("user_credit", currentCredit.toFixed(2));
-    console.log(`💳 Host buy-in deducted (£${buyInAmount.toFixed(2)}). Remaining wallet: £${currentCredit.toFixed(2)}`);
+    console.log(`⚡ Host buy-in deducted (${buyInAmount.toFixed(2)}⚡). Remaining wallet: ${currentCredit.toFixed(2)}⚡`);
 
     window.currentPlayerName = hostName;
     window.isHost = true;
@@ -355,7 +355,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (nameEl) nameEl.textContent = `Host: ${hostName}`;
     if (balanceEl && window.pot) {
       const startingBal = window.pot.balances[window.currentPlayerName] || buyInAmount;
-      balanceEl.textContent = `Balance: £${Number(startingBal).toFixed(2)}`;
+      balanceEl.textContent = `Balance: ${Number(startingBal).toFixed(2)}⚡`;
     }
   });
 });
@@ -389,7 +389,7 @@ socket.on("balance_update", ({ balance }) => {
 
   const balanceEl = document.getElementById("player-balance");
   if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Number(balance).toFixed(2)}`;
+    balanceEl.textContent = `Balance: ${Number(balance).toFixed(2)}⚡`;
   }
 });
 
