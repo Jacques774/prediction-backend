@@ -31,7 +31,7 @@ function revealPot(amount) {
   if (potEl) {
     potEl.style.removeProperty("display");
     potEl.style.display = "inline";
-    potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
+    potEl.textContent = "Pot: " + Number(amount || 0).toFixed(2) + "⚡";
   }
 }
 
@@ -39,7 +39,7 @@ function updatePot(amount) {
   const potEl = document.getElementById("potAmount");
   if (!potEl) return;
 
-  potEl.textContent = "Pot: £" + Number(amount || 0).toFixed(2);
+  potEl.textContent = "Pot: " + Number(amount || 0).toFixed(2) + "⚡";
   if (window.isStakeWindowActive) {
     potEl.style.setProperty("display", "none", "important");
   }
@@ -139,7 +139,7 @@ function initPlayerUI() {
     document.getElementById("preview-sport").textContent = pendingGameData.sport;
     document.getElementById("preview-questions").textContent = pendingGameData.questionCount;
     document.getElementById("preview-timer").textContent = pendingGameData.cardTimer;
-    document.getElementById("preview-balance").textContent = `£${pendingGameData.startingBalance.toFixed(2)}`;
+    document.getElementById("preview-balance").textContent = `${pendingGameData.startingBalance.toFixed(2)}⚡`;
 
     // Re-read latest wallet credit safely
     const rawWalletCheck = localStorage.getItem("user_credit");
@@ -149,7 +149,7 @@ function initPlayerUI() {
     const creditErrorEl = document.getElementById("previewCreditError");
     if (currentWalletCheck < pendingGameData.startingBalance) {
       if (creditErrorEl) {
-        creditErrorEl.textContent = `Insufficient credit! Required: £${pendingGameData.startingBalance.toFixed(2)}, Available: £${currentWalletCheck.toFixed(2)}`;
+        creditErrorEl.textContent = `Insufficient credit! Required: ${pendingGameData.startingBalance.toFixed(2)}⚡, Available: ${currentWalletCheck.toFixed(2)}⚡`;
         creditErrorEl.style.display = "block";
       }
       if (confirmJoinBtn) {
@@ -193,12 +193,12 @@ function initPlayerUI() {
       const buyin = pendingGameData.startingBalance;
 
       if (currentCredit < buyin) {
-        alert(`Insufficient credit! Required: £${buyin.toFixed(2)}, Available: £${currentCredit.toFixed(2)}`);
+        alert(`Insufficient credit! Required: ${buyin.toFixed(2)}⚡, Available: ${currentCredit.toFixed(2)}⚡`);
         return;
       }
       currentCredit -= buyin;
       localStorage.setItem("user_credit", currentCredit.toFixed(2));
-      console.log(`💳 Player buy-in deducted (£${buyin.toFixed(2)}). Remaining wallet: £${currentCredit.toFixed(2)}`);
+      console.log(`💳 Player buy-in deducted (${buyin.toFixed(2)}⚡). Remaining wallet: ${currentCredit.toFixed(2)}⚡`);
 
       window.isHost = false;
 
@@ -228,7 +228,7 @@ function initPlayerUI() {
 
       if (nameEl) nameEl.textContent = `Player: ${window.currentPlayerName}`;
       if (balanceEl) {
-        balanceEl.textContent = `Balance: £${Number(startingBal).toFixed(2)}`;
+        balanceEl.textContent = `Balance: ${Number(startingBal).toFixed(2)}⚡`;
       }
     });
   }
@@ -251,7 +251,7 @@ function initPlayerUI() {
         currentWallet += gameEarnings;
 
         localStorage.setItem("user_credit", currentWallet.toFixed(2));
-        console.log(`💰 Added player final balance (£${gameEarnings.toFixed(2)}) to wallet on exit. New total: £${currentWallet.toFixed(2)}`);
+        console.log(`⚡ Added player final balance (${gameEarnings.toFixed(2)}⚡) to wallet on exit. New total: ${currentWallet.toFixed(2)}⚡`);
       }
 
       if (socket) socket.disconnect();
@@ -402,7 +402,7 @@ socket.on("balance_update", ({ balance }) => {
   }
   const balanceEl = document.getElementById("player-balance");
   if (balanceEl) {
-    balanceEl.textContent = `Balance: £${Number(balance).toFixed(2)}`;
+    balanceEl.textContent = `Balance: ${Number(balance).toFixed(2)}⚡`;
   }
 });
 
