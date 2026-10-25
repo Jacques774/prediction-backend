@@ -1,6 +1,6 @@
 /* ============================================================
    SPORT VOLT THEME - COMPLETE CSS REFACTOR
-   Matches Wix Landing Page Aesthetic & Stadium Background
+   Matches Wix Landing Page Aesthetic & Stadium Glow
    ============================================================ */
 
 :root {
@@ -22,11 +22,10 @@
    ============================ */
 body {
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  /* Dark midnight gradient overlay blended over a floodlit stadium image */
-  background: linear-gradient(rgba(5, 11, 20, 0.92), rgba(5, 11, 20, 0.95)), 
-              url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1600&auto=format&fit=crop');
-  background-size: cover;
-  background-position: center;
+  /* Deep midnight stadium background with a clean electric-cyan spotlight glow */
+  background: 
+    radial-gradient(circle at 50% 20%, rgba(0, 210, 255, 0.08) 0%, transparent 60%),
+    linear-gradient(135deg, #050b14 0%, #03070d 100%);
   background-attachment: fixed;
   color: var(--text-main);
   margin: 0;
