@@ -8,7 +8,7 @@ window.initGame = function (players, buyInAmount = 100) {
     const balance = window.pot.balances[p];
     const el = document.getElementById(`${p}-balance`);
     if (el) {
-      el.innerText = "Balance: £" + Number(balance).toFixed(2);
+      el.innerText = "Balance: " + Number(balance).toFixed(2) + "⚡";
     }
 
     // 🔑 Instantly populate player on leaderboard upon joining/init
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3️⃣ Fallback to DOM element text if present
     const balanceEl = document.getElementById("player-balance");
     if (balanceEl) {
-      const match = balanceEl.textContent.match(/£([\d.]+)/);
+      const match = balanceEl.textContent.match(/([\d.]+)⚡/);
       if (match && match[1]) {
         return Number(match[1]);
       }
@@ -166,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const balanceEl = document.getElementById("gameOverFinalBalance");
 
     if (messageEl) messageEl.textContent = positionText;
-    if (balanceEl) balanceEl.textContent = `Final Balance: £${Number(finalBalance || 0).toFixed(2)}`;
+    if (balanceEl) balanceEl.textContent = `Final Balance: ${Number(finalBalance || 0).toFixed(2)}⚡`;
 
     // 🔑 Safely parse current wallet and earnings as numbers before adding (prevents string concatenation)
     const rawWallet = localStorage.getItem("user_credit");
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
     currentWallet += gameEarnings;
 
     localStorage.setItem("user_credit", currentWallet.toFixed(2));
-    console.log(`💰 Added final balance (£${gameEarnings.toFixed(2)}) to wallet. New total: £${currentWallet.toFixed(2)}`);
+    console.log(`⚡ Added final balance (${gameEarnings.toFixed(2)}⚡) to wallet. New total: ${currentWallet.toFixed(2)}⚡`);
 
     // Show Modal via class toggle and fallback inline flex
     const gameOverModal = document.getElementById("gameOverModal");
@@ -246,7 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (timeLeft) => {
           if (qInfo) {
             qInfo.innerHTML = `You chose: ${this.currentQuestion.userChoice || "--"}<br>
-              Stake: £${this.currentQuestion.stake ? this.currentQuestion.stake.toFixed(2) : 0}<br>
+              Stake: ${this.currentQuestion.stake ? this.currentQuestion.stake.toFixed(2) : 0}⚡<br>
               Timer: ${timeLeft}s`;
           }
         },
@@ -333,7 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const balanceEl = document.getElementById("player-balance");
       if (balanceEl) {
-        balanceEl.textContent = `Balance: £${Utils.formatMoney(finalBalance)}`;
+        balanceEl.textContent = `Balance: ${Utils.formatMoney(finalBalance)}⚡`;
       }
 
       if (typeof Leaderboard !== "undefined" && Leaderboard.update && player) {
@@ -347,7 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (qInfo) {
         qInfo.innerHTML = `You chose: ${q.userChoice || "--"}<br>
-          Stake: £${q.stake.toFixed(2)} (CASHED OUT)<br>
+          Stake: ${q.stake.toFixed(2)}⚡ (CASHED OUT)<br>
           <small>Waiting for host outcome...</small>`;
       }
 
@@ -390,7 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           const balanceEl = document.getElementById("player-balance");
           if (balanceEl) {
-            balanceEl.textContent = `Balance: £${Utils.formatMoney(finalBalance)}`;
+            balanceEl.textContent = `Balance: ${Utils.formatMoney(finalBalance)}⚡`;
           }
 
           if (typeof Leaderboard !== "undefined" && Leaderboard.update && player) {
@@ -591,19 +591,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const balanceEl = document.getElementById("player-balance");
       if (balanceEl) {
-        balanceEl.textContent = `Balance: £${Utils.formatMoney(getCurrentPlayerBalance())}`;
+        balanceEl.textContent = `Balance: ${Utils.formatMoney(getCurrentPlayerBalance())}⚡`;
       }
 
       if (qInfo) {
         qInfo.innerHTML = `
           You chose: ${q.userChoice}<br>
-          Stake: £${amount.toFixed(2)}
+          Stake: ${amount.toFixed(2)}⚡
         `;
       }
 
       if (cashoutBtn) {
         cashoutBtn.disabled = false;
-        cashoutBtn.textContent = `Cash Out: £${(amount * 0.5).toFixed(2)}`;
+        cashoutBtn.textContent = `Cash Out: ${(amount * 0.5).toFixed(2)}⚡`;
       }
 
       if (stakePopup) stakePopup.style.display = "none";
@@ -669,7 +669,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (qInfo) {
       qInfo.innerHTML = `
         You chose: ${q.userChoice || "--"}<br>
-        Stake: £${safeStake.toFixed(2)}<br>
+        Stake: ${safeStake.toFixed(2)}⚡<br>
         Timer: ${q.timer || "--"}s
       `;
     }
