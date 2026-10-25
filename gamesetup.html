@@ -14,25 +14,35 @@
       --border-color: #1e293b;     /* Dark subtle borders */
     }
 
-    body {
+    /* 🔑 Lock Viewport & Prevent Scroller */
+    html, body {
       font-family: "Segoe UI", sans-serif;
       background-color: var(--bg-primary);
       color: var(--text-main);
       margin: 0;
-      padding: 16px;
+      padding: 12px;
+      height: 100vh;
+      overflow: hidden;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .setup-container { 
-      max-width: 600px; 
+      width: 100%;
+      max-width: 520px; 
       margin: 0 auto; 
-      padding-top: 20px; 
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .setup-title { 
       text-align: center; 
-      font-size: 1.8rem; 
+      font-size: 1.5rem; 
       font-weight: 700; 
-      margin-bottom: 25px; 
+      margin-bottom: 14px; 
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -40,29 +50,29 @@
     .setup-card { 
       background-color: var(--bg-card); 
       border-radius: 14px; 
-      padding: 24px; 
+      padding: 16px 20px; 
       border: 1px solid var(--border-color); 
       display: flex; 
       flex-direction: column; 
-      gap: 16px; 
+      gap: 10px; 
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     }
 
     .setup-card label { 
-      font-size: 0.85rem; 
+      font-size: 0.8rem; 
       font-weight: 600; 
       color: var(--text-muted); 
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
 
     .setup-card input, .setup-card select { 
-      padding: 12px; 
-      border-radius: 10px; 
+      padding: 9px 12px; 
+      border-radius: 8px; 
       border: 1px solid var(--border-color); 
       background: #050b14; 
       color: var(--text-main); 
-      font-size: 1rem; 
+      font-size: 0.95rem; 
       outline: none;
       transition: border-color 0.3s;
     }
@@ -72,17 +82,17 @@
       box-shadow: 0 0 8px rgba(0, 210, 255, 0.25);
     }
 
-    /* Main Create Game Button - Matching pill neon style */
+    /* Main Create Game Button */
     #create-game-btn { 
-      padding: 14px; 
+      padding: 12px; 
       border-radius: 30px; 
       border: 1px solid var(--accent-blue); 
       background: transparent; 
       color: var(--text-main); 
-      font-size: 1.1rem; 
+      font-size: 1rem; 
       font-weight: bold; 
       cursor: pointer; 
-      margin-top: 10px; 
+      margin-top: 4px; 
       text-transform: uppercase;
       letter-spacing: 0.5px;
       box-shadow: 0 0 10px rgba(0, 210, 255, 0.15);
@@ -95,37 +105,37 @@
     }
 
     .readonly-field { 
-      padding: 12px; 
-      border-radius: 10px; 
+      padding: 10px; 
+      border-radius: 8px; 
       background: #050b14; 
       color: var(--accent-blue); 
-      font-size: 0.95rem; 
+      font-size: 0.9rem; 
       border: 1px solid var(--border-color); 
       word-break: break-all; 
     }
 
     .code-box { 
-      font-size: 1.8rem; 
+      font-size: 1.5rem; 
       font-weight: 800; 
       letter-spacing: 3px; 
       text-align: center; 
       color: var(--accent-blue); 
       background: #050b14; 
       border: 2px dashed var(--accent-blue); 
-      padding: 14px; 
-      border-radius: 12px;
+      padding: 10px; 
+      border-radius: 10px;
       text-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
     }
 
     .share-btn { 
-      padding: 12px; 
-      border-radius: 10px; 
+      padding: 10px; 
+      border-radius: 8px; 
       border: 1px solid var(--accent-blue); 
       background: rgba(0, 210, 255, 0.1); 
       color: var(--accent-blue); 
       font-weight: bold; 
       cursor: pointer; 
-      margin-top: 5px; 
+      margin-top: 2px; 
       width: 100%; 
       transition: all 0.3s;
     }
@@ -135,15 +145,15 @@
     }
 
     #start-game-btn { 
-      padding: 14px; 
+      padding: 12px; 
       border-radius: 30px; 
       border: none; 
       background: var(--accent-blue); 
       color: #000; 
-      font-size: 1.1rem; 
+      font-size: 1rem; 
       font-weight: bold; 
       cursor: pointer; 
-      margin-top: 10px; 
+      margin-top: 4px; 
       display: none; 
       text-transform: uppercase;
       box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
@@ -177,11 +187,11 @@
       <label>Question Time (minutes)</label>
       <input type="number" id="question-time" min="1" value="2" placeholder="2">
 
-      <div id="setupError" style="color:#ef4444; font-weight:600; display:none; font-size:0.9rem;"></div>
+      <div id="setupError" style="color:#ef4444; font-weight:600; display:none; font-size:0.85rem;"></div>
       
       <button id="create-game-btn">Create Game</button>
       
-      <div id="generatedLinkBox" style="display:none; margin-top:20px; flex-direction:column; gap:12px;">
+      <div id="generatedLinkBox" style="display:none; margin-top:10px; flex-direction:column; gap:8px;">
         <!-- Hidden link sections (kept in code for future use) -->
         <div style="display: none;">
           <label>Players Join Link</label>
@@ -189,7 +199,7 @@
           <button id="share-btn" class="share-btn">Share Link</button>
         </div>
 
-        <label style="margin-top: 8px;">Game Room Code</label>
+        <label style="margin-top: 4px;">Game Room Code</label>
         <div class="code-box" id="game-code-display"></div>
       </div>
 
