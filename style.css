@@ -192,7 +192,7 @@ body {
 }
 
 /* ============================
-   CASHOUT ROW & ACTIVE BUTTON STYLING
+   CASHOUT ROW & DYNAMIC ACTIVE STYLING
    ============================ */
 .cashout-row {
   display: flex;
@@ -214,43 +214,40 @@ body {
   gap: 6px;
 }
 
-/* Base Cashout Button (Inactive State) */
+/* Base Cashout Button (Normal State when enabled) */
 .cashout-btn {
   padding: 10px 20px;
   border-radius: 30px;
-  border: 1px solid var(--border-color);
-  cursor: not-allowed;
+  border: 1px solid var(--accent-blue);
+  cursor: pointer;
   font-size: 0.95rem;
-  background: rgba(13, 23, 38, 0.6);
-  color: var(--text-muted);
+  background: transparent;
+  color: var(--text-main);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
   transition: all 0.3s ease;
 }
 
-/* ⚡ ACTIVE & READY STATE (When enabled by engine) */
-.cashout-btn:not(:disabled) {
-  background: linear-gradient(135deg, rgba(0, 210, 255, 0.25), rgba(0, 210, 255, 0.45));
-  border: 2px solid var(--accent-blue);
-  color: var(--text-main);
-  cursor: pointer;
-  box-shadow: 0 0 18px rgba(0, 210, 255, 0.5);
-  animation: cashoutPulse 1.4s infinite alternate ease-in-out;
-}
-
-/* Hover effect when active */
-.cashout-btn:not(:disabled):hover {
+.cashout-btn:hover:not(:disabled) {
   background: var(--accent-blue);
   color: #000;
-  box-shadow: 0 0 28px rgba(0, 210, 255, 0.85);
-  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.6);
 }
 
-/* Disabled fallback override */
+/* ⚡ PULSING HIGHLIGHT STATE (Only added dynamically when cash-out window is live) */
+.cashout-btn.cashout-active-window {
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.3), rgba(0, 210, 255, 0.5));
+  border: 2px solid var(--accent-blue);
+  box-shadow: 0 0 22px rgba(0, 210, 255, 0.7);
+  animation: cashoutPulse 1.2s infinite alternate ease-in-out;
+}
+
+/* Disabled state */
 #cashout-btn:disabled,
 .cashout-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.4;
   cursor: not-allowed;
   border-color: var(--border-color);
   box-shadow: none;
@@ -262,15 +259,15 @@ body {
   color: var(--text-muted);
 }
 
-/* Pulsing neon animation for active state */
+/* Pulsing animation */
 @keyframes cashoutPulse {
   0% {
-    box-shadow: 0 0 8px rgba(0, 210, 255, 0.3);
-    border-color: rgba(0, 210, 255, 0.6);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+    transform: scale(1);
   }
   100% {
-    box-shadow: 0 0 22px rgba(0, 210, 255, 0.85);
-    border-color: var(--accent-blue);
+    box-shadow: 0 0 25px rgba(0, 210, 255, 0.9);
+    transform: scale(1.03);
   }
 }
 
