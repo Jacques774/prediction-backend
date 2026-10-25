@@ -105,13 +105,13 @@
 </head>
 <body>
 
-  <!-- 🔑 Temp Add £5 Credit Button -->
-  <button id="add-credit-btn" class="temp-add-btn">+ Add £5 Credit (Temp)</button>
+  <!-- 🔑 Temp Add 5 Volts Credit Button -->
+  <button id="add-credit-btn" class="temp-add-btn">+ Add 5 ⚡ Credit (Temp)</button>
 
   <!-- Temporary Credit Display -->
   <div class="credit-box">
     <div class="credit-label">Available Credit</div>
-    <div class="credit-amount" id="user-credit">£30.00</div>
+    <div class="credit-amount" id="user-credit">30.00⚡</div>
   </div>
 
   <h1>Main Menu</h1>
@@ -119,7 +119,7 @@
   <a href="/player" class="menu-btn">Player</a>
 
   <script>
-    // 🔑 FIX: Explicitly check for null so £0.00 isn't bypassed by short-circuit fallback
+    // 🔑 FIX: Explicitly check for null so 0.00⚡ isn't bypassed by short-circuit fallback
     const storedCredit = localStorage.getItem("user_credit");
     let userCredit = storedCredit !== null ? Number(storedCredit) : 30.00;
 
@@ -131,7 +131,7 @@
     // Update credit display element
     const creditEl = document.getElementById("user-credit");
     if (creditEl) {
-      creditEl.textContent = "£" + userCredit.toFixed(2);
+      creditEl.textContent = userCredit.toFixed(2) + "⚡";
     }
 
     // 🔑 Dynamically update Host link to pass credit parameter to gamesetup.html
@@ -140,7 +140,7 @@
       hostBtn.href = `/gamesetup.html?credit=${userCredit.toFixed(2)}`;
     }
 
-    // 🔑 Temp Button Event Listener to add £5
+    // 🔑 Temp Button Event Listener to add 5 Volts
     const addCreditBtn = document.getElementById("add-credit-btn");
     if (addCreditBtn) {
       addCreditBtn.addEventListener("click", () => {
@@ -148,14 +148,14 @@
         localStorage.setItem("user_credit", userCredit.toFixed(2));
 
         if (creditEl) {
-          creditEl.textContent = "£" + userCredit.toFixed(2);
+          creditEl.textContent = userCredit.toFixed(2) + "⚡";
         }
 
         if (hostBtn) {
           hostBtn.href = `/gamesetup.html?credit=${userCredit.toFixed(2)}`;
         }
 
-        console.log(`💰 Temp added £5. New credit: £${userCredit.toFixed(2)}`);
+        console.log(`⚡ Temp added 5⚡. New credit: ${userCredit.toFixed(2)}⚡`);
       });
     }
   </script>
