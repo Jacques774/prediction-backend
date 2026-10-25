@@ -192,7 +192,7 @@ body {
 }
 
 /* ============================
-   CASHOUT ROW
+   CASHOUT ROW & ACTIVE BUTTON STYLING
    ============================ */
 .cashout-row {
   display: flex;
@@ -214,38 +214,64 @@ body {
   gap: 6px;
 }
 
+/* Base Cashout Button (Inactive State) */
 .cashout-btn {
   padding: 10px 20px;
   border-radius: 30px;
-  border: 1px solid var(--accent-blue);
-  cursor: pointer;
+  border: 1px solid var(--border-color);
+  cursor: not-allowed;
   font-size: 0.95rem;
-  background: transparent;
-  color: var(--text-main);
+  background: rgba(13, 23, 38, 0.6);
+  color: var(--text-muted);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
   transition: all 0.3s ease;
 }
 
-.cashout-btn:hover:not(:disabled) {
-  background: var(--accent-blue);
-  color: #000;
-  box-shadow: 0 0 20px rgba(0, 210, 255, 0.6);
+/* ⚡ ACTIVE & READY STATE (When enabled by engine) */
+.cashout-btn:not(:disabled) {
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.25), rgba(0, 210, 255, 0.45));
+  border: 2px solid var(--accent-blue);
+  color: var(--text-main);
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(0, 210, 255, 0.5);
+  animation: cashoutPulse 1.4s infinite alternate ease-in-out;
 }
 
+/* Hover effect when active */
+.cashout-btn:not(:disabled):hover {
+  background: var(--accent-blue);
+  color: #000;
+  box-shadow: 0 0 28px rgba(0, 210, 255, 0.85);
+  transform: translateY(-2px);
+}
+
+/* Disabled fallback override */
 #cashout-btn:disabled,
 .cashout-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
   border-color: var(--border-color);
   box-shadow: none;
+  animation: none;
 }
 
 .cashout-timer {
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+/* Pulsing neon animation for active state */
+@keyframes cashoutPulse {
+  0% {
+    box-shadow: 0 0 8px rgba(0, 210, 255, 0.3);
+    border-color: rgba(0, 210, 255, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 22px rgba(0, 210, 255, 0.85);
+    border-color: var(--accent-blue);
+  }
 }
 
 /* ============================
