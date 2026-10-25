@@ -22,13 +22,14 @@
    ============================ */
 body {
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  /* Deep midnight navy gradient overlay blended over a floodlit rugby stadium pitch */
-  background: linear-gradient(rgba(5, 11, 20, 0.82), rgba(3, 7, 13, 0.90)), 
-              url('https://images.unsplash.com/photo-1516475425556-013661ecd2e3?q=80&w=1920&auto=format&fit=crop');
+  /* Deep midnight navy gradient overlay over a verified floodlit stadium arena image */
+  background: linear-gradient(rgba(5, 11, 20, 0.85), rgba(3, 7, 13, 0.92)), 
+              url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1920&auto=format&fit=crop');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  background-color: #050b14; /* Instant fallback background */
   color: var(--text-main);
   margin: 0;
   padding: 16px;
