@@ -22,9 +22,9 @@
    ============================ */
 body {
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  /* Deep midnight navy gradient overlay over an illuminated rugby stadium pitch with goalposts */
+  /* Deep midnight navy gradient overlay over a verified floodlit rugby stadium arena image */
   background: linear-gradient(rgba(5, 11, 20, 0.82), rgba(3, 7, 13, 0.90)), 
-              url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1920&auto=format&fit=crop');
+              url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=1920&auto=format&fit=crop');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
