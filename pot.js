@@ -54,7 +54,7 @@ class Pot {
     const potEl = document.getElementById("potAmount");
     if (potEl) {
       potEl.style.display = "inline";
-      potEl.textContent = `Pot: £${Number(amount || this.potBalance).toFixed(2)}`;
+      potEl.textContent = `Pot: ${Number(amount || this.potBalance).toFixed(2)}⚡`;
     }
   }
 
@@ -136,7 +136,7 @@ class Pot {
     // Explicitly clear and hide the pot display on screen
     const potEl = document.getElementById("potAmount");
     if (potEl) {
-      potEl.textContent = "Pot: £0.00";
+      potEl.textContent = "Pot: 0.00⚡";
       potEl.style.display = "none";
     }
   }
