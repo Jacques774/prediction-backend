@@ -548,12 +548,12 @@ body:not(.stake-active) #potAmount {
 .host-outcome-panel {
   position: fixed;
   inset: 0;
-  background: rgba(5, 11, 20, 0.95);
+  background: rgba(5, 11, 20, 0.98);
   backdrop-filter: blur(8px);
   display: none;
   justify-content: center;
   align-items: center;
-  z-index: 999;
+  z-index: 9999;
 }
 
 .history-panel.active,
@@ -570,7 +570,7 @@ body:not(.stake-active) #potAmount {
   height: 100vh;
   max-height: 100vh;
   border-radius: 0;
-  padding: 24px;
+  padding: 40px 20px 20px 20px; /* Clears mobile browser bars */
   box-sizing: border-box;
   border: none;
   transform: translateY(0);
@@ -579,12 +579,33 @@ body:not(.stake-active) #potAmount {
   box-shadow: none;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* 🔑 Locks container to viewport bounds */
+  overflow: hidden; /* Locks container to viewport bounds */
 }
 
 /* ============================
    HISTORY + LEADERBOARD CONTENT
    ============================ */
+.close-btn {
+  background: var(--no-red);
+  color: var(--text-main);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+  flex-shrink: 0;
+  margin-bottom: 10px; /* Cleanly spaces button above title */
+}
+
+.close-btn:hover {
+  background: #dc2626;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
 .history-header,
 .leaderboard-title {
   font-size: 1.3rem;
@@ -592,10 +613,9 @@ body:not(.stake-active) #potAmount {
   margin-bottom: 12px;
   color: var(--text-main);
   text-align: center;
-  margin-top: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  flex-shrink: 0; /* 🔑 Keeps header locked in place at top */
+  flex-shrink: 0; /* Keeps header locked in place at top */
 }
 
 .history-list,
@@ -605,8 +625,8 @@ body:not(.stake-active) #potAmount {
   gap: 14px;
   margin-top: 10px;
   flex: 1;
-  overflow-y: auto; /* 🔑 Scrolls internally instead of breaking page bounds */
-  padding-bottom: 40px;
+  overflow-y: auto; /* Scrolls internally instead of breaking page bounds */
+  padding-bottom: 50px;
   box-sizing: border-box;
 }
 
@@ -656,30 +676,6 @@ body:not(.stake-active) #potAmount {
 .outcome-yes { border-left: 6px solid var(--yes-green); }
 .outcome-no { border-left: 6px solid var(--no-red); }
 .outcome-cash { border-left: 6px solid var(--accent-blue); }
-
-/* ============================
-   CLOSE BUTTON
-   ============================ */
-.close-btn {
-  background: var(--no-red);
-  color: var(--text-main);
-  border: none;
-  padding: 10px 18px;
-  border-radius: 30px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  transition: all 0.3s ease;
-  align-self: flex-start;
-  flex-shrink: 0; /* 🔑 Prevents close button distortion */
-}
-
-.close-btn:hover {
-  background: #dc2626;
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
-}
 
 /* ============================
    LEADERBOARD ITEM — FULL DESIGN
