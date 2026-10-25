@@ -3,13 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Main Menu</title>
+  <title>Main Menu | Sport Volt</title>
   <link rel="stylesheet" href="styles.css"> <!-- optional external CSS -->
   <style>
+    :root {
+      --bg-primary: #050b14;       /* Deep midnight stadium background from Wix */
+      --bg-card: #0d1726;          /* Slightly lighter navy for containers */
+      --text-main: #ffffff;        /* Crisp white typography */
+      --text-muted: #94a3b8;       /* Muted grey for labels */
+      --accent-blue: #00d2ff;      /* Electric cyan glow accent */
+      --border-color: #1e293b;     /* Dark subtle borders */
+    }
+
     body {
-      font-family: "Segoe UI", sans-serif; /* swap to your app font */
-      background: #222; /* dark background to match app */
-      color: #fff;
+      font-family: "Segoe UI", sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -20,65 +29,77 @@
 
     /* Temp Add Credit Button Style */
     .temp-add-btn {
-      background: #007bff;
-      color: #fff;
-      border: none;
+      background: transparent;
+      color: var(--accent-blue);
+      border: 1px dashed var(--accent-blue);
       border-radius: 8px;
       padding: 8px 16px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: bold;
       cursor: pointer;
-      margin-bottom: 15px;
-      transition: background 0.3s;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
     }
     .temp-add-btn:hover {
-      background: #0056b3;
+      background: rgba(0, 210, 255, 0.1);
+      box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
     }
 
-    /* Temp Credit Box */
+    /* Temp Credit Box - Styled like your Wix product cards */
     .credit-box {
-      background: #2a2a2a;
-      border: 2px solid #28a745;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
       border-radius: 12px;
-      padding: 12px 24px;
+      padding: 16px 32px;
       margin-bottom: 30px;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     }
     .credit-label {
-      font-size: 0.85rem;
-      color: #aaa;
+      font-size: 0.8rem;
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
+      letter-spacing: 1.5px;
+      margin-bottom: 6px;
     }
     .credit-amount {
-      font-size: 1.8rem;
+      font-size: 2rem;
       font-weight: bold;
-      color: #28a745;
+      color: var(--accent-blue);
+      text-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
     }
 
     h1 {
       margin-bottom: 30px;
       font-size: 2rem;
+      letter-spacing: 1px;
+      font-weight: 700;
+      text-transform: uppercase;
     }
+
+    /* Matching your website's pill-shaped neon buttons */
     .menu-btn {
       margin: 10px;
-      padding: 15px 40px;
-      font-size: 1.2rem;
+      padding: 14px 40px;
+      font-size: 1.1rem;
       font-weight: bold;
-      color: #fff;
-      background: #28a745; /* green accent, change to your theme */
-      border: none;
-      border-radius: 10px;
+      color: var(--text-main);
+      background: transparent;
+      border: 1px solid var(--accent-blue);
+      border-radius: 30px;
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.3s;
-      width: 180px;
+      transition: all 0.3s ease;
+      width: 200px;
       text-align: center;
+      box-shadow: 0 0 10px rgba(0, 210, 255, 0.15);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .menu-btn:hover {
-      background: #1e7e34;
+      background-color: var(--accent-blue);
+      color: #000;
+      box-shadow: 0 0 20px rgba(0, 210, 255, 0.5);
     }
   </style>
 </head>
