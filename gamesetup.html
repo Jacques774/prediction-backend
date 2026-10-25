@@ -181,10 +181,13 @@
       
       <button id="create-game-btn">Create Game</button>
       
-      <div id="generatedLinkBox" style="display:none; margin-top:20px; display:flex; flex-direction:column; gap:12px;">
-        <label>Players Join Link</label>
-        <div class="readonly-field" id="generated-link"></div>
-        <button id="share-btn" class="share-btn">Share Link</button>
+      <div id="generatedLinkBox" style="display:none; margin-top:20px; flex-direction:column; gap:12px;">
+        <!-- Hidden link sections (kept in code for future use) -->
+        <div style="display: none;">
+          <label>Players Join Link</label>
+          <div class="readonly-field" id="generated-link"></div>
+          <button id="share-btn" class="share-btn">Share Link</button>
+        </div>
 
         <label style="margin-top: 8px;">Game Room Code</label>
         <div class="code-box" id="game-code-display"></div>
