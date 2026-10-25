@@ -74,6 +74,100 @@ body {
 }
 
 /* ============================
+   HUD CONTAINER (TIMER & REVEALED POT)
+   ============================ */
+.hud-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px 22px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  margin-bottom: 20px;
+}
+
+/* Countdown Timer Pill */
+.timer-hud {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #050b14;
+  border: 1px solid var(--border-color);
+  padding: 10px 16px;
+  border-radius: 30px;
+  transition: all 0.3s ease;
+}
+
+.timer-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timer-clock {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums; /* Prevents text jitter as numbers tick down */
+  letter-spacing: 0.5px;
+}
+
+/* Urgency State (< 10s warning pulse) */
+.timer-hud.urgent {
+  border-color: var(--no-red);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  animation: pulse-red 1s infinite alternate;
+}
+
+.timer-hud.urgent .timer-clock {
+  color: var(--no-red);
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3); }
+  100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.8); }
+}
+
+/* Revealed Pot Styling */
+.pot-hud {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fade-in 0.4s ease forwards;
+}
+
+.pot-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pot-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent-blue);
+  text-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+/* Hidden utility state */
+.pot-hud.hidden {
+  display: none;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ============================
    QUESTION CARD
    ============================ */
 .cards {
