@@ -1,6 +1,6 @@
 /* ============================================================
    SPORT VOLT THEME - COMPLETE CSS REFACTOR
-   Matches Wix Landing Page Aesthetic & Stadium Background
+   Matches Wix Landing Page Aesthetic & Rugby Stadium Background
    ============================================================ */
 
 :root {
@@ -18,13 +18,13 @@
 }
 
 /* ============================
-   GLOBAL & STADIUM BACKGROUND
+   GLOBAL & RUGBY STADIUM BACKGROUND
    ============================ */
 body {
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  /* Deep stadium atmosphere: rich navy shade layered over clean arena lighting */
+  /* Deep midnight navy gradient overlay blended over an illuminated rugby stadium arena image */
   background: linear-gradient(rgba(5, 11, 20, 0.82), rgba(3, 7, 13, 0.90)), 
-              url('https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=1920&auto=format&fit=crop');
+              url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1920&auto=format&fit=crop');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
