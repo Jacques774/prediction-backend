@@ -541,7 +541,7 @@ body:not(.stake-active) #potAmount {
 }
 
 /* ============================
-   PANELS (History + Leaderboard FULL SCREEN)
+   PANELS (History + Leaderboard FULL SCREEN UNIFIED)
    ============================ */
 .history-panel,
 #leaderboardPanel,
@@ -567,10 +567,10 @@ body:not(.stake-active) #potAmount {
 .host-outcome-content {
   background: var(--bg-card);
   width: 100%;
-  height: 100vh;
-  max-height: 100vh;
+  height: 100dvh; /* Dynamic mobile viewport height */
+  max-height: 100dvh;
   border-radius: 0;
-  padding: 40px 20px 20px 20px; /* Clears mobile browser bars */
+  padding: calc(25px + env(safe-area-inset-top)) 20px 20px 20px; /* Perfectly aligns below mobile browser bars */
   box-sizing: border-box;
   border: none;
   transform: translateY(0);
@@ -579,11 +579,11 @@ body:not(.stake-active) #potAmount {
   box-shadow: none;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Locks container to viewport bounds */
+  overflow: hidden; /* Locks container to screen bounds */
 }
 
 /* ============================
-   HISTORY + LEADERBOARD CONTENT
+   PANEL HEADERS & CLOSE BUTTONS
    ============================ */
 .close-btn {
   background: var(--no-red);
@@ -598,7 +598,8 @@ body:not(.stake-active) #potAmount {
   transition: all 0.3s ease;
   align-self: flex-start;
   flex-shrink: 0;
-  margin-bottom: 10px; /* Cleanly spaces button above title */
+  margin-top: 5px;
+  margin-bottom: 12px;
 }
 
 .close-btn:hover {
@@ -615,7 +616,7 @@ body:not(.stake-active) #potAmount {
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 1px;
-  flex-shrink: 0; /* Keeps header locked in place at top */
+  flex-shrink: 0; /* Keeps header locked in place */
 }
 
 .history-list,
@@ -623,9 +624,9 @@ body:not(.stake-active) #potAmount {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-top: 10px;
+  margin-top: 5px;
   flex: 1;
-  overflow-y: auto; /* Scrolls internally instead of breaking page bounds */
+  overflow-y: auto; /* Internal scroll bounds */
   padding-bottom: 50px;
   box-sizing: border-box;
 }
