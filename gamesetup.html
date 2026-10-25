@@ -168,7 +168,7 @@
         <option value="tennis">Tennis</option>
       </select>
 
-      <label>Starting Balance (£)</label>
+      <label>Starting Balance (⚡)</label>
       <input type="number" id="starting-balance" min="20" value="50" placeholder="50">
 
       <label>How Many Questions (Max 20)</label>
@@ -231,7 +231,7 @@
 
       // Enforce maximum limit check against main menu credit
       if (startingBalance > maxCredit) {
-        err.textContent = `Starting balance (£${startingBalance}) cannot exceed your main menu credit (£${maxCredit}).`;
+        err.textContent = `Starting balance (${startingBalance}⚡) cannot exceed your main menu credit (${maxCredit}⚡).`;
         err.style.display = "block";
         return;
       }
@@ -244,7 +244,7 @@
       }
 
       if (!sport || startingBalance < 20 || questionCount <= 0 || questionTimeMins < 1) {
-        err.textContent = "Please fill in all fields correctly (Min balance: £20, Min card timer: 1 min).";
+        err.textContent = "Please fill in all fields correctly (Min balance: 20⚡, Min card timer: 1 min).";
         err.style.display = "block";
         return;
       }
