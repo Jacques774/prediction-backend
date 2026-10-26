@@ -321,6 +321,11 @@ socket.on("disconnect", () => (statusDot.style.backgroundColor = "red"));
 
 socket.on("game_starting", ({ host }) => {
   console.log(`Game starting by host: ${host}`);
+
+  // 🔑 Hide the waiting-for-host lobby card when game starts
+  const waitingCard = document.getElementById("waitingForHostCard");
+  if (waitingCard) waitingCard.style.display = "none";
+
   window.startPreCountdown(() => {
     const activeCard = document.getElementById("active-card");
     if (activeCard && !window.isGameOver) activeCard.style.display = "block";
