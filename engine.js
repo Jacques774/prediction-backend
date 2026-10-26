@@ -1,5 +1,42 @@
-import { RugbyQuestions } from "./questions.js";
+import { RugbyBlitzQuestions } from "./RugbyQuestions-blitz.js";
+import { RugbyTacticalQuestions } from "./RugbyQuestions-tactical.js";
 import Pot from "./pot.js";
+
+// ============================
+// NEW QUESTION SYSTEM (NON-REPEATING RANDOM PICKER)
+// ============================
+let lastQuestionId = null;
+
+const RugbyQuestions = {
+  getRand(mode = "blitz") {
+    let deck = [];
+
+    if (mode === "blitz") {
+      deck = RugbyBlitzQuestions;
+    } else if (mode === "tactical") {
+      deck = RugbyTacticalQuestions;
+    } else if (mode === "mix") {
+      deck = [...RugbyBlitzQuestions, ...RugbyTacticalQuestions];
+    } else {
+      deck = RugbyBlitzQuestions;
+    }
+
+    if (!deck || deck.length === 0) {
+      return { id: "fallback", text: "Will a lineout be awarded in the next 3 minutes?", timer: 180 };
+    }
+
+    let available = deck;
+    if (lastQuestionId && deck.length > 1) {
+      available = deck.filter(q => q.id !== lastQuestionId);
+    }
+
+    const randomIndex = Math.floor(Math.random() * available.length);
+    const selected = available[randomIndex];
+
+    lastQuestionId = selected.id;
+    return selected;
+  }
+};
 
 // ✅ Dynamic Pot initializer supporting host buy-in amount & instant leaderboard sync
 window.initGame = function (players, buyInAmount = 100) {
@@ -200,6 +237,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const activeCard = document.getElementById("active-card");
         if (activeCard) activeCard.style.display = "none";
         return;
+      }
+
+      // 🔑 Fetch question from new system if not provided by socket payload
+      if (!q || !q.text) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameMode = urlParams.get("mode") || "blitz";
+        q = RugbyQuestions.getRand(gameMode);
       }
 
       // 🔑 Capture question tally tracking for final round detection
