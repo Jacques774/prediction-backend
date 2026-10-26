@@ -1,5 +1,42 @@
-import { RugbyQuestions } from "./questions.js";
+import { RugbyBlitzQuestions } from "./RugbyQuestions-blitz.js";
+import { RugbyTacticalQuestions } from "./RugbyQuestions-tactical.js";
 import Pot from "./pot.js";
+
+// ============================
+// NEW QUESTION SYSTEM (NON-REPEATING RANDOM PICKER)
+// ============================
+let lastQuestionId = null;
+
+const RugbyQuestions = {
+  getRand(mode = "blitz") {
+    let deck = [];
+
+    if (mode === "blitz") {
+      deck = RugbyBlitzQuestions;
+    } else if (mode === "tactical") {
+      deck = RugbyTacticalQuestions;
+    } else if (mode === "mix") {
+      deck = [...RugbyBlitzQuestions, ...RugbyTacticalQuestions];
+    } else {
+      deck = RugbyBlitzQuestions;
+    }
+
+    if (!deck || deck.length === 0) {
+      return { id: "fallback", text: "Will a lineout be awarded in the next 3 minutes?", timer: 180 };
+    }
+
+    let available = deck;
+    if (lastQuestionId && deck.length > 1) {
+      available = deck.filter(q => q.id !== lastQuestionId);
+    }
+
+    const randomIndex = Math.floor(Math.random() * available.length);
+    const selected = available[randomIndex];
+
+    lastQuestionId = selected.id;
+    return selected;
+  }
+};
 
 // ============================
 // DOM Helpers for Stake Timer & Delayed Pot Reveal
@@ -58,7 +95,7 @@ console.log("✅ host-ui.js loaded");
 const socket = io("https://prediction-backend-2e20.onrender.com");
 window.socket = socket;
 
-// Read ?code= and ?buyin= from URL
+// Read ?code=, ?buyin=, and ?mode= from URL
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("code");
 let buyInAmount = urlParams.get("buyin") !== null ? Number(urlParams.get("buyin")) : 20;
@@ -124,7 +161,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let lastSeenHostIndex = 0;
 
   // Listen for server broadcast of new question
-  socket.on("new_question", ({ id, current, total }) => {
+  socket.on("new_question", ({ id, current, total, question: serverQuestion }) => {
     // 🔑 Stop loading questions if game is over
     if (window.isGameOver) {
       console.log("🛑 Game is complete. Ignoring new question emission.");
@@ -137,8 +174,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (current !== undefined && current === lastSeenHostIndex) return;
     if (current !== undefined) lastSeenHostIndex = current;
 
-    const question = RugbyQuestions[id];
-    if (!question) return;
+    // 🔑 Dynamically fetch question using mode from URL if server didn't pass full question object
+    let question = serverQuestion;
+    if (!question || !question.text) {
+      const gameMode = urlParams.get("mode") || "blitz";
+      question = RugbyQuestions.getRand(gameMode);
+    }
+
     console.log(`📡 Host received new question: ${question.text}`);
     if (typeof Engine !== "undefined" && typeof Engine.nextQuestion === "function") {
       Engine.nextQuestion(question);
