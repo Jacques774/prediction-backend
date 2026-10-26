@@ -25,7 +25,7 @@ html, body {
   width: 100%;
   height: 100vh;
   margin: 0;
-  padding: 16px;
+  padding: 10px 16px; /* Tighter padding to shift everything up */
   overflow: hidden; /* 🔑 Locks page scrollers */
   box-sizing: border-box;
   /* Deep midnight navy gradient overlay over a clean, text-free floodlit rugby stadium pitch */
@@ -42,7 +42,7 @@ html, body {
 .dashboard {
   max-width: 1000px;
   margin: 0 auto;
-  height: calc(100vh - 32px);
+  height: calc(100vh - 20px);
   display: flex;
   flex-direction: column;
   justify-content: flex-start; /* Aligns content smoothly from the top down */
@@ -56,19 +56,19 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
-  padding: 4px;
+  margin-bottom: 10px;
+  padding: 2px;
 }
 
 .header-left,
 .header-right {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .header-line {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -86,38 +86,38 @@ html, body {
 .cards {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .card {
   background: var(--bg-card);
   border-radius: 14px;
-  padding: 18px;
+  padding: 14px 18px;
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .card-header {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .question-text {
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: var(--text-main);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .choices {
   display: flex;
-  gap: 14px;
-  margin: 14px 0;
+  gap: 12px;
+  margin: 10px 0;
 }
 
 .btn {
   flex: 1;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 30px; /* Pill-shape match */
   border: none;
   cursor: pointer;
@@ -155,6 +155,43 @@ html, body {
   opacity: 0.4;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+/* ============================
+   WAITING FOR HOST LOBBY CARD
+   ============================ */
+#waitingForHostCard {
+  background: var(--bg-card);
+  border: 1px solid var(--accent-blue);
+  border-radius: 14px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 0 25px rgba(0, 210, 255, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+#waitingForHostCard .waiting-icon {
+  font-size: 2.2rem;
+  animation: cashoutPulse 1.2s infinite alternate ease-in-out;
+}
+
+#waitingForHostCard h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#waitingForHostCard p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
 }
 
 /* ============================
