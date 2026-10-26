@@ -5,6 +5,7 @@ import Pot from "./pot.js";
 // DOM Helpers for Stake Timer & Delayed Pot Reveal
 // ============================
 window.isStakeWindowActive = false;
+window.isGameOver = false; // 🔑 Freeze question flag
 
 function showCountdown(timeLeft) {
   window.isStakeWindowActive = true;
@@ -112,13 +113,19 @@ function initPlayerUI() {
     let sport = "Rugby";
     let questionCount = 40;
 
+    // 🔑 STORE BUY-IN GLOBALLY FOR GAME OVER COMPARISON
+    window.activeBuyInAmount = urlBuyin;
+
     // 🔑 FETCH LIVE GAME ROOM DETAILS FROM BACKEND API
     try {
       const res = await fetch(`https://prediction-backend-2e20.onrender.com/api/game/${gameId}`);
       if (res.ok) {
         const gameData = await res.json();
         if (gameData) {
-          if (gameData.startingBalance !== undefined) urlBuyin = Number(gameData.startingBalance);
+          if (gameData.startingBalance !== undefined) {
+            urlBuyin = Number(gameData.startingBalance);
+            window.activeBuyInAmount = urlBuyin;
+          }
           if (gameData.qtime !== undefined) urlQtime = Number(gameData.qtime);
           if (gameData.questionCount !== undefined) questionCount = Number(gameData.questionCount);
           if (gameData.sport) sport = gameData.sport.charAt(0).toUpperCase() + gameData.sport.slice(1);
@@ -191,6 +198,7 @@ function initPlayerUI() {
       const rawCredit = localStorage.getItem("user_credit");
       let currentCredit = (rawCredit !== null && !isNaN(parseFloat(rawCredit))) ? parseFloat(rawCredit) : 30.00;
       const buyin = pendingGameData.startingBalance;
+      window.activeBuyInAmount = buyin;
 
       if (currentCredit < buyin) {
         alert(`Insufficient credit! Required: ${buyin.toFixed(2)}⚡, Available: ${currentCredit.toFixed(2)}⚡`);
@@ -370,6 +378,83 @@ socket.on("new_question", ({ id, timer, current, total }) => {
 
   const activeCard = document.getElementById("active-card");
   if (activeCard && !window.isGameOver) activeCard.style.display = "block";
+});
+
+// 🔑 GAME OVER LISTENER (SAFE NUMERIC PARSING & AUTO LEADERBOARD OPEN)
+socket.on("game_over", ({ leaderboard }) => {
+  if (window.hasProcessedGameOver) return;
+  window.hasProcessedGameOver = true;
+
+  window.isGameOver = true;
+
+  // Hide active question card immediately
+  const activeCard = document.getElementById("active-card");
+  if (activeCard) activeCard.style.display = "none";
+
+  const playerName = window.currentPlayerName || "Player";
+  const refBuyin = window.activeBuyInAmount !== undefined ? window.activeBuyInAmount : 20;
+  let finalBalance = window.pot && window.pot.balances ? window.pot.balances[playerName] || refBuyin : refBuyin;
+
+  if (leaderboard && Array.isArray(leaderboard)) {
+    const sorted = [...leaderboard].sort((a, b) => b.balance - a.balance);
+    const index = sorted.findIndex(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
+    
+    if (index !== -1) {
+      const boardBal = Number(sorted[index].balance);
+      if (!isNaN(boardBal) && boardBal >= 0) {
+        finalBalance = boardBal;
+      }
+    }
+
+    // 🔑 POPULATE & UPDATE LEADERBOARD DATA
+    if (typeof Leaderboard !== "undefined") {
+      sorted.forEach(p => {
+        Leaderboard.update(p.name, p.balance);
+      });
+      Leaderboard.render();
+    }
+  }
+
+  // Evaluate Win / Loss / Break-Even against buy-in
+  let positionText = "";
+  if (finalBalance > refBuyin) {
+    positionText = "Congratulations! You finished in profit! 🏆🎉";
+  } else if (finalBalance === refBuyin) {
+    positionText = "Game Over! You broke even. ⚖️";
+  } else {
+    positionText = "Game Over. You finished in a loss. 📉";
+  }
+
+  // 🔑 Safely parse wallet and earnings as numbers before adding
+  const rawWallet = localStorage.getItem("user_credit");
+  let currentWallet = (rawWallet !== null && !isNaN(parseFloat(rawWallet))) ? parseFloat(rawWallet) : 30.00;
+  
+  const gameEarnings = Number(finalBalance || 0);
+  currentWallet += gameEarnings;
+
+  localStorage.setItem("user_credit", currentWallet.toFixed(2));
+  console.log(`⚡ Added final balance (${gameEarnings.toFixed(2)}⚡) to wallet. New total: ${currentWallet.toFixed(2)}⚡`);
+
+  // Populate Modal Elements
+  const messageEl = document.getElementById("gameOverMessage");
+  const balanceEl = document.getElementById("gameOverFinalBalance");
+
+  if (messageEl) messageEl.textContent = positionText;
+  if (balanceEl) balanceEl.textContent = `Final Balance: ${gameEarnings.toFixed(2)}⚡`;
+
+  // Show Modal via class toggle and inline fallback
+  const gameOverModal = document.getElementById("gameOverModal");
+  if (gameOverModal) {
+    gameOverModal.classList.add("show");
+    gameOverModal.style.display = "flex";
+  }
+
+  // 🔑 Automatically open leaderboard panel after short delay
+  setTimeout(() => {
+    if (typeof openLeaderboard === "function") {
+      openLeaderboard();
+    }
+  }, 1500);
 });
 
 socket.on("pot_update", ({ amount }) => {
