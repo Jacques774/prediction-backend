@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 🔑 GAME OVER LISTENER (SAFE NUMERIC PARSING & DUPLICATE GUARD)
+  // 🔑 GAME OVER LISTENER (SAFE NUMERIC PARSING & AUTO LEADERBOARD OPEN)
   socket.on("game_over", ({ leaderboard }) => {
     if (window.hasProcessedGameOver) return;
     window.hasProcessedGameOver = true;
@@ -178,6 +178,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           finalBalance = boardBal;
         }
       }
+
+      // 🔑 POPULATE & UPDATE LEADERBOARD DATA
+      if (typeof Leaderboard !== "undefined") {
+        sorted.forEach(p => {
+          Leaderboard.update(p.name, p.balance);
+        });
+        Leaderboard.render();
+      }
     }
 
     // Evaluate Win / Loss / Break-Even against buyInAmount
@@ -198,7 +206,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentWallet += gameEarnings;
 
     localStorage.setItem("user_credit", currentWallet.toFixed(2));
-    console.log(`⚡ Added host final balance (${gameEarnings.toFixed(2)}⚡) to wallet. New total: ${currentWallet.toFixed(2)}⚡`);
+    console.log(`⚡ Added final balance (${gameEarnings.toFixed(2)}⚡) to wallet. New total: ${currentWallet.toFixed(2)}⚡`);
 
     // Populate Modal Elements
     const messageEl = document.getElementById("gameOverMessage");
@@ -213,6 +221,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       gameOverModal.classList.add("show");
       gameOverModal.style.display = "flex";
     }
+
+    // 🔑 Automatically open leaderboard panel after short delay
+    setTimeout(() => {
+      if (typeof openLeaderboard === "function") {
+        openLeaderboard();
+      }
+    }, 1500);
   });
 
   // Logout Button Listener -> Safely adds balance back to wallet & Redirects to Main Menu
