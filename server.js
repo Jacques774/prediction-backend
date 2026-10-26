@@ -5,8 +5,9 @@ import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ✅ Import shared rugby questions
-import { RugbyQuestions } from "./questions.js";
+// ✅ Import new separate rugby question banks
+import { RugbyBlitzQuestions } from "./RugbyQuestions-blitz.js";
+import { RugbyTacticalQuestions } from "./RugbyQuestions-tactical.js";
 
 const app = express();
 app.use(cors());
@@ -31,41 +32,59 @@ app.get("/player", (req, res) => res.sendFile(path.join(__dirname, "player.html"
 // --- Game state ---
 const games = {};
 
-// ✅ Updated to receive host settings, defaulting to 60s fallback if unsupplied
+// 🔑 Helper to pick a random question based on game mode with non-repeating logic
+function getRandomQuestionForMode(mode, lastId) {
+  let deck = [];
+  if (mode === "blitz") {
+    deck = RugbyBlitzQuestions;
+  } else if (mode === "tactical") {
+    deck = RugbyTacticalQuestions;
+  } else if (mode === "mix") {
+    deck = [...RugbyBlitzQuestions, ...RugbyTacticalQuestions];
+  } else {
+    deck = RugbyBlitzQuestions;
+  }
+
+  if (!deck || deck.length === 0) {
+    return { id: "fallback", text: "Will a lineout be awarded in the next 3 minutes?", timer: 180 };
+  }
+
+  let available = deck;
+  if (lastId && deck.length > 1) {
+    available = deck.filter(q => q.id !== lastId);
+  }
+
+  const randomIndex = Math.floor(Math.random() * available.length);
+  return available[randomIndex];
+}
+
+// ✅ Updated to receive host settings, including mode
 app.post("/api/create-game", (req, res) => {
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const { startingBalance, questionCount, qtime } = req.body;
+  const { startingBalance, questionCount, mode } = req.body;
 
-  let parsedQTime = Number(qtime);
-
-  // If missing or invalid, default to 60s
-  if (isNaN(parsedQTime) || parsedQTime <= 0) {
-    parsedQTime = 60;
-  } else if (parsedQTime < 60) {
-    // If sent as minutes (e.g. 4), convert to seconds (4 * 60 = 240s)
-    parsedQTime = parsedQTime * 60;
-  }
+  const gameMode = mode || "blitz";
 
   games[code] = {
     players: {},
     hostId: null,
     potBalance: 0, 
     started: false,
+    mode: gameMode, // 🔑 Store selected mode in server state
     currentQuestionId: null,
-    currentQuestionIndex: 0, // Track current question index
+    currentQuestionIndex: 0,
     lastOutcome: null,
     startingBalance: Number(startingBalance) >= 20 ? Number(startingBalance) : 100,
-    questionCount: Number(questionCount) || 40,
-    qtime: parsedQTime // Guaranteed to be in seconds (defaults to 60s)
+    questionCount: Number(questionCount) || 20
   };
 
-  console.log(`🎮 Game created [${code}] with timer: ${games[code].qtime}s`);
+  console.log(`🎮 Game created [${code}] with mode: ${gameMode}`);
 
   res.json({ 
     code, 
     startingBalance: games[code].startingBalance,
     questionCount: games[code].questionCount,
-    qtime: games[code].qtime
+    mode: games[code].mode
   });
 });
 
@@ -79,7 +98,7 @@ app.get("/api/game/:code", (req, res) => {
   res.json({
     startingBalance: game.startingBalance,
     questionCount: game.questionCount,
-    qtime: game.qtime
+    mode: game.mode
   });
 });
 
@@ -135,14 +154,13 @@ io.on("connection", (socket) => {
       wins: 0,
       cashouts: 0,
       stake: 0,
-      choice: null // Track active round prediction choice
+      choice: null
     };
 
     if (isHost) {
       game.hostId = socket.id;
       io.to(gameId).emit("host_joined", { playerName });
     } else {
-      // ✅ Broadcast player join event with the correct host-configured starting balance
       io.to(gameId).emit("player_joined", { playerName, balance: initialBalance });
       broadcastLeaderboard(gameId);
     }
@@ -211,17 +229,18 @@ io.on("connection", (socket) => {
       game.started = true;
       io.to(gameId).emit("game_started", { host });
 
-      const ids = Object.keys(RugbyQuestions);
-      const randomId = ids[Math.floor(Math.random() * ids.length)];
-      game.currentQuestionId = randomId;
-      game.currentQuestionIndex = 1; // 🔑 Start strictly at 1
+      // 🔑 Pull question based on game mode
+      const selectedQ = getRandomQuestionForMode(game.mode, game.currentQuestionId);
+      game.currentQuestionId = selectedQ.id;
+      game.currentQuestionIndex = 1;
 
-      // ✅ Pass server-stored qtime and question tally payload
+      // ✅ Pass full question object so host/player clients receive exact text and card timer
       io.to(gameId).emit("new_question", { 
-        id: randomId, 
-        timer: game.qtime,
+        id: selectedQ.id, 
+        timer: selectedQ.timer,
         current: game.currentQuestionIndex,
-        total: game.questionCount
+        total: game.questionCount,
+        question: selectedQ
       });
     }, 4000);
   });
@@ -236,7 +255,6 @@ io.on("connection", (socket) => {
     const playersList = Object.values(game.players);
     const normalizedOutcome = outcome ? outcome.trim().toUpperCase() : "";
 
-    // Filter players who guessed correctly (case-insensitive) AND did not cash out (stake > 0)
     const winners = [];
     playersList.forEach(p => {
       const playerChoice = p.choice ? p.choice.trim().toUpperCase() : "";
@@ -251,7 +269,6 @@ io.on("connection", (socket) => {
       if (p) totalWinningStakes += p.stake;
     });
 
-    // If there are valid winners, distribute the pot proportionally
     if (winners.length > 0 && totalWinningStakes > 0) {
       const currentPot = game.potBalance || 0;
       winners.forEach(wName => {
@@ -262,7 +279,6 @@ io.on("connection", (socket) => {
           p.balance += payout;
           p.wins += 1;
 
-          // ✅ Send direct balance update to this specific player's socket
           const socketEntry = Object.entries(game.players).find(([sId, playerData]) => 
             playerData.name.trim().toLowerCase() === wName.trim().toLowerCase()
           );
@@ -271,42 +287,37 @@ io.on("connection", (socket) => {
           }
         }
       });
-      // Reset pot balance to 0 on successful win resolution
       game.potBalance = 0;
       io.to(gameId).emit("pot_update", { amount: 0 });
     } else {
       console.log("❌ No winners or 0 winning stakes, pot rolls over.");
     }
 
-    // Broadcast outcome, winners list, and updated leaderboard at end of round
     io.to(gameId).emit("round_outcome", { outcome, winners });
     broadcastLeaderboard(gameId);
   });
 
-  // ✅ Handle next round (Preserves rollover pot if no winners, clears round stakes)
+  // ✅ Handle next round
   socket.on("next_round", ({ gameId }) => {
     const game = games[gameId];
     if (!game) return;
 
-    // Reset individual stakes and choices, but KEEP potBalance intact for rollovers!
     Object.values(game.players).forEach(p => {
       p.stake = 0;
       p.choice = null;
     });
 
-    const ids = Object.keys(RugbyQuestions);
-    const randomId = ids[Math.floor(Math.random() * ids.length)];
-    game.currentQuestionId = randomId;
-    
-    // 🔑 Guaranteed safe +1 increment
+    // 🔑 Pull next random question based on game mode
+    const selectedQ = getRandomQuestionForMode(game.mode, game.currentQuestionId);
+    game.currentQuestionId = selectedQ.id;
     game.currentQuestionIndex = (game.currentQuestionIndex || 0) + 1;
     
-    // ✅ Pass server-stored qtime and updated question tally payload
     io.to(gameId).emit("new_question", { 
-      id: randomId, 
-      timer: game.qtime,
+      id: selectedQ.id, 
+      timer: selectedQ.timer,
       current: game.currentQuestionIndex,
-      total: game.questionCount
+      total: game.questionCount,
+      question: selectedQ
     });
   });
 
