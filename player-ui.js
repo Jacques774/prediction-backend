@@ -1,5 +1,42 @@
-import { RugbyQuestions } from "./questions.js";
+import { RugbyBlitzQuestions } from "./RugbyQuestions-blitz.js";
+import { RugbyTacticalQuestions } from "./RugbyQuestions-tactical.js";
 import Pot from "./pot.js";
+
+// ============================
+// NEW QUESTION SYSTEM (NON-REPEATING RANDOM PICKER)
+// ============================
+let lastQuestionId = null;
+
+const RugbyQuestions = {
+  getRand(mode = "blitz") {
+    let deck = [];
+
+    if (mode === "blitz") {
+      deck = RugbyBlitzQuestions;
+    } else if (mode === "tactical") {
+      deck = RugbyTacticalQuestions;
+    } else if (mode === "mix") {
+      deck = [...RugbyBlitzQuestions, ...RugbyTacticalQuestions];
+    } else {
+      deck = RugbyBlitzQuestions;
+    }
+
+    if (!deck || deck.length === 0) {
+      return { id: "fallback", text: "Will a lineout be awarded in the next 3 minutes?", timer: 180 };
+    }
+
+    let available = deck;
+    if (lastQuestionId && deck.length > 1) {
+      available = deck.filter(q => q.id !== lastQuestionId);
+    }
+
+    const randomIndex = Math.floor(Math.random() * available.length);
+    const selected = available[randomIndex];
+
+    lastQuestionId = selected.id;
+    return selected;
+  }
+};
 
 // ============================
 // DOM Helpers for Stake Timer & Delayed Pot Reveal
@@ -342,7 +379,7 @@ socket.on("game_starting", ({ host }) => {
 
 let lastSeenPlayerIndex = 0;
 
-socket.on("new_question", ({ id, timer, current, total }) => {
+socket.on("new_question", ({ id, timer, current, total, question: serverQuestion }) => {
   if (window.isGameOver) return;
 
   if (current !== undefined) {
@@ -352,17 +389,17 @@ socket.on("new_question", ({ id, timer, current, total }) => {
   }
   if (total !== undefined) window.totalQuestionsCount = total;
 
-  if (typeof RugbyQuestions === "undefined") {
-    console.error("❌ RugbyQuestions is not loaded.");
-    return;
+  // 🔑 Dynamically fetch question using mode from URL if server didn't pass full question object
+  let question = serverQuestion;
+  if (!question || !question.text) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameMode = urlParams.get("mode") || "blitz";
+    question = RugbyQuestions.getRand(gameMode);
   }
-
-  const question = RugbyQuestions[id];
-  if (!question) return;
 
   const questionData = {
     ...question,
-    timer: timer || 60,
+    timer: timer || question.timer || 90,
     current,
     total
   };
