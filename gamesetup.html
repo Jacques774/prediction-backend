@@ -7,14 +7,13 @@
   <style>
     :root {
       --bg-primary: #050b14;       /* Deep midnight stadium background */
-      --bg-card: #0d1726;          /* Slightly lighter navy container */
+      --bg-card: #0d1726;          /* Lighter navy container */
       --text-main: #ffffff;        /* Crisp white text */
       --text-muted: #94a3b8;       /* Muted grey for labels */
       --accent-blue: #00d2ff;      /* Electric cyan glow accent */
       --border-color: #1e293b;     /* Dark subtle borders */
     }
 
-    /* 🔑 Lock Viewport & Shift Content Up */
     html, body {
       font-family: "Segoe UI", sans-serif;
       background-color: var(--bg-primary);
@@ -26,7 +25,7 @@
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      justify-content: flex-start; /* 🔑 Shifts everything to the top */
+      justify-content: flex-start;
       align-items: center;
     }
 
@@ -82,7 +81,6 @@
       box-shadow: 0 0 8px rgba(0, 210, 255, 0.25);
     }
 
-    /* Main Create Game Button */
     #create-game-btn { 
       padding: 13px; 
       border-radius: 30px; 
@@ -178,21 +176,25 @@
         <option value="tennis">Tennis</option>
       </select>
 
+      <!-- ⚡ NEW: Game Mode Option (Replaces Card Timer Input) -->
+      <label>Game Mode</label>
+      <select id="game-mode">
+        <option value="blitz" selected>Blitz (Fast Events: 90s - 3m)</option>
+        <option value="tactical">Tactical (Macro Trends: 4m - 10m)</option>
+        <option value="mix">Mix (Combined Blitz & Tactical Deck)</option>
+      </select>
+
       <label>Starting Balance (⚡)</label>
       <input type="number" id="starting-balance" min="20" value="50" placeholder="50">
 
       <label>How Many Questions (Max 20)</label>
       <input type="number" id="question-count" min="1" max="20" value="20" placeholder="20">
 
-      <label>Question Time (minutes)</label>
-      <input type="number" id="question-time" min="1" value="2" placeholder="2">
-
       <div id="setupError" style="color:#ef4444; font-weight:600; display:none; font-size:0.9rem;"></div>
       
       <button id="create-game-btn">Create Game</button>
       
       <div id="generatedLinkBox" style="display:none; margin-top:8px; flex-direction:column; gap:6px;">
-        <!-- Hidden link sections (kept in code for future use) -->
         <div style="display: none;">
           <label>Players Join Link</label>
           <div class="readonly-field" id="generated-link"></div>
@@ -209,7 +211,6 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // Read available credit passed from main menu (defaults to 50)
     const urlParams = new URLSearchParams(window.location.search);
     const maxCredit = Number(urlParams.get("credit")) || 50;
 
@@ -235,52 +236,47 @@
 
     createBtn.addEventListener("click", () => {
       const sport = document.getElementById("sport-type").value;
+      const gameMode = document.getElementById("game-mode").value; // 'blitz', 'tactical', or 'mix'
       const startingBalance = Number(balanceInput.value);
       const questionCount = Number(document.getElementById("question-count").value);
-      const questionTimeMins = Number(document.getElementById("question-time").value);
 
-      // 🛑 CRITICAL FIX: Enforce credit validation IMMEDIATELY before making backend fetch
       if (startingBalance > maxCredit) {
         err.textContent = `Starting balance (${startingBalance}⚡) cannot exceed your available credit (${maxCredit}⚡).`;
         err.style.display = "block";
         return;
       }
 
-      // 🛑 Enforce 20-Question Maximum Limit Guard
       if (questionCount > 20) {
         err.textContent = "Maximum question limit is 20.";
         err.style.display = "block";
         return;
       }
 
-      if (!sport || startingBalance < 20 || questionCount <= 0 || questionTimeMins < 1) {
-        err.textContent = "Please fill in all fields correctly (Min balance: 20⚡, Min card timer: 1 min).";
+      if (!sport || !gameMode || startingBalance < 20 || questionCount <= 0) {
+        err.textContent = "Please fill in all fields correctly (Min balance: 20⚡).";
         err.style.display = "block";
         return;
       }
       err.style.display = "none";
-
-      // Convert minutes to seconds
-      const questionTimeSeconds = questionTimeMins * 60;
 
       fetch(`${API_BASE}/create-game`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hostId: "temp-host",
+          sport: sport,
+          mode: gameMode,
           startingBalance: startingBalance,
-          questionCount: questionCount,
-          qtime: questionTimeSeconds
+          questionCount: questionCount
         })
       })
       .then(res => res.json())
       .then(data => {
         const gameCode = data.code;
-        const serverTimer = data.qtime; // Server-confirmed timer in seconds
 
-        window.GameSession = { gameCode, sport, startingBalance, questionCount, questionTimeSeconds: serverTimer };
+        window.GameSession = { gameCode, sport, gameMode, startingBalance, questionCount };
 
-        const joinLink = `${BASE_URL}/player.html?code=${gameCode}&buyin=${startingBalance}&qtime=${serverTimer}`;
+        const joinLink = `${BASE_URL}/player.html?code=${gameCode}&buyin=${startingBalance}&mode=${gameMode}`;
         linkField.textContent = joinLink;
         
         codeDisplay.textContent = gameCode;
@@ -310,10 +306,9 @@
       }
     });
 
-    // Host redirect
     startBtn.addEventListener("click", () => {
-      const { gameCode, startingBalance, questionTimeSeconds } = window.GameSession;
-      window.location.href = `${BASE_URL}/host?code=${gameCode}&buyin=${startingBalance}&qtime=${questionTimeSeconds}`;
+      const { gameCode, gameMode, startingBalance } = window.GameSession;
+      window.location.href = `${BASE_URL}/host?code=${gameCode}&buyin=${startingBalance}&mode=${gameMode}`;
     });
   });
 </script>
